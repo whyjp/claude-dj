@@ -25,6 +25,10 @@ export class SessionManager {
     return this.sessions.get(id);
   }
 
+  get sessionCount() {
+    return this.sessions.size;
+  }
+
   handleNotify(input) {
     const session = this.getOrCreate(input);
     session.state = 'PROCESSING';

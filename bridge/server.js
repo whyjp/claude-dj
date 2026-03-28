@@ -31,18 +31,26 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+// --- Helpers ---
+
+function broadcastLayout(layout) {
+  ws.broadcast({ type: 'LAYOUT', sessionCount: sm.sessionCount, ...layout });
+}
+
 // --- Hook Endpoints ---
 
 app.post('/api/hook/notify', (req, res) => {
   const input = req.body;
+  console.log(`[hook/notify] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
   const session = sm.handleNotify(input);
   const layout = ButtonManager.layoutFor(session);
-  ws.broadcast({ type: 'LAYOUT', ...layout });
+  broadcastLayout(layout);
   res.json({ ok: true });
 });
 
 app.post('/api/hook/stop', (req, res) => {
   const input = req.body;
+  console.log(`[hook/stop] session=${input.session_id} active=${input.stop_hook_active}`);
   if (input.stop_hook_active) {
     return res.json({ ok: true });
   }
@@ -53,11 +61,12 @@ app.post('/api/hook/stop', (req, res) => {
 
 app.post('/api/hook/permission', (req, res) => {
   const input = req.body;
+  console.log(`[hook/permission] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
   const session = sm.handlePermission(input);
   const layout = ButtonManager.layoutFor(session);
   const isChoice = session.state === 'WAITING_CHOICE';
 
-  ws.broadcast({ type: 'LAYOUT', ...layout });
+  broadcastLayout(layout);
 
   const timeout = setTimeout(() => {
     session.respondFn = null;
@@ -70,7 +79,7 @@ app.post('/api/hook/permission', (req, res) => {
     clearTimeout(timeout);
     const response = ButtonManager.buildHookResponse(decision, isChoice);
     const newLayout = ButtonManager.layoutFor(session);
-    ws.broadcast({ type: 'LAYOUT', ...newLayout });
+    broadcastLayout(newLayout);
     res.json(response);
   };
 });
