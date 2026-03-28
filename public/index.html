@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClaudeDJ — Virtual DJ</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <div class="logo">Claude<em>DJ</em></div>
+  <span class="logo-sep">—</span>
+  <span class="logo-sub">VIRTUAL DJ</span>
+  <div class="ws-bar">
+    <div class="ws-dot" id="wsDot"></div>
+    <span class="ws-lbl" id="wsLbl">disconnected</span>
+    <button class="btn-s" id="btnConn">connect</button>
+    <button class="btn-s" id="btnClearLog">clear log</button>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: DEVICE -->
+  <div class="dev-panel">
+    <div class="dev-hdr">
+      <span class="dev-title">D200 Simulator</span>
+      <span class="dev-model">13 LCD Keys + BIG WIN</span>
+    </div>
+    <div class="d200-wrap">
+      <div class="d200" id="d200grid">
+        <!-- Rows injected by d200-renderer.js -->
+      </div>
+      <div class="state-info">
+        <div class="si"><span class="si-k">State</span><span class="si-v a" id="iState">IDLE</span></div>
+        <div class="si"><span class="si-k">Session</span><span class="si-v" id="iSess">—</span></div>
+        <div class="si"><span class="si-k">Active</span><span class="si-v" id="iAct">—</span></div>
+        <div class="si"><span class="si-k">WS</span><span class="si-v" id="iWs">disconnected</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: CONTROL -->
+  <div class="ctl-panel">
+    <div class="tabs" id="tabBar">
+      <div class="tab on" data-tab="log">Event Log <span class="lbadge" id="lbadge"></span></div>
+      <div class="tab" data-tab="proto">Protocol</div>
+      <div class="tab" data-tab="settings">Settings</div>
+    </div>
+    <div class="pane-body">
+
+      <!-- EVENT LOG -->
+      <div class="pane on" id="pane-log">
+        <div class="elog" id="elog"></div>
+        <div class="log-ctl">
+          <input class="log-fil" id="logFil" placeholder="filter…">
+          <button class="btn-s" id="btnClearLog2">clear</button>
+          <label class="log-scroll-lbl">
+            <input type="checkbox" id="aScroll" checked> auto scroll
+          </label>
+        </div>
+      </div>
+
+      <!-- PROTOCOL -->
+      <div class="pane" id="pane-proto">
+        <div class="proto">
+          <div class="ps">
+            <h4>Bridge → Client</h4>
+            <div class="pb">
+              <div class="pd in">← LAYOUT: full state update</div>
+              <div class="pc">{ "type": "LAYOUT",
+  "preset": "idle" | "processing" | "binary" | "choice",
+  "session": { "id": "abc", "name": "api-server", "state": "…" },
+  "prompt":  { "toolName": "Bash", "command": "rm -rf", "hasAlwaysAllow": false },
+  "choices": [ { "index": 1, "label": "Refactor" }, { "index": 2, "label": "Fix tests" } ]
+}</div>
+            </div>
+            <div class="pb">
+              <div class="pd in">← ALL_DIM: dim all keys</div>
+              <div class="pc">{ "type": "ALL_DIM" }</div>
+            </div>
+            <div class="pb">
+              <div class="pd in">← WELCOME: initial handshake</div>
+              <div class="pc">{ "type": "WELCOME", "version": "0.1.0", "sessions": [...] }</div>
+            </div>
+          </div>
+          <div class="ps">
+            <h4>Client → Bridge</h4>
+            <div class="pb">
+              <div class="pd out">→ BUTTON_PRESS: key clicked</div>
+              <div class="pc">{ "type": "BUTTON_PRESS", "slot": 0, "timestamp": 1743000000000 }</div>
+              <div class="pn">Slot 0 = Approve, Slot 1 = Deny, Slot 5 = Always Allow<br>
+              Choice mode: Slot N maps to choice index N</div>
+            </div>
+            <div class="pb">
+              <div class="pd out">→ CLIENT_READY: sent on connect</div>
+              <div class="pc">{ "type": "CLIENT_READY", "clientType": "virtual", "version": "0.1.0" }</div>
+            </div>
+          </div>
+          <div class="ps">
+            <h4>Slot Layout</h4>
+            <div class="pb">
+              <div class="pc">Row 0: [0] [1] [2] [3] [4]
+Row 1: [5] [6] [7] [8] [9=sessions count]
+Row 2: [10] [11] [12] [BIG WIN area]
+
+IDLE:            all dynamic keys dim (opacity 0.12)
+PROCESSING:      all keys pulse with wave animation
+WAITING_BINARY:  slot 0=approve, slot 1=deny, slot 5=always (if set)
+WAITING_CHOICE:  slot 0..N = numbered choices</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="pane" id="pane-settings">
+        <div class="settings-body">
+          <div class="sg">
+            <h4>Connection</h4>
+            <div class="set-row">
+              <label class="set-lbl">Bridge WS URL</label>
+              <input class="set-inp" id="wsUrlInput" value="">
+              <button class="btn-s" id="btnReconnect">reconnect</button>
+            </div>
+          </div>
+          <div class="hr"></div>
+          <div class="sg">
+            <h4>Display</h4>
+            <div class="set-row">
+              <label class="set-lbl">
+                <input type="checkbox" id="chkAutoReconnect" checked> Auto-reconnect on disconnect
+              </label>
+            </div>
+            <div class="set-row">
+              <label class="set-lbl">
+                <input type="checkbox" id="chkLogOutbound" checked> Log outbound messages
+              </label>
+            </div>
+          </div>
+          <div class="hr"></div>
+          <div class="sg">
+            <h4>About</h4>
+            <div class="about-info">
+              <div class="si"><span class="si-k">Version</span><span class="si-v">0.1.0</span></div>
+              <div class="si"><span class="si-k">Build</span><span class="si-v g">ClaudeDJ Virtual DJ</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
