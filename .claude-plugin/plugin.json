@@ -1,0 +1,12 @@
+{
+  "name": "claude-dj",
+  "version": "0.1.0",
+  "description": "Control Claude Code with physical buttons or browser — no terminal focus needed",
+  "author": {
+    "name": "whyjp"
+  },
+  "repository": "https://github.com/anthropics/claude-dj",
+  "license": "MIT",
+  "keywords": ["claude-code", "ulanzi", "d200", "hooks", "dj", "deck"],
+  "hooks": "./hooks/hooks.json"
+}

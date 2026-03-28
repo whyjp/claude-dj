@@ -26,4 +26,25 @@ describe('Hook scripts', () => {
     const content = readFileSync('hooks/postToolUse.js', 'utf8');
     assert.ok(content.includes('/api/hook/postToolUse'));
   });
+
+  it('hooks.json is valid and references all hook scripts', () => {
+    assert.ok(existsSync('hooks/hooks.json'));
+    const config = JSON.parse(readFileSync('hooks/hooks.json', 'utf8'));
+    assert.ok(config.hooks, 'should have hooks key');
+    assert.ok(config.hooks.PermissionRequest, 'should have PermissionRequest');
+    assert.ok(config.hooks.PreToolUse, 'should have PreToolUse');
+    assert.ok(config.hooks.PostToolUse, 'should have PostToolUse');
+    assert.ok(config.hooks.Stop, 'should have Stop');
+    // Verify ${CLAUDE_PLUGIN_ROOT} is used for portability
+    const json = JSON.stringify(config);
+    assert.ok(json.includes('${CLAUDE_PLUGIN_ROOT}'), 'should use ${CLAUDE_PLUGIN_ROOT} paths');
+  });
+
+  it('plugin.json is valid and references hooks.json', () => {
+    assert.ok(existsSync('.claude-plugin/plugin.json'));
+    const manifest = JSON.parse(readFileSync('.claude-plugin/plugin.json', 'utf8'));
+    assert.equal(manifest.name, 'claude-dj');
+    assert.ok(manifest.hooks, 'should declare hooks');
+    assert.ok(manifest.hooks.includes('hooks.json'), 'should reference hooks.json');
+  });
 });
