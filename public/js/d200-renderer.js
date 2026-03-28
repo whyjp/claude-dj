@@ -151,10 +151,15 @@ export function renderLayout(msg) {
       _setInfoState('PROCESSING');
       break;
 
+    // Match Claude Code dialog: 1=Allow, 2=Always Allow, 3=Deny
     case 'binary':
       _setKeyState(0, 'approve');
-      _setKeyState(1, 'deny');
-      if (msg.prompt?.hasAlwaysAllow) _setKeyState(5, 'always');
+      if (msg.prompt?.hasAlwaysAllow) {
+        _setKeyState(1, 'always');
+        _setKeyState(2, 'deny');
+      } else {
+        _setKeyState(1, 'deny');
+      }
       _setInfoState('WAITING_BINARY');
       if (msg.prompt) {
         const actEl = document.getElementById('iAct');

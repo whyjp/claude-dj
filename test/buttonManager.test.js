@@ -46,9 +46,23 @@ describe('ButtonManager', () => {
     assert.equal(decision.value, 'allow');
   });
 
-  it('resolves binary button press slot 1 to deny', () => {
+  it('resolves binary button press slot 1 to deny (no alwaysAllow)', () => {
     const decision = ButtonManager.resolvePress(1, 'WAITING_BINARY', {
       type: 'BINARY', hasAlwaysAllow: false,
+    });
+    assert.equal(decision.value, 'deny');
+  });
+
+  it('resolves binary button press slot 1 to alwaysAllow (with alwaysAllow)', () => {
+    const decision = ButtonManager.resolvePress(1, 'WAITING_BINARY', {
+      type: 'BINARY', hasAlwaysAllow: true,
+    });
+    assert.equal(decision.value, 'alwaysAllow');
+  });
+
+  it('resolves binary button press slot 2 to deny (with alwaysAllow)', () => {
+    const decision = ButtonManager.resolvePress(2, 'WAITING_BINARY', {
+      type: 'BINARY', hasAlwaysAllow: true,
     });
     assert.equal(decision.value, 'deny');
   });

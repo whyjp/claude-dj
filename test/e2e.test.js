@@ -196,7 +196,7 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
     ws.close();
   });
 
-  it('permission.js: always-allow button (slot 5) returns alwaysAllow', async () => {
+  it('permission.js: always-allow button (slot 1 with hasAlwaysAllow) returns alwaysAllow', async () => {
     const ws = await connectWs(wsUrl);
     const msgs = collectMessages(ws);
     await new Promise((r) => setTimeout(r, 100));
@@ -219,14 +219,49 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
       }, 50);
     });
 
-    // Press always-allow button (slot 5)
-    ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 5, timestamp: Date.now() }));
+    // Slot 1 = Always Allow (when hasAlwaysAllow), matching Claude Code dialog order
+    ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 1, timestamp: Date.now() }));
 
     const result = await hookPromise;
     assert.equal(result.exitCode, 0);
 
     const response = JSON.parse(result.stdout);
     assert.equal(response.hookSpecificOutput.decision.behavior, 'alwaysAllow');
+
+    ws.close();
+  });
+
+  it('permission.js: deny button (slot 2 with hasAlwaysAllow) returns deny', async () => {
+    const ws = await connectWs(wsUrl);
+    const msgs = collectMessages(ws);
+    await new Promise((r) => setTimeout(r, 100));
+
+    const hookPromise = runHook('permission.js', {
+      session_id: 'e2e-perm-4',
+      cwd: '/tmp/project4',
+      hook_event_name: 'PermissionRequest',
+      tool_name: 'Bash',
+      tool_input: { command: 'npm run build' },
+      permission_suggestions: [{ tool_name: 'Bash', command: 'npm run build' }],
+    });
+
+    await new Promise((resolve) => {
+      const check = setInterval(() => {
+        if (msgs.some((m) => m.type === 'LAYOUT' && m.preset === 'binary')) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 50);
+    });
+
+    // Slot 2 = Deny (when hasAlwaysAllow shifts deny to slot 2)
+    ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 2, timestamp: Date.now() }));
+
+    const result = await hookPromise;
+    assert.equal(result.exitCode, 0);
+
+    const response = JSON.parse(result.stdout);
+    assert.equal(response.hookSpecificOutput.decision.behavior, 'deny');
 
     ws.close();
   });
