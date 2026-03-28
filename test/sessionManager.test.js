@@ -18,7 +18,7 @@ describe('SessionManager', () => {
     };
     const session = sm.getOrCreate(input);
     assert.equal(session.id, 'abc123');
-    assert.equal(session.name, 'api-server');
+    assert.equal(session.name, 'api-server (abc123)');
     assert.equal(session.state, 'IDLE');
   });
 

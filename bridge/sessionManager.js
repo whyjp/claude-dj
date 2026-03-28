@@ -11,7 +11,7 @@ export class SessionManager {
     if (!this.sessions.has(id)) {
       this.sessions.set(id, {
         id,
-        name: input.cwd ? path.basename(input.cwd) : 'unknown',
+        name: `${input.cwd ? path.basename(input.cwd) : 'unknown'} (${id})`,
         cwd: input.cwd || '',
         state: 'IDLE',
         waitingSince: null,
