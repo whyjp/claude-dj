@@ -1,0 +1,22 @@
+{
+  "name": "claude-dj",
+  "version": "0.1.0",
+  "description": "Control Claude Code with physical buttons or browser — no terminal focus needed",
+  "type": "module",
+  "main": "bridge/server.js",
+  "bin": {
+    "claude-dj": "./cli/index.js"
+  },
+  "scripts": {
+    "start": "node bridge/server.js",
+    "test": "node --test test/*.test.js",
+    "setup": "node tools/setup.js"
+  },
+  "keywords": ["claude-code", "ulanzi", "d200", "hooks", "dj"],
+  "license": "MIT",
+  "engines": { "node": ">=20.0.0" },
+  "dependencies": {
+    "express": "^4.21.0",
+    "ws": "^8.18.0"
+  }
+}
