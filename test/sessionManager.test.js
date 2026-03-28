@@ -136,9 +136,9 @@ describe('SessionManager', () => {
     assert.equal(focus.id, 's2');
   });
 
-  it('cycleFocus rotates through waiting sessions', () => {
-    sm.handlePermission({ session_id: 's1', cwd: '/a', tool_name: 'Bash', tool_input: { command: 'a' } });
-    sm.handlePermission({ session_id: 's2', cwd: '/b', tool_name: 'Bash', tool_input: { command: 'b' } });
+  it('cycleFocus rotates through all sessions', () => {
+    sm.handleNotify({ session_id: 's1', cwd: '/a', hook_event_name: 'PreToolUse', tool_name: 'Bash' });
+    sm.handleNotify({ session_id: 's2', cwd: '/b', hook_event_name: 'PreToolUse', tool_name: 'Bash' });
     sm.setFocus('s1');
     const next = sm.cycleFocus();
     assert.equal(next.id, 's2');
@@ -146,10 +146,19 @@ describe('SessionManager', () => {
     assert.equal(back.id, 's1');
   });
 
-  it('cycleFocus returns null when no waiting sessions', () => {
-    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+  it('cycleFocus returns null when no sessions', () => {
     const result = sm.cycleFocus();
     assert.equal(result, null);
+  });
+
+  it('cycleFocus works with mix of IDLE and WAITING sessions', () => {
+    sm.handleNotify({ session_id: 's1', cwd: '/a', hook_event_name: 'PreToolUse', tool_name: 'Bash' });
+    sm.handlePermission({ session_id: 's2', cwd: '/b', tool_name: 'Bash', tool_input: { command: 'x' } });
+    sm.handleStop({ session_id: 's3', cwd: '/c', hook_event_name: 'Stop', stop_hook_active: false });
+    sm.setFocus('s1');
+    assert.equal(sm.cycleFocus().id, 's2');
+    assert.equal(sm.cycleFocus().id, 's3');
+    assert.equal(sm.cycleFocus().id, 's1');
   });
 
   it('getWaitingSessions returns sorted by waitingSince', () => {

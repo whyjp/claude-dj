@@ -143,18 +143,18 @@ export class SessionManager {
     this.focusSessionId = sessionId;
   }
 
-  /** Cycle focus to next waiting session. Returns the newly focused session or null. */
+  /** Cycle focus to next session (all sessions, not just waiting). Returns the newly focused session or null. */
   cycleFocus() {
-    const waiting = this.getWaitingSessions();
-    if (waiting.length === 0) return null;
-    if (waiting.length === 1) {
-      this.focusSessionId = waiting[0].id;
-      return waiting[0];
+    const all = [...this.sessions.values()];
+    if (all.length === 0) return null;
+    if (all.length === 1) {
+      this.focusSessionId = all[0].id;
+      return all[0];
     }
-    const currentIdx = waiting.findIndex((s) => s.id === this.focusSessionId);
-    const nextIdx = (currentIdx + 1) % waiting.length;
-    this.focusSessionId = waiting[nextIdx].id;
-    return waiting[nextIdx];
+    const currentIdx = all.findIndex((s) => s.id === this.focusSessionId);
+    const nextIdx = (currentIdx + 1) % all.length;
+    this.focusSessionId = all[nextIdx].id;
+    return all[nextIdx];
   }
 
   toJSON() {
