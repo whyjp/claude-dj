@@ -30,11 +30,11 @@ export function initGrid() {
   for (let i = 5; i <= 9; i++) r1.appendChild(_makeKey(i));
   grid.appendChild(r1);
 
-  // Row 2: slot 10 (session count) + slot 11 (session name/switch) + slot 12 (dynamic) + Info Display area (system-only, non-interactive)
+  // Row 2: slot 10 (session count) + slot 11 (session name/switch) + slot 12 (reserved) + Info Display area (system-only, non-interactive)
   const r2 = _makeRow('kgl');
   r2.appendChild(_makeCountKey());
   r2.appendChild(_makeSessKey());
-  r2.appendChild(_makeKey(12));
+  r2.appendChild(_makeReservedKey());
   r2.appendChild(_makeInfoDisplay());
   grid.appendChild(r2);
 }
@@ -61,6 +61,15 @@ function _makeCountKey() {
   k.className = 'k count';
   k.dataset.slot = '10';
   k.innerHTML = `<span class="cnt-n" id="cntN">0</span><span class="cnt-l">sessions</span>`;
+  return k;
+}
+
+function _makeReservedKey() {
+  const k = document.createElement('div');
+  k.className = 'k reserved';
+  k.dataset.slot = '12';
+  k.title = 'RESERVED — 향후 용도';
+  // RSVD label rendered via CSS ::after pseudo-element
   return k;
 }
 
@@ -99,9 +108,10 @@ function _getK(slot) {
   return document.querySelector(`[data-slot="${slot}"]`);
 }
 
-/** Dim all dynamic keys (slots 0-9, 12) and reset info display to idle */
+/** Dim all dynamic keys (slots 0-9) and reset info display to idle.
+ *  Slot 12 is RESERVED (always in reserved state, not dimmed by this function). */
 export function renderAllDim() {
-  const dynamic = [0,1,2,3,4,5,6,7,8,9,12];
+  const dynamic = [0,1,2,3,4,5,6,7,8,9];
   for (const s of dynamic) {
     const k = _getK(s);
     if (!k) continue;
@@ -131,8 +141,8 @@ export function renderLayout(msg) {
       break;
 
     case 'processing':
-      // All dynamic keys pulse (staggered)
-      [0,1,2,3,4,5,6,7,8,9,12].forEach((s, idx) => {
+      // Dynamic keys 0-9 pulse (staggered). Slot 12 stays reserved.
+      [0,1,2,3,4,5,6,7,8,9].forEach((s, idx) => {
         const k = _getK(s);
         if (!k) return;
         k.className = 'k proc';
@@ -155,10 +165,9 @@ export function renderLayout(msg) {
 
     case 'choice':
       if (msg.choices) {
+        // Slots 0-9 only (max 10 choices). Slot 12 is RESERVED, never used for choices.
         msg.choices.forEach((c, i) => {
-          // slots 0-9 then skip 10,11 (fixed), use 12 for index 10
-          const slot = i < 10 ? i : 12;
-          if (i <= 10) _setKeyChoice(slot, i, c.index, c.label);
+          if (i < 10) _setKeyChoice(i, i, c.index, c.label);
         });
       }
       _setInfoState('WAITING_CHOICE');

@@ -166,6 +166,16 @@ main {
 .k[data-ci="7"] .kn { color: var(--cc7); } .k[data-ci="7"] .ks { color: color-mix(in srgb, var(--cc7) 70%, transparent); }
 .k[data-ci="8"] .kn { color: var(--cc8); } .k[data-ci="8"] .ks { color: color-mix(in srgb, var(--cc8) 70%, transparent); }
 
+/* ── RESERVED KEY (slot 12) ── */
+.k.reserved {
+  opacity: .22; cursor: default; pointer-events: none;
+}
+.k.reserved::after {
+  content: 'RSVD';
+  font-size: 7px; letter-spacing: .08em; color: var(--muted);
+}
+.k.reserved:active { transform: none; }
+
 /* ── SESSION COUNT KEY (slot 10) ── */
 .k.count { border-color: var(--amber); background: var(--adim); cursor: default; pointer-events: none; }
 .k.count:active { transform: none; }
@@ -195,6 +205,12 @@ main {
   cursor: default; pointer-events: none;
   transition: all .2s;
   user-select: none;
+  position: relative;
+}
+.k-info::before {
+  content: 'SYSTEM';
+  position: absolute; top: 3px; left: 50%; transform: translateX(-50%);
+  font-size: 5.5px; letter-spacing: .14em; color: var(--muted); opacity: .6;
 }
 .k-info.idle { border-color: var(--bd2); }
 .k-info.proc { border-color: var(--blue);  background: var(--bdim); animation: gb 2s ease-in-out infinite; }
