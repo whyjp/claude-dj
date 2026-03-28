@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 const BRIDGE_URL = process.env.CLAUDE_DJ_URL || 'http://localhost:39200';
 
 try {
-  const input = readFileSync('/dev/stdin', 'utf8');
+  const input = readFileSync(0, 'utf8');
   await fetch(`${BRIDGE_URL}/api/hook/stop`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
