@@ -86,6 +86,84 @@ describe('SessionManager', () => {
     assert.equal(session.state, 'IDLE');
   });
 
+  it('transitions to PROCESSING with lastToolResult on PostToolUse', () => {
+    const input = {
+      session_id: 'abc123',
+      cwd: '/projects/api-server',
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Bash',
+      tool_result: { output: 'hello world', errored: false },
+    };
+    sm.getOrCreate(input);
+    sm.handlePostToolUse(input);
+    const session = sm.get('abc123');
+    assert.equal(session.state, 'PROCESSING');
+    assert.equal(session.lastToolResult.toolName, 'Bash');
+    assert.equal(session.lastToolResult.success, true);
+    assert.equal(session.lastToolResult.output, 'hello world');
+  });
+
+  it('marks lastToolResult.success=false when tool errored', () => {
+    const input = {
+      session_id: 'abc123',
+      cwd: '/projects/api-server',
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Bash',
+      tool_result: { output: 'command not found', errored: true },
+    };
+    sm.getOrCreate(input);
+    sm.handlePostToolUse(input);
+    const session = sm.get('abc123');
+    assert.equal(session.lastToolResult.success, false);
+  });
+
+  it('getFocusSession returns focused waiting session', () => {
+    sm.handlePermission({ session_id: 's1', cwd: '/a', tool_name: 'Bash', tool_input: { command: 'ls' } });
+    sm.handlePermission({ session_id: 's2', cwd: '/b', tool_name: 'Write', tool_input: { file_path: '/x' } });
+    sm.setFocus('s2');
+    const focus = sm.getFocusSession();
+    assert.equal(focus.id, 's2');
+  });
+
+  it('getFocusSession falls back to oldest waiting when focus is not waiting', () => {
+    sm.handlePermission({ session_id: 's1', cwd: '/a', tool_name: 'Bash', tool_input: { command: 'ls' } });
+    sm.handlePermission({ session_id: 's2', cwd: '/b', tool_name: 'Write', tool_input: { file_path: '/x' } });
+    sm.setFocus('s1');
+    // Resolve s1 so it's no longer waiting
+    sm.get('s1').respondFn = () => {};
+    sm.resolveWaiting('s1', { value: 'allow' });
+    const focus = sm.getFocusSession();
+    assert.equal(focus.id, 's2');
+  });
+
+  it('cycleFocus rotates through waiting sessions', () => {
+    sm.handlePermission({ session_id: 's1', cwd: '/a', tool_name: 'Bash', tool_input: { command: 'a' } });
+    sm.handlePermission({ session_id: 's2', cwd: '/b', tool_name: 'Bash', tool_input: { command: 'b' } });
+    sm.setFocus('s1');
+    const next = sm.cycleFocus();
+    assert.equal(next.id, 's2');
+    const back = sm.cycleFocus();
+    assert.equal(back.id, 's1');
+  });
+
+  it('cycleFocus returns null when no waiting sessions', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    const result = sm.cycleFocus();
+    assert.equal(result, null);
+  });
+
+  it('getWaitingSessions returns sorted by waitingSince', () => {
+    sm.handlePermission({ session_id: 's1', cwd: '/a', tool_name: 'Bash', tool_input: { command: 'a' } });
+    // Force s1 to have earlier timestamp
+    sm.get('s1').waitingSince = 1000;
+    sm.handlePermission({ session_id: 's2', cwd: '/b', tool_name: 'Bash', tool_input: { command: 'b' } });
+    sm.get('s2').waitingSince = 2000;
+    const waiting = sm.getWaitingSessions();
+    assert.equal(waiting.length, 2);
+    assert.equal(waiting[0].id, 's1');
+    assert.equal(waiting[1].id, 's2');
+  });
+
   it('resolves waiting session on button press', () => {
     const input = {
       session_id: 'abc123',

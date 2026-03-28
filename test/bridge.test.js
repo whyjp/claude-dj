@@ -66,6 +66,18 @@ describe('Bridge Server', () => {
     assert.equal(res.body.ok, true);
   });
 
+  it('POST /api/hook/postToolUse returns ok', async () => {
+    const res = await post('/api/hook/postToolUse', {
+      session_id: 'test1',
+      cwd: '/test/project',
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Bash',
+      tool_result: { output: 'done', errored: false },
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.ok, true);
+  });
+
   it('POST /api/hook/stop returns ok', async () => {
     const res = await post('/api/hook/stop', {
       session_id: 'test1',

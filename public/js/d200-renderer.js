@@ -131,7 +131,7 @@ export function renderLayout(msg) {
     const sess = msg.session;
     const nameEl = document.getElementById('iSess');
     if (nameEl) nameEl.textContent = sess.name || '—';
-    _updateInfoDisplay({ name: sess.name, state: sess.state });
+    _updateInfoDisplay();
   }
 
   switch (msg.preset) {
@@ -248,9 +248,9 @@ function _updateSessName(name) {
   if (el) el.textContent = name || '—';
 }
 
-/** System info display — always static, non-interactive */
+/** System info display — reserved by D200 hardware, non-interactive */
 function _updateInfoDisplay() {
-  // No-op: system key is always fixed as "SYSTEM / D200 Info Display"
+  // No-op: system key is reserved by D200 hardware ("SYSTEM / D200 Info Display")
 }
 
 /** Update the state info bar */

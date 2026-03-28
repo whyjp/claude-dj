@@ -48,6 +48,15 @@ app.post('/api/hook/notify', (req, res) => {
   res.json({ ok: true });
 });
 
+app.post('/api/hook/postToolUse', (req, res) => {
+  const input = req.body;
+  console.log(`[hook/postToolUse] session=${input.session_id} tool=${input.tool_name} errored=${input.tool_result?.errored}`);
+  const session = sm.handlePostToolUse(input);
+  const layout = ButtonManager.layoutFor(session);
+  broadcastLayout(layout);
+  res.json({ ok: true });
+});
+
 app.post('/api/hook/stop', (req, res) => {
   const input = req.body;
   console.log(`[hook/stop] session=${input.session_id} active=${input.stop_hook_active}`);
@@ -63,6 +72,8 @@ app.post('/api/hook/permission', (req, res) => {
   const input = req.body;
   console.log(`[hook/permission] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
   const session = sm.handlePermission(input);
+  // Auto-focus: new permission request takes focus
+  sm.setFocus(session.id);
   const layout = ButtonManager.layoutFor(session);
   const isChoice = session.state === 'WAITING_CHOICE';
 
@@ -89,6 +100,16 @@ app.post('/api/hook/permission', (req, res) => {
 ws.attach(server, config.wsPath);
 
 ws.onButtonPress = (slot, timestamp) => {
+  // Slot 11: cycle focus to next waiting session
+  if (slot === 11) {
+    const next = sm.cycleFocus();
+    if (next) {
+      const layout = ButtonManager.layoutFor(next);
+      broadcastLayout(layout);
+    }
+    return;
+  }
+
   const focus = sm.getFocusSession();
   if (!focus) return;
 

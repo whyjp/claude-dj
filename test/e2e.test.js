@@ -121,6 +121,41 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
     assert.equal(msg.type, 'ALL_DIM');
   });
 
+  it('postToolUse.js: spawned with stdin → bridge receives → WS gets LAYOUT(processing)', async () => {
+    const wsPromise = waitForWsMessage(wsUrl, 'LAYOUT');
+
+    const result = await runHook('postToolUse.js', {
+      session_id: 'e2e-post-1',
+      cwd: '/tmp/my-project',
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Bash',
+      tool_result: { output: 'hello', errored: false },
+    });
+
+    assert.equal(result.exitCode, 0);
+
+    const msg = await wsPromise;
+    assert.equal(msg.preset, 'processing');
+    assert.equal(msg.session.id, 'e2e-post-1');
+  });
+
+  it('postToolUse.js: errored tool also broadcasts processing layout', async () => {
+    const wsPromise = waitForWsMessage(wsUrl, 'LAYOUT');
+
+    const result = await runHook('postToolUse.js', {
+      session_id: 'e2e-post-2',
+      cwd: '/tmp/my-project',
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Write',
+      tool_result: { output: 'ENOENT', errored: true },
+    });
+
+    assert.equal(result.exitCode, 0);
+
+    const msg = await wsPromise;
+    assert.equal(msg.preset, 'processing');
+  });
+
   it('permission.js: spawned with stdin → WS gets LAYOUT(binary) → button press → hook returns allow', async () => {
     // Connect a WS client that will press the approve button
     const ws = await connectWs(wsUrl);
@@ -266,7 +301,7 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
     ws.close();
   });
 
-  it('full lifecycle: notify → permission(allow) → stop', async () => {
+  it('full lifecycle: notify → permission(allow) → postToolUse → stop', async () => {
     const ws = await connectWs(wsUrl);
     const msgs = collectMessages(ws);
     await new Promise((r) => setTimeout(r, 100));
@@ -310,7 +345,20 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
     const resp = JSON.parse(permResult.stdout);
     assert.equal(resp.hookSpecificOutput.decision.behavior, 'allow');
 
-    // 3. Stop → IDLE
+    // 3. PostToolUse → PROCESSING with result
+    await runHook('postToolUse.js', {
+      session_id: sid,
+      cwd: '/tmp/lifecycle',
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Bash',
+      tool_result: { output: 'removed', errored: false },
+    });
+
+    // After postToolUse, should get a processing layout for same session
+    const postMsgs = msgs.filter((m) => m.type === 'LAYOUT' && m.preset === 'processing');
+    assert.ok(postMsgs.length >= 2, 'Should receive processing layout from both notify and postToolUse');
+
+    // 4. Stop → IDLE
     await runHook('stop.js', {
       session_id: sid,
       cwd: '/tmp/lifecycle',

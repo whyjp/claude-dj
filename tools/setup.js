@@ -31,6 +31,7 @@ export async function run({ global = false } = {}) {
 
   settings.hooks.PermissionRequest = settings.hooks.PermissionRequest || [];
   settings.hooks.PreToolUse = settings.hooks.PreToolUse || [];
+  settings.hooks.PostToolUse = settings.hooks.PostToolUse || [];
   settings.hooks.Stop = settings.hooks.Stop || [];
 
   // Remove existing claude-dj hooks
@@ -38,10 +39,12 @@ export async function run({ global = false } = {}) {
     x.command?.includes('claude-dj') ||
     x.command?.includes('hooks/permission.js') ||
     x.command?.includes('hooks/notify.js') ||
+    x.command?.includes('hooks/postToolUse.js') ||
     x.command?.includes('hooks/stop.js'));
 
   settings.hooks.PermissionRequest = settings.hooks.PermissionRequest.filter((h) => !isClaudeDjHook(h));
   settings.hooks.PreToolUse = settings.hooks.PreToolUse.filter((h) => !isClaudeDjHook(h));
+  settings.hooks.PostToolUse = settings.hooks.PostToolUse.filter((h) => !isClaudeDjHook(h));
   settings.hooks.Stop = settings.hooks.Stop.filter((h) => !isClaudeDjHook(h));
 
   const permHook = {
@@ -59,6 +62,13 @@ export async function run({ global = false } = {}) {
     }],
   };
 
+  const postToolUseHook = {
+    hooks: [{
+      type: 'command',
+      command: `"${nodeCmd}" "${path.join(hooksDir, 'postToolUse.js')}"`,
+    }],
+  };
+
   const stopHook = {
     hooks: [{
       type: 'command',
@@ -68,6 +78,7 @@ export async function run({ global = false } = {}) {
 
   settings.hooks.PermissionRequest.push(permHook);
   settings.hooks.PreToolUse.push(notifyHook);
+  settings.hooks.PostToolUse.push(postToolUseHook);
   settings.hooks.Stop.push(stopHook);
 
   fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
@@ -76,5 +87,6 @@ export async function run({ global = false } = {}) {
   console.log(`[claude-dj] Hooks registered — ${scope}`);
   console.log(`[claude-dj] PermissionRequest → permission.js`);
   console.log(`[claude-dj] PreToolUse → notify.js`);
+  console.log(`[claude-dj] PostToolUse → postToolUse.js`);
   console.log(`[claude-dj] Stop → stop.js`);
 }
