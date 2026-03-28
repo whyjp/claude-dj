@@ -50,7 +50,7 @@ function init() {
     });
   }
 
-  // Keyboard shortcuts: 1-9 map to slots 0-8, Space/Enter for BIG WIN
+  // Keyboard shortcuts: 1-9 map to slots 0-8
   document.addEventListener('keydown', e => {
     const n = parseInt(e.key);
     if (!isNaN(n) && n >= 1 && n <= 9) {

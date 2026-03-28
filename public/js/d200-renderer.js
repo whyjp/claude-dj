@@ -31,10 +31,10 @@ export function initGrid() {
   r1.appendChild(_makeCountKey());
   grid.appendChild(r1);
 
-  // Row 2: slots 10-12 + BIG WIN area
+  // Row 2: slots 10-12 + Info Display area (system-only, non-interactive)
   const r2 = _makeRow('kgl');
   for (let i = 10; i <= 12; i++) r2.appendChild(_makeKey(i));
-  r2.appendChild(_makeBigWin());
+  r2.appendChild(_makeInfoDisplay());
   grid.appendChild(r2);
 }
 
@@ -63,17 +63,17 @@ function _makeCountKey() {
   return k;
 }
 
-function _makeBigWin() {
-  const bw = document.createElement('div');
-  bw.className = 'k-big idle';
-  bw.id = 'bigWin';
-  bw.innerHTML = `
-    <span class="bw-ico">💤</span>
-    <span class="bw-nam" id="bwNam">—</span>
-    <span class="bw-sts" id="bwSts">IDLE</span>
-    <span class="bw-ses" id="bwSes"></span>
+function _makeInfoDisplay() {
+  const el = document.createElement('div');
+  el.className = 'k-info idle';
+  el.id = 'infoDisplay';
+  el.innerHTML = `
+    <span class="info-ico">💤</span>
+    <span class="info-nam" id="infoNam">—</span>
+    <span class="info-sts" id="infoSts">IDLE</span>
+    <span class="info-ses" id="infoSes"></span>
   `;
-  return bw;
+  return el;
 }
 
 function _firePress(slot, el) {
@@ -87,7 +87,7 @@ function _getK(slot) {
   return document.querySelector(`[data-slot="${slot}"]`);
 }
 
-/** Dim all dynamic keys (slots 0-8, 10-12) and reset BIG WIN to idle */
+/** Dim all dynamic keys (slots 0-8, 10-12) and reset info display to idle */
 export function renderAllDim() {
   const dynamic = [0,1,2,3,4,5,6,7,8,10,11,12];
   for (const s of dynamic) {
@@ -99,7 +99,7 @@ export function renderAllDim() {
     k.style.removeProperty('--off');
   }
   _setInfoState('IDLE');
-  _updateBigWin({ icon: '💤', name: '—', state: 'IDLE' });
+  _updateInfoDisplay({ icon: '💤', name: '—', state: 'IDLE' });
 }
 
 /** Apply a LAYOUT message from the bridge */
@@ -110,7 +110,7 @@ export function renderLayout(msg) {
     const sess = msg.session;
     const nameEl = document.getElementById('iSess');
     if (nameEl) nameEl.textContent = sess.name || '—';
-    _updateBigWin({ name: sess.name, state: sess.state });
+    _updateInfoDisplay({ name: sess.name, state: sess.state });
   }
 
   switch (msg.preset) {
@@ -214,31 +214,31 @@ function _updateCount(total, waiting) {
   }
 }
 
-/** Update the BIG WIN display area */
-function _updateBigWin({ icon, name, state } = {}) {
-  const bw = document.getElementById('bigWin');
-  const namEl = document.getElementById('bwNam');
-  const stsEl = document.getElementById('bwSts');
-  if (!bw) return;
+/** Update the Session Info display area (non-interactive, system-only) */
+function _updateInfoDisplay({ icon, name, state } = {}) {
+  const el = document.getElementById('infoDisplay');
+  const namEl = document.getElementById('infoNam');
+  const stsEl = document.getElementById('infoSts');
+  if (!el) return;
 
   if (namEl && name !== undefined) namEl.textContent = name || '—';
   if (stsEl && state !== undefined) stsEl.textContent = state || 'IDLE';
 
   const st = (state || 'IDLE').toLowerCase();
-  const ico = bw.querySelector('.bw-ico');
+  const ico = el.querySelector('.info-ico');
 
-  bw.className = 'k-big';
+  el.className = 'k-info';
   if (st.includes('waiting')) {
-    bw.classList.add('wait');
+    el.classList.add('wait');
     if (ico) ico.textContent = '❓';
   } else if (st === 'processing') {
-    bw.classList.add('proc');
+    el.classList.add('proc');
     if (ico) ico.textContent = '⚙️';
   } else if (st === 'done') {
-    bw.classList.add('done');
+    el.classList.add('done');
     if (ico) ico.textContent = '✅';
   } else {
-    bw.classList.add('idle');
+    el.classList.add('idle');
     if (ico) ico.textContent = icon || '💤';
   }
 }

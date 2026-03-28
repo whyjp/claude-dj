@@ -40,9 +40,6 @@ export class WsServer {
           this.onButtonPress(msg.slot, msg.timestamp);
         }
         break;
-      case 'BIG_WINDOW_PRESS':
-        // Phase 2
-        break;
       default:
         console.log(`[ws] unknown message type: ${msg.type}`);
     }
