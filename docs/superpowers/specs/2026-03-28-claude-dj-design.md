@@ -200,9 +200,9 @@ WAITING_CHOICE  → PermissionRequest (AskUserQuestion). 번호 버튼 활성.
 
 ### Button Layout per State
 
-**IDLE:** 슬롯 0~8, 10~12 → dim. 눌림 무반응.
+**IDLE:** 슬롯 0~9, 12 → dim. 눌림 무반응.
 
-**PROCESSING:** 슬롯 0~8, 10~12 → 웨이브 애니메이션.
+**PROCESSING:** 슬롯 0~9, 12 → 웨이브 애니메이션.
 
 **WAITING_BINARY:**
 - 슬롯 0 → Approve (✅)
@@ -215,6 +215,7 @@ WAITING_CHOICE  → PermissionRequest (AskUserQuestion). 번호 버튼 활성.
 - 슬롯 1 → 2번 + label
 - 슬롯 2 → 3번 + label
 - 나머지 → dim
+- 최대 11개 선택지 (슬롯 0~9 + 12)
 
 ### Slot Map
 
@@ -222,20 +223,18 @@ WAITING_CHOICE  → PermissionRequest (AskUserQuestion). 번호 버튼 활성.
 ┌────┬────┬────┬────┬────┐
 │  0 │  1 │  2 │  3 │  4 │
 ├────┼────┼────┼────┼────┤
-│  5 │  6 │  7 │  8 │  9 │  ← 9: SESSION_COUNT (고정, 표시 전용)
+│  5 │  6 │  7 │  8 │  9 │
 ├────┼────┼────┼──────────┤
-│ 10 │ 11 │ 12 │ (시스템) │  ← BIG WIN = 시스템 전용 (프로그래밍 불가)
+│ 10 │ 11 │ 12 │ (시스템) │
 └────┴────┴────┴──────────┘
 
-동적 슬롯: 0~8 (최대 9개 선택지)
-세션 정보 슬롯: 10~12 (세션명, 상태, 도구 표시 — Phase 2)
-고정 슬롯: 9 (SESSION_COUNT)
-시스템 키: BIG WIN (제어 불가, 시간/CPU/RAM 표시)
+동적 슬롯: 0~9, 12 (최대 11개 선택지)
+고정 슬롯: 10 (SESSION_COUNT), 11 (SESSION_NAME/SWITCH)
+시스템 키: 더블 사이즈 키 (제어 불가, 시간/CPU/RAM 표시)
 ```
 
-> **Note:** D200의 BIG WIN 키는 Plugin API로 제어 불가 (시스템 전용).
-> 세션 정보는 슬롯 10~12를 활용. Virtual DJ FE에서는 BIG WIN 영역을
-> 세션 정보 표시용으로 시뮬레이션하되, 실제 D200에서는 슬롯 10~12로 매핑.
+> **Note:** D200의 더블 사이즈 키(Info Display 위치)는 Plugin API로 제어 불가 (시스템 전용).
+> 세션 카운트는 슬롯 10, 세션명/전환은 슬롯 11. Virtual DJ FE에서는 Info Display 위치에 Session Info Display를 비대화형 패널로 표시하며, 별도 WS 메시지 없이 수동으로 업데이트된다.
 
 ---
 
@@ -332,7 +331,7 @@ Claude Code         Hook Script         Bridge              FE (WS)
 
 Slot 의미 (Bridge가 현재 state 기반으로 해석):
 - BINARY: slot 0 = approve, slot 1 = deny, slot 5 = always allow
-- CHOICE: slot 0~8 = choice 1~9
+- CHOICE: slot 0~9 + 12 = choice 1~11 (max 11)
 
 > **Note:** Session info is displayed passively in the FE info panel, no dedicated WS message needed.
 
@@ -415,8 +414,9 @@ Slot 의미 (Bridge가 현재 state 기반으로 해석):
 ### Phase 2 — Multi-session
 
 - Session Manager 확장
-- SESSION_COUNT 슬롯 (슬롯 9)
-- 세션 정보 표시 슬롯 10~12 (세션명, 상태, 도구)
+- SESSION_COUNT 슬롯 (슬롯 10)
+- SESSION_NAME/SWITCH 슬롯 (슬롯 11 — 클릭으로 세션 로테이션)
+- 자동 포커스 전환 로직 개선
 - 자동 포커스 전환 로직
 - FE Sessions 탭 활성화
 
@@ -469,8 +469,8 @@ Slot 의미 (Bridge가 현재 state 기반으로 해석):
 
 ### BIG WIN 키 제약
 
-D200의 더블 사이즈 키(BIG WIN)는 시스템 전용(시간/CPU/RAM 표시)으로 Plugin API 제어 불가.
-세션 정보는 슬롯 10~12를 활용한다. Virtual DJ FE에서는 BIG WIN 위치에 Session Info Display를 비대화형 패널로 표시하며, 별도 WS 메시지 없이 수동으로 업데이트된다.
+D200의 더블 사이즈 키(Info Display)는 시스템 전용(시간/CPU/RAM 표시)으로 Plugin API 제어 불가.
+세션 카운트와 세션명은 슬롯 10~11을 활용한다. 슬롯 10 = SESSION_COUNT (비대화형), 슬롯 11 = SESSION_NAME/SWITCH (Phase 2에서 세션 로테이션 클릭 가능). Virtual DJ FE에서는 Info Display 위치에 Session Info Display를 비대화형 패널로 표시하며, 별도 WS 메시지 없이 수동으로 업데이트된다.
 
 ### Plugin 역할 (Phase 3)
 

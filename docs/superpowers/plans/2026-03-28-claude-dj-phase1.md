@@ -1179,12 +1179,13 @@ const SLOT_COUNT = 13;
 const ROWS = [
   { id: 'row0', slots: [0, 1, 2, 3, 4] },
   { id: 'row1', slots: [5, 6, 7, 8, 9] },
-  { id: 'row2', slots: [10, 11, 12] },
+  { id: 'row2', slots: [10, 11, 12] },  // 10=count, 11=sess-switch, 12=dynamic
 ];
 
 const CHOICE_COLORS = [
   '#39ff6e', '#ffcc00', '#44aaff', '#bb88ff',
   '#ff8844', '#44ffcc', '#ff44aa', '#88ff44', '#ffaa44',
+  '#ff55cc', '#aaffee',  // 2 more for 11 total
 ];
 
 export function initGrid() {
@@ -1195,9 +1196,12 @@ export function initGrid() {
       const key = document.createElement('div');
       key.className = 'k dim';
       key.dataset.slot = slot;
-      if (slot === 9) {
+      if (slot === 10) {
         key.className = 'k count';
         key.innerHTML = '<span class="cnt-n">0</span><span class="cnt-l">sessions</span>';
+      } else if (slot === 11) {
+        key.className = 'k sess-switch';
+        key.innerHTML = '<span class="sess-ico">⬡</span><span class="sess-n">—</span>';
       }
       key.addEventListener('click', () => onKeyPress(slot));
       row.appendChild(key);
@@ -1239,8 +1243,9 @@ export function renderLayout(msg) {
 
     case 'choice':
       (msg.choices || []).forEach((choice, i) => {
-        if (i >= 9) return;
-        const el = getSlot(i);
+        if (i > 10) return; // max 11 choices
+        const slot = i < 10 ? i : 12; // skip fixed slots 10,11
+        const el = getSlot(slot);
         const color = CHOICE_COLORS[i % CHOICE_COLORS.length];
         el.className = 'k';
         el.dataset.ci = String(i);
@@ -1259,7 +1264,7 @@ export function renderAllDim() {
 
 function clearAll() {
   for (let i = 0; i <= 12; i++) {
-    if (i === 9) continue;
+    if (i === 10 || i === 11) continue; // fixed: count, sess-switch
     const el = getSlot(i);
     el.className = 'k dim';
     el.innerHTML = '';
@@ -1270,12 +1275,10 @@ function clearAll() {
 
 function forEachDynamic(fn) {
   let idx = 0;
-  for (let i = 0; i <= 8; i++) {
+  for (let i = 0; i <= 9; i++) {
     fn(getSlot(i), idx++);
   }
-  for (let i = 10; i <= 12; i++) {
-    fn(getSlot(i), idx++);
-  }
+  fn(getSlot(12), idx++);
 }
 
 function getSlot(n) {

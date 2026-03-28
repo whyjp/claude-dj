@@ -166,7 +166,7 @@ main {
 .k[data-ci="7"] .kn { color: var(--cc7); } .k[data-ci="7"] .ks { color: color-mix(in srgb, var(--cc7) 70%, transparent); }
 .k[data-ci="8"] .kn { color: var(--cc8); } .k[data-ci="8"] .ks { color: color-mix(in srgb, var(--cc8) 70%, transparent); }
 
-/* ── SESSION COUNT KEY (slot 9) ── */
+/* ── SESSION COUNT KEY (slot 10) ── */
 .k.count { border-color: var(--amber); background: var(--adim); cursor: default; pointer-events: none; }
 .k.count:active { transform: none; }
 .k.count .cnt-n { font-size: 18px; font-weight: 700; color: var(--amber); line-height: 1; }
@@ -179,6 +179,12 @@ main {
   width: 12px; height: 12px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
 }
+
+/* ── SESSION NAME/SWITCH KEY (slot 11) ── */
+.k.sess-switch { border-color: var(--blue); background: var(--bdim); cursor: pointer; }
+.k.sess-switch:active { transform: scale(.93); }
+.k.sess-switch .sess-ico { font-size: 14px; line-height: 1; color: var(--blue); }
+.k.sess-switch .sess-n { font-size: 6.5px; color: var(--blue); margin-top: 2px; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── INFO DISPLAY (system-only, non-interactive) ── */
 .k-info {

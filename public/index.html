@@ -101,13 +101,16 @@
             <h4>Slot Layout</h4>
             <div class="pb">
               <div class="pc">Row 0: [0] [1] [2] [3] [4]
-Row 1: [5] [6] [7] [8] [9=sessions count]
-Row 2: [10] [11] [12] [Info Display — system only]
+Row 1: [5] [6] [7] [8] [9]
+Row 2: [10=session count] [11=session name] [12] [Info Display — system only]
 
-IDLE:            all dynamic keys dim (opacity 0.12)
-PROCESSING:      all keys pulse with wave animation
+Dynamic slots: 0-9, 12 (max 11 choices)
+Fixed slots:   10 (SESSION_COUNT), 11 (SESSION_NAME/SWITCH)
+
+IDLE:            slots 0-9, 12 dim (opacity 0.12)
+PROCESSING:      slots 0-9, 12 pulse with wave animation
 WAITING_BINARY:  slot 0=approve, slot 1=deny, slot 5=always (if set)
-WAITING_CHOICE:  slot 0..N = numbered choices</div>
+WAITING_CHOICE:  slot 0..N = numbered choices (max 11)</div>
             </div>
           </div>
         </div>

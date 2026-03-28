@@ -25,15 +25,16 @@ export function initGrid() {
   for (let i = 0; i <= 4; i++) r0.appendChild(_makeKey(i));
   grid.appendChild(r0);
 
-  // Row 1: slots 5-8 + slot 9 (session count)
+  // Row 1: slots 5-9 (all dynamic)
   const r1 = _makeRow('kg5');
-  for (let i = 5; i <= 8; i++) r1.appendChild(_makeKey(i));
-  r1.appendChild(_makeCountKey());
+  for (let i = 5; i <= 9; i++) r1.appendChild(_makeKey(i));
   grid.appendChild(r1);
 
-  // Row 2: slots 10-12 + Info Display area (system-only, non-interactive)
+  // Row 2: slot 10 (session count) + slot 11 (session name/switch) + slot 12 (dynamic) + Info Display area (system-only, non-interactive)
   const r2 = _makeRow('kgl');
-  for (let i = 10; i <= 12; i++) r2.appendChild(_makeKey(i));
+  r2.appendChild(_makeCountKey());
+  r2.appendChild(_makeSessKey());
+  r2.appendChild(_makeKey(12));
   r2.appendChild(_makeInfoDisplay());
   grid.appendChild(r2);
 }
@@ -58,8 +59,19 @@ function _makeKey(slot) {
 function _makeCountKey() {
   const k = document.createElement('div');
   k.className = 'k count';
-  k.dataset.slot = '9';
+  k.dataset.slot = '10';
   k.innerHTML = `<span class="cnt-n" id="cntN">0</span><span class="cnt-l">sessions</span>`;
+  return k;
+}
+
+function _makeSessKey() {
+  const k = document.createElement('div');
+  k.className = 'k sess-switch';
+  k.dataset.slot = '11';
+  k.innerHTML = `<span class="sess-ico">⬡</span><span class="sess-n" id="sessN">—</span>`;
+  k.addEventListener('click', () => {
+    _firePress(11, k);
+  });
   return k;
 }
 
@@ -87,9 +99,9 @@ function _getK(slot) {
   return document.querySelector(`[data-slot="${slot}"]`);
 }
 
-/** Dim all dynamic keys (slots 0-8, 10-12) and reset info display to idle */
+/** Dim all dynamic keys (slots 0-9, 12) and reset info display to idle */
 export function renderAllDim() {
-  const dynamic = [0,1,2,3,4,5,6,7,8,10,11,12];
+  const dynamic = [0,1,2,3,4,5,6,7,8,9,12];
   for (const s of dynamic) {
     const k = _getK(s);
     if (!k) continue;
@@ -120,7 +132,7 @@ export function renderLayout(msg) {
 
     case 'processing':
       // All dynamic keys pulse (staggered)
-      [0,1,2,3,4,5,6,7,8,10,11,12].forEach((s, idx) => {
+      [0,1,2,3,4,5,6,7,8,9,12].forEach((s, idx) => {
         const k = _getK(s);
         if (!k) return;
         k.className = 'k proc';
@@ -144,18 +156,21 @@ export function renderLayout(msg) {
     case 'choice':
       if (msg.choices) {
         msg.choices.forEach((c, i) => {
-          if (i < 9) _setKeyChoice(i, i, c.index, c.label);
+          // slots 0-9 then skip 10,11 (fixed), use 12 for index 10
+          const slot = i < 10 ? i : 12;
+          if (i <= 10) _setKeyChoice(slot, i, c.index, c.label);
         });
       }
       _setInfoState('WAITING_CHOICE');
       break;
   }
 
-  // Update session count key if session info available
+  // Update session count key (slot 10) and session name key (slot 11)
   if (msg.session) {
     const total = msg.sessionCount ?? 1;
     const waiting = msg.preset === 'binary' || msg.preset === 'choice' ? 1 : 0;
     _updateCount(total, waiting);
+    _updateSessName(msg.session.name);
   }
 }
 
@@ -196,11 +211,11 @@ function _setKeyChoice(slot, ci, num, label) {
   k.innerHTML = `<span class="kn">${num}</span><span class="ks">${label || ''}</span>`;
 }
 
-/** Update the session count key (slot 9) */
+/** Update the session count key (slot 10) */
 function _updateCount(total, waiting) {
   const nEl = document.getElementById('cntN');
   if (nEl) nEl.textContent = total;
-  const k = _getK(9);
+  const k = _getK(10);
   if (!k) return;
   k.querySelector('.cnt-badge')?.remove();
   if (waiting > 0) {
@@ -212,6 +227,12 @@ function _updateCount(total, waiting) {
   } else {
     k.classList.remove('alert');
   }
+}
+
+/** Update the session name key (slot 11) */
+function _updateSessName(name) {
+  const el = document.getElementById('sessN');
+  if (el) el.textContent = name || '—';
 }
 
 /** Update the Session Info display area (non-interactive, system-only) */
