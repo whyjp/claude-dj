@@ -318,11 +318,6 @@ Claude Code         Hook Script         Bridge              FE (WS)
 { "type": "SESSION_COUNT", "total": 3, "waiting": 1 }
 ```
 
-**BIG_WINDOW** (Phase 2)
-```json
-{ "type": "BIG_WINDOW", "sessionName": "api-server", "sessionState": "WAITING_BINARY", "totalSessions": 3 }
-```
-
 **ALL_DIM**
 ```json
 { "type": "ALL_DIM" }
@@ -339,10 +334,7 @@ Slot 의미 (Bridge가 현재 state 기반으로 해석):
 - BINARY: slot 0 = approve, slot 1 = deny, slot 5 = always allow
 - CHOICE: slot 0~8 = choice 1~9
 
-**BIG_WINDOW_PRESS** (Phase 2)
-```json
-{ "type": "BIG_WINDOW_PRESS", "timestamp": 1743000000 }
-```
+> **Note:** Session info is displayed passively in the FE info panel, no dedicated WS message needed.
 
 **CLIENT_READY**
 ```json
@@ -384,7 +376,7 @@ Slot 의미 (Bridge가 현재 state 기반으로 해석):
 
 ### Layout
 
-- **좌측:** D200 시뮬레이터 — 5+5+4 그리드 (슬롯 0~12 + 시스템 BIG WIN 시뮬레이션), 버튼 클릭으로 조작
+- **좌측:** D200 시뮬레이터 — 5+5+4 그리드 (슬롯 0~12), 버튼 클릭으로 조작. 시스템 키 영역은 Session Info Display로 활용 (비대화형)
 - **우측:** 대시보드 탭
   - **Event Log** — WS 메시지 실시간 로그, 방향(in/out) 표시, 필터
   - **Sessions** — 연결된 세션 목록, 상태, 포커스 전환 (Phase 2)
@@ -478,7 +470,7 @@ Slot 의미 (Bridge가 현재 state 기반으로 해석):
 ### BIG WIN 키 제약
 
 D200의 더블 사이즈 키(BIG WIN)는 시스템 전용(시간/CPU/RAM 표시)으로 Plugin API 제어 불가.
-세션 정보는 슬롯 10~12를 활용하며, Virtual DJ FE에서는 BIG WIN 영역을 시뮬레이션용으로 유지.
+세션 정보는 슬롯 10~12를 활용한다. Virtual DJ FE에서는 BIG WIN 위치에 Session Info Display를 비대화형 패널로 표시하며, 별도 WS 메시지 없이 수동으로 업데이트된다.
 
 ### Plugin 역할 (Phase 3)
 
