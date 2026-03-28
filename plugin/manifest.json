@@ -1,0 +1,25 @@
+{
+  "Author": "claude-dj",
+  "Name": "Claude DJ",
+  "Description": "Control Claude Code with Ulanzi D200 physical buttons",
+  "Icon": "assets/icons/icon.png",
+  "Version": "0.1.0",
+  "UUID": "com.claudedj.ulanzistudio.claudedj",
+  "Type": "JavaScript",
+  "CodePath": "app.js",
+  "Actions": [
+    {
+      "Name": "Claude DJ Button",
+      "UUID": "com.claudedj.ulanzistudio.claudedj.button",
+      "Icon": "assets/icons/actionIcon.png",
+      "States": [{ "Image": "assets/icons/actionIcon.png" }],
+      "Controllers": ["Keypad"],
+      "Tooltip": "Claude Code permission/choice button"
+    }
+  ],
+  "OS": [
+    { "Platform": "windows", "MinimumVersion": "10" },
+    { "Platform": "mac", "MinimumVersion": "10.11" }
+  ],
+  "Software": { "MinVersion": "2.1.4" }
+}
