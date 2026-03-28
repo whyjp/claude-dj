@@ -371,4 +371,47 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
 
     ws.close();
   });
+
+  it('late-join: new client receives current LAYOUT on CLIENT_READY', async () => {
+    // First, create a waiting session via permission hook
+    const ws1 = await connectWs(wsUrl);
+    const msgs1 = collectMessages(ws1);
+    await new Promise((r) => setTimeout(r, 100));
+
+    const hookPromise = runHook('permission.js', {
+      session_id: 'e2e-latejoin-1',
+      cwd: '/tmp/latejoin',
+      hook_event_name: 'PermissionRequest',
+      tool_name: 'Bash',
+      tool_input: { command: 'echo hi' },
+    });
+
+    // Wait for binary layout
+    await new Promise((resolve) => {
+      const check = setInterval(() => {
+        if (msgs1.some((m) => m.type === 'LAYOUT' && m.preset === 'binary')) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 50);
+    });
+
+    // Now a LATE client joins — should immediately receive the current layout
+    const ws2 = await connectWs(wsUrl);
+    const msgs2 = collectMessages(ws2);
+
+    // Wait briefly for the sync message
+    await new Promise((r) => setTimeout(r, 200));
+
+    const syncMsg = msgs2.find((m) => m.type === 'LAYOUT' && m.preset === 'binary');
+    assert.ok(syncMsg, 'Late-join client should receive current binary layout');
+    assert.equal(syncMsg.session.id, 'e2e-latejoin-1');
+
+    // Clean up: approve to unblock the hook
+    ws1.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 0, timestamp: Date.now() }));
+    await hookPromise;
+
+    ws1.close();
+    ws2.close();
+  });
 });

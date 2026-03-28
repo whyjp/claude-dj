@@ -99,6 +99,15 @@ app.post('/api/hook/permission', (req, res) => {
 
 ws.attach(server, config.wsPath);
 
+ws.onClientReady = (client) => {
+  const focus = sm.getFocusSession();
+  if (focus) {
+    const layout = ButtonManager.layoutFor(focus);
+    const msg = JSON.stringify({ type: 'LAYOUT', sessionCount: sm.sessionCount, ...layout });
+    if (client.readyState === 1) client.send(msg);
+  }
+};
+
 ws.onButtonPress = (slot, timestamp) => {
   // Slot 11: cycle focus to next waiting session
   if (slot === 11) {

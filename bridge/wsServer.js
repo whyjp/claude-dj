@@ -5,6 +5,7 @@ export class WsServer {
     this.wss = null;
     this.clients = new Set();
     this.onButtonPress = null;
+    this.onClientReady = null;
   }
 
   attach(server, path) {
@@ -34,6 +35,7 @@ export class WsServer {
     switch (msg.type) {
       case 'CLIENT_READY':
         console.log(`[ws] client ready: ${msg.clientType} v${msg.version}`);
+        if (this.onClientReady) this.onClientReady(ws);
         break;
       case 'BUTTON_PRESS':
         if (this.onButtonPress) {
