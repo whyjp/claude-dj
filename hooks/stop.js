@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 
 const BRIDGE_URL = process.env.CLAUDE_DJ_URL || 'http://localhost:39200';
+const MAX_RETRIES = 3;
 
 try {
   const input = readFileSync(0, 'utf8');
@@ -18,18 +19,21 @@ try {
     process.exit(0);
   }
 
-  // Blocking: wait for Bridge to return (button press or timeout)
-  const res = await fetch(`${BRIDGE_URL}/api/hook/stop`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: input,
-    signal: AbortSignal.timeout(30_000),
-  });
-  const json = await res.json();
+  // Retry loop: each attempt has a short timeout, retry if no button pressed
+  for (let i = 0; i < MAX_RETRIES; i++) {
+    const res = await fetch(`${BRIDGE_URL}/api/hook/stop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: input,
+      signal: AbortSignal.timeout(10_000),
+    });
+    const json = await res.json();
 
-  // If Bridge returned a response with systemMessage, pass it to Claude
-  if (json.hookSpecificOutput) {
-    process.stdout.write(JSON.stringify(json));
+    if (json.hookSpecificOutput) {
+      process.stdout.write(JSON.stringify(json));
+      process.exit(0);
+    }
+    // No response — retry (Bridge will re-enter WAITING_RESPONSE)
   }
 } catch (e) {
   // Bridge down or timeout — exit cleanly
