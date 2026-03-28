@@ -136,13 +136,22 @@ export class SessionManager {
       .sort((a, b) => (a.waitingSince || 0) - (b.waitingSince || 0));
   }
 
-  /** Get the currently focused session (must be in a WAITING state), or auto-pick oldest waiting */
+  /** Get the currently focused session. Priority: WAITING_BINARY/CHOICE > WAITING_RESPONSE */
   getFocusSession() {
+    // Always prioritize binary/choice over response
+    const urgent = this.getWaitingSessions().find(
+      (s) => s.state === 'WAITING_BINARY' || s.state === 'WAITING_CHOICE'
+    );
+    if (urgent) {
+      this.focusSessionId = urgent.id;
+      return urgent;
+    }
+
     const focused = this.focusSessionId ? this.sessions.get(this.focusSessionId) : null;
     if (focused && focused.state.startsWith('WAITING_')) {
       return focused;
     }
-    // Fallback: oldest waiting session
+    // Fallback: oldest waiting session (including WAITING_RESPONSE)
     const waiting = this.getWaitingSessions();
     if (waiting.length > 0) {
       this.focusSessionId = waiting[0].id;

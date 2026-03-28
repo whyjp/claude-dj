@@ -127,12 +127,12 @@ describe('SessionManager', () => {
     assert.equal(session.lastToolResult.success, false);
   });
 
-  it('getFocusSession returns focused waiting session', () => {
-    sm.handlePermission({ session_id: 's1', cwd: '/a', tool_name: 'Bash', tool_input: { command: 'ls' } });
-    sm.handlePermission({ session_id: 's2', cwd: '/b', tool_name: 'Write', tool_input: { file_path: '/x' } });
-    sm.setFocus('s2');
+  it('getFocusSession prioritizes binary/choice over response', () => {
+    sm.handleStop({ session_id: 's1', cwd: '/a', stop_hook_active: false });
+    sm.handlePermission({ session_id: 's2', cwd: '/b', tool_name: 'Bash', tool_input: { command: 'ls' } });
+    sm.setFocus('s1'); // focus on WAITING_RESPONSE
     const focus = sm.getFocusSession();
-    assert.equal(focus.id, 's2');
+    assert.equal(focus.id, 's2'); // but binary takes priority
   });
 
   it('getFocusSession falls back to oldest waiting when focus is not waiting', () => {

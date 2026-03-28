@@ -65,7 +65,11 @@ app.post('/api/hook/stop', (req, res) => {
     return res.json({ ok: true });
   }
   const session = sm.handleStop(input);
-  sm.setFocus(session.id);
+  // Only take focus if no higher-priority session is waiting (binary/choice)
+  const currentFocus = sm.getFocusSession();
+  if (!currentFocus || currentFocus.state === 'WAITING_RESPONSE') {
+    sm.setFocus(session.id);
+  }
   const layout = ButtonManager.layoutFor(session);
   broadcastLayout(layout);
   // Non-blocking: deck shows response buttons, events written to file on press
