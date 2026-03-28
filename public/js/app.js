@@ -5,8 +5,8 @@
  * and handles button press events from the virtual grid.
  */
 
-import { initGrid, onPress, renderLayout, renderAllDim } from './d200-renderer.js';
-import { initDashboard, log, updateWsStatus, clearLog } from './dashboard.js';
+import { initGrid, onPress, renderLayout, renderAllDim, setConnectionOverlay } from './d200-renderer.js';
+import { initDashboard, log, updateWsStatus, clearLog, updateSession, dimAllSessions, setSessions } from './dashboard.js';
 
 const VERSION = '0.1.0';
 const WS_PATH = '/ws';
@@ -79,12 +79,14 @@ function _connect() {
   const url = (wsInput && wsInput.value.trim()) || `ws://${location.host}${WS_PATH}`;
 
   updateWsStatus('connecting');
+  setConnectionOverlay('connecting');
 
   try {
     _ws = new WebSocket(url);
 
     _ws.onopen = () => {
       updateWsStatus('connected');
+      setConnectionOverlay('connected');
       log('sys', `Connected: ${url}`);
       _clearReconnect();
       _sendJson({ type: 'CLIENT_READY', clientType: 'virtual', version: VERSION });
@@ -102,6 +104,7 @@ function _connect() {
 
     _ws.onclose = () => {
       updateWsStatus('');
+      setConnectionOverlay('disconnected');
       log('sys', 'Disconnected');
       _ws = null;
       if (!_manualDisconnect) _scheduleReconnect();
@@ -109,6 +112,7 @@ function _connect() {
 
     _ws.onerror = () => {
       updateWsStatus('error');
+      setConnectionOverlay('error');
       log('err', 'WebSocket error');
     };
   } catch (err) {
@@ -150,14 +154,17 @@ function _handleMessage(msg) {
   switch (msg.type) {
     case 'WELCOME':
       log('sys', `Bridge v${msg.version || '?'} — ${(msg.sessions || []).length} session(s)`);
+      if (msg.sessions) setSessions(msg.sessions);
       break;
 
     case 'LAYOUT':
       renderLayout(msg);
+      updateSession(msg);
       break;
 
     case 'ALL_DIM':
       renderAllDim();
+      dimAllSessions();
       break;
 
     default:

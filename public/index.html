@@ -44,6 +44,7 @@
   <div class="ctl-panel">
     <div class="tabs" id="tabBar">
       <div class="tab on" data-tab="log">Event Log <span class="lbadge" id="lbadge"></span></div>
+      <div class="tab" data-tab="sessions">Sessions <span class="lbadge" id="sbadge"></span></div>
       <div class="tab" data-tab="proto">Protocol</div>
       <div class="tab" data-tab="settings">Settings</div>
     </div>
@@ -59,6 +60,12 @@
             <input type="checkbox" id="aScroll" checked> auto scroll
           </label>
         </div>
+      </div>
+
+      <!-- SESSIONS -->
+      <div class="pane" id="pane-sessions">
+        <div class="sess-list" id="sessList"></div>
+        <div class="sess-empty" id="sessEmpty">No active sessions</div>
       </div>
 
       <!-- PROTOCOL -->

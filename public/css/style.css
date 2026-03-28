@@ -305,6 +305,31 @@ main {
   white-space: nowrap;
 }
 
+/* ── SESSIONS ── */
+.sess-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+.sess-empty {
+  padding: 24px 14px; text-align: center;
+  font-size: 10px; color: var(--muted); letter-spacing: .06em;
+}
+.sess-empty.hide { display: none; }
+.sess-row {
+  padding: 8px 14px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--bd);
+  transition: background .15s;
+}
+.sess-row:hover { background: var(--surf); }
+.sess-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  background: var(--muted);
+}
+.sess-dot.IDLE           { background: var(--muted); }
+.sess-dot.PROCESSING     { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+.sess-dot.WAITING_BINARY { background: var(--amber); box-shadow: 0 0 6px var(--amber); animation: blk .8s ease infinite; }
+.sess-dot.WAITING_CHOICE { background: var(--purple); box-shadow: 0 0 6px var(--purple); animation: blk .8s ease infinite; }
+.sess-name { font-size: 11px; color: var(--white); font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sess-state { font-size: 9px; color: var(--muted); letter-spacing: .06em; flex-shrink: 0; }
+.sess-dur { font-size: 9px; color: var(--bd2); flex-shrink: 0; min-width: 36px; text-align: right; }
+
 /* ── PROTOCOL ── */
 .proto { padding: 12px 14px; overflow-y: auto; flex: 1; }
 .ps { margin-bottom: 16px; }
@@ -343,6 +368,40 @@ main {
 .set-inp:focus { border-color: var(--blue); }
 .about-info { display: flex; flex-direction: column; gap: 6px; }
 .hr { border: none; border-top: 1px solid var(--bd); margin: 2px 0; }
+
+/* ── BUTTON COMMAND PREVIEW ── */
+.k .kc {
+  font-size: 8px; color: var(--muted); margin-top: 2px;
+  max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  opacity: .7;
+}
+
+/* ── CONNECTION OVERLAY ── */
+.conn-overlay {
+  position: absolute; inset: 0; z-index: 10;
+  background: rgba(8,8,16,.75);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px; border-radius: 6px;
+  pointer-events: none;
+  animation: conn-fade-in .3s ease;
+}
+.conn-overlay .conn-ico {
+  font-size: 22px; color: var(--muted);
+}
+.conn-overlay .conn-msg {
+  font-size: 10px; color: var(--muted); letter-spacing: .06em;
+}
+.conn-overlay.connecting .conn-ico {
+  color: var(--amber);
+  animation: conn-spin 1s linear infinite;
+}
+.conn-overlay.connecting .conn-msg { color: var(--amber); }
+.conn-overlay.error .conn-ico { color: var(--red); }
+.conn-overlay.error .conn-msg { color: var(--red); }
+
+@keyframes conn-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes conn-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 /* ── SCROLLBARS ── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }

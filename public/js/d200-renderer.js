@@ -152,10 +152,14 @@ export function renderLayout(msg) {
       break;
 
     // Match Claude Code dialog: 1=Allow, 2=Always Allow, 3=Deny
-    case 'binary':
-      _setKeyState(0, 'approve');
+    case 'binary': {
+      const toolName = msg.prompt?.toolName || '';
+      const command = msg.prompt?.command || '';
+      const cmdPreview = _truncCmd(command, 18);
+
+      _setKeyState(0, 'approve', { toolName, cmdPreview });
       if (msg.prompt?.hasAlwaysAllow) {
-        _setKeyState(1, 'always');
+        _setKeyState(1, 'always', { toolName });
         _setKeyState(2, 'deny');
       } else {
         _setKeyState(1, 'deny');
@@ -163,9 +167,10 @@ export function renderLayout(msg) {
       _setInfoState('WAITING_BINARY');
       if (msg.prompt) {
         const actEl = document.getElementById('iAct');
-        if (actEl) actEl.textContent = (msg.prompt.command || msg.prompt.toolName || '').slice(0, 28);
+        if (actEl) actEl.textContent = (command || toolName).slice(0, 28);
       }
       break;
+    }
 
     case 'choice':
       if (msg.choices) {
@@ -187,24 +192,29 @@ export function renderLayout(msg) {
   }
 }
 
-function _setKeyState(slot, state) {
+function _setKeyState(slot, state, meta) {
   const k = _getK(slot);
   if (!k) return;
   k.removeAttribute('data-ci');
   k.style.removeProperty('--off');
   switch (state) {
-    case 'approve':
+    case 'approve': {
       k.className = 'k approve';
-      k.innerHTML = `<span class="ki">✅</span><span class="kl">Approve</span>`;
+      const tool = meta?.toolName ? ` ${meta.toolName}` : '';
+      const cmd = meta?.cmdPreview ? `<span class="kc">${_esc(meta.cmdPreview)}</span>` : '';
+      k.innerHTML = `<span class="ki">✅</span><span class="kl">OK${_esc(tool)}</span>${cmd}`;
       break;
+    }
     case 'deny':
       k.className = 'k deny';
       k.innerHTML = `<span class="ki">❌</span><span class="kl">Deny</span>`;
       break;
-    case 'always':
+    case 'always': {
       k.className = 'k always';
-      k.innerHTML = `<span class="ki">🔒</span><span class="kl">Always</span>`;
+      const tool = meta?.toolName ? ` ${meta.toolName}` : '';
+      k.innerHTML = `<span class="ki">🔒</span><span class="kl">Always${_esc(tool)}</span>`;
       break;
+    }
     case 'processing':
       k.className = 'k proc';
       k.style.setProperty('--off', (slot * 0.08) + 's');
@@ -214,6 +224,19 @@ function _setKeyState(slot, state) {
       k.className = 'k dim';
       k.innerHTML = '';
   }
+}
+
+/** Truncate a command string for button preview */
+function _truncCmd(str, max) {
+  if (!str) return '';
+  return str.length > max ? str.slice(0, max - 1) + '\u2026' : str;
+}
+
+/** HTML-escape a string */
+function _esc(str) {
+  const d = document.createElement('span');
+  d.textContent = str;
+  return d.innerHTML;
 }
 
 function _setKeyChoice(slot, ci, num, label) {
@@ -251,6 +274,36 @@ function _updateSessName(name) {
 /** System info display — reserved by D200 hardware, non-interactive */
 function _updateInfoDisplay() {
   // No-op: system key is reserved by D200 hardware ("SYSTEM / D200 Info Display")
+}
+
+/** Show/hide connection status overlay on the D200 grid */
+export function setConnectionOverlay(state) {
+  const grid = document.getElementById('d200grid');
+  if (!grid) return;
+  let ov = document.getElementById('connOverlay');
+
+  if (state === 'connected') {
+    if (ov) ov.remove();
+    return;
+  }
+
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'connOverlay';
+    ov.className = 'conn-overlay';
+    grid.appendChild(ov);
+  }
+
+  if (state === 'connecting') {
+    ov.className = 'conn-overlay connecting';
+    ov.innerHTML = '<span class="conn-ico">&#x21bb;</span><span class="conn-msg">reconnecting\u2026</span>';
+  } else if (state === 'error') {
+    ov.className = 'conn-overlay error';
+    ov.innerHTML = '<span class="conn-ico">&#x26a0;</span><span class="conn-msg">connection lost</span>';
+  } else {
+    ov.className = 'conn-overlay';
+    ov.innerHTML = '<span class="conn-ico">&#x25cb;</span><span class="conn-msg">disconnected</span>';
+  }
 }
 
 /** Update the state info bar */

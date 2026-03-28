@@ -20,4 +20,10 @@ describe('Hook scripts', () => {
     const content = readFileSync('hooks/stop.js', 'utf8');
     assert.ok(content.includes('/api/hook/stop'));
   });
+
+  it('postToolUse.js exists and is valid JS', () => {
+    assert.ok(existsSync('hooks/postToolUse.js'));
+    const content = readFileSync('hooks/postToolUse.js', 'utf8');
+    assert.ok(content.includes('/api/hook/postToolUse'));
+  });
 });

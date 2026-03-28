@@ -1,10 +1,14 @@
 /**
  * dashboard.js
- * Manages tab switching, event log, and WebSocket status indicator.
+ * Manages tab switching, event log, session list, and WebSocket status indicator.
  */
 
 let _logEntries = [];
 let _logFilter = '';
+
+/** @type {Map<string, {id:string, name:string, state:string, waitingSince:number|null}>} */
+let _sessions = new Map();
+let _sessionDurTimer = null;
 
 const DIR_SYMBOL = { in: '←', out: '→', sys: '·', err: '!' };
 const DIR_CLASS  = { in: 'in-e', out: 'out-e', err: 'err-e', sys: '' };
@@ -101,6 +105,66 @@ export function updateWsStatus(state) {
   }
 }
 
+// ── Sessions ──────────────────────────────────────────────
+
+/**
+ * Update session list from a LAYOUT message.
+ * @param {{session?: {id:string, name:string, state:string}, sessionCount?: number}} msg
+ */
+export function updateSession(msg) {
+  const s = msg.session;
+  if (!s || !s.id) return;
+
+  const existing = _sessions.get(s.id);
+  const isWaiting = s.state === 'WAITING_BINARY' || s.state === 'WAITING_CHOICE';
+  const wasWaiting = existing && (existing.state === 'WAITING_BINARY' || existing.state === 'WAITING_CHOICE');
+
+  _sessions.set(s.id, {
+    id: s.id,
+    name: s.name || s.id.slice(0, 8),
+    state: s.state,
+    waitingSince: isWaiting ? (wasWaiting ? existing.waitingSince : Date.now()) : null,
+  });
+
+  _renderSessions();
+  _ensureDurTimer();
+}
+
+/**
+ * Mark all sessions as IDLE (from ALL_DIM message).
+ */
+export function dimAllSessions() {
+  for (const [id, s] of _sessions) {
+    _sessions.set(id, { ...s, state: 'IDLE', waitingSince: null });
+  }
+  _renderSessions();
+}
+
+/**
+ * Bulk-set sessions from WELCOME message.
+ * @param {{id:string, name:string, state:string}[]} list
+ */
+export function setSessions(list) {
+  _sessions.clear();
+  for (const s of list) {
+    if (!s.id) continue;
+    const isWaiting = s.state === 'WAITING_BINARY' || s.state === 'WAITING_CHOICE';
+    _sessions.set(s.id, {
+      id: s.id,
+      name: s.name || s.id.slice(0, 8),
+      state: s.state || 'IDLE',
+      waitingSince: isWaiting ? Date.now() : null,
+    });
+  }
+  _renderSessions();
+  _ensureDurTimer();
+}
+
+/** Get sessions map (for testing) */
+export function getSessions() {
+  return _sessions;
+}
+
 /** Clear all log entries */
 export function clearLog() {
   _logEntries = [];
@@ -152,4 +216,71 @@ function _esc(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+// ── Session internals ─────────────────────────────────────
+
+const STATE_LABELS = {
+  IDLE: 'idle',
+  PROCESSING: 'processing',
+  WAITING_BINARY: 'waiting',
+  WAITING_CHOICE: 'choosing',
+};
+
+function _renderSessions() {
+  const list = document.getElementById('sessList');
+  const empty = document.getElementById('sessEmpty');
+  if (!list) return;
+
+  list.innerHTML = '';
+  const entries = Array.from(_sessions.values());
+
+  if (empty) empty.classList.toggle('hide', entries.length > 0);
+
+  for (const s of entries) {
+    const row = document.createElement('div');
+    row.className = 'sess-row';
+    row.dataset.sid = s.id;
+
+    const dur = s.waitingSince ? _fmtDur(Date.now() - s.waitingSince) : '';
+
+    row.innerHTML =
+      `<span class="sess-dot ${_esc(s.state)}"></span>` +
+      `<span class="sess-name">${_esc(s.name)}</span>` +
+      `<span class="sess-state">${STATE_LABELS[s.state] || s.state}</span>` +
+      `<span class="sess-dur">${dur}</span>`;
+
+    list.appendChild(row);
+  }
+
+  _updateSessionBadge();
+}
+
+function _updateSessionBadge() {
+  const badge = document.getElementById('sbadge');
+  if (!badge) return;
+  const count = _sessions.size;
+  badge.textContent = count > 0 ? count : '';
+}
+
+function _fmtDur(ms) {
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return `${m}m${rem.toString().padStart(2, '0')}s`;
+}
+
+/** Start a 1s timer to keep waiting durations up to date */
+function _ensureDurTimer() {
+  if (_sessionDurTimer) return;
+  _sessionDurTimer = setInterval(() => {
+    const hasWaiting = Array.from(_sessions.values()).some(s => s.waitingSince);
+    if (hasWaiting) {
+      _renderSessions();
+    } else {
+      clearInterval(_sessionDurTimer);
+      _sessionDurTimer = null;
+    }
+  }, 1000);
 }
