@@ -2,6 +2,7 @@
  * d200-renderer.js
  * Manages the D200 hardware simulator DOM — grid init, state rendering, press callbacks.
  */
+import { esc } from './util.js';
 
 const CHOICE_COLORS = [
   'var(--cc0)', 'var(--cc1)', 'var(--cc2)', 'var(--cc3)',
@@ -201,8 +202,8 @@ function _setKeyState(slot, state, meta) {
     case 'approve': {
       k.className = 'k approve';
       const tool = meta?.toolName ? ` ${meta.toolName}` : '';
-      const cmd = meta?.cmdPreview ? `<span class="kc">${_esc(meta.cmdPreview)}</span>` : '';
-      k.innerHTML = `<span class="ki">✅</span><span class="kl">OK${_esc(tool)}</span>${cmd}`;
+      const cmd = meta?.cmdPreview ? `<span class="kc">${esc(meta.cmdPreview)}</span>` : '';
+      k.innerHTML = `<span class="ki">✅</span><span class="kl">OK${esc(tool)}</span>${cmd}`;
       break;
     }
     case 'deny':
@@ -212,7 +213,7 @@ function _setKeyState(slot, state, meta) {
     case 'always': {
       k.className = 'k always';
       const tool = meta?.toolName ? ` ${meta.toolName}` : '';
-      k.innerHTML = `<span class="ki">🔒</span><span class="kl">Always${_esc(tool)}</span>`;
+      k.innerHTML = `<span class="ki">🔒</span><span class="kl">Always${esc(tool)}</span>`;
       break;
     }
     case 'processing':
@@ -232,19 +233,14 @@ function _truncCmd(str, max) {
   return str.length > max ? str.slice(0, max - 1) + '\u2026' : str;
 }
 
-/** HTML-escape a string */
-function _esc(str) {
-  const d = document.createElement('span');
-  d.textContent = str;
-  return d.innerHTML;
-}
+// esc imported from util.js
 
 function _setKeyChoice(slot, ci, num, label) {
   const k = _getK(slot);
   if (!k) return;
   k.className = 'k';
   k.dataset.ci = ci;
-  k.innerHTML = `<span class="kn">${_esc(String(num))}</span><span class="ks">${_esc(label || '')}</span>`;
+  k.innerHTML = `<span class="kn">${esc(String(num))}</span><span class="ks">${esc(label || '')}</span>`;
 }
 
 /** Update the session count key (slot 10) */

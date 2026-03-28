@@ -2,6 +2,7 @@
  * dashboard.js
  * Manages tab switching, event log, session list, and WebSocket status indicator.
  */
+import { esc } from './util.js';
 
 let _logEntries = [];
 let _logFilter = '';
@@ -185,7 +186,7 @@ function _appendEntry(entry) {
   el.innerHTML =
     `<span class="le-t">${t}</span>` +
     `<span class="le-d ${dir}">${DIR_SYMBOL[dir] || '·'}</span>` +
-    `<span class="le-m">${_esc(truncated)}</span>`;
+    `<span class="le-m">${esc(truncated)}</span>`;
 
   const elog = document.getElementById('elog');
   if (!elog) return;
@@ -211,12 +212,7 @@ function _updateBadge() {
   badge.textContent = count > 99 ? '99+' : count > 0 ? count : '';
 }
 
-function _esc(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
+// _esc imported from util.js as esc
 
 // ── Session internals ─────────────────────────────────────
 
@@ -245,8 +241,8 @@ function _renderSessions() {
     const dur = s.waitingSince ? _fmtDur(Date.now() - s.waitingSince) : '';
 
     row.innerHTML =
-      `<span class="sess-dot ${_esc(s.state)}"></span>` +
-      `<span class="sess-name">${_esc(s.name)}</span>` +
+      `<span class="sess-dot ${esc(s.state)}"></span>` +
+      `<span class="sess-name">${esc(s.name)}</span>` +
       `<span class="sess-state">${STATE_LABELS[s.state] || s.state}</span>` +
       `<span class="sess-dur">${dur}</span>`;
 

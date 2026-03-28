@@ -128,6 +128,15 @@ ws.onButtonPress = (slot, timestamp) => {
   sm.resolveWaiting(focus.id, decision);
 };
 
+// --- Session Cleanup ---
+
+setInterval(() => {
+  const pruned = sm.pruneIdle(config.sessionIdleTimeout);
+  if (pruned.length > 0) {
+    console.log(`[claude-dj] Pruned ${pruned.length} idle session(s): ${pruned.join(', ')}`);
+  }
+}, 60000); // check every minute
+
 // --- Start ---
 
 const port = config.port;

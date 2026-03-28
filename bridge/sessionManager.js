@@ -85,7 +85,21 @@ export class SessionManager {
     session.prompt = null;
     session.waitingSince = null;
     session.respondFn = null;
+    session.idleSince = Date.now();
     return session;
+  }
+
+  /** Remove sessions that have been IDLE longer than ttlMs */
+  pruneIdle(ttlMs) {
+    const now = Date.now();
+    const pruned = [];
+    for (const [id, session] of this.sessions) {
+      if (session.state === 'IDLE' && session.idleSince && (now - session.idleSince) > ttlMs) {
+        this.sessions.delete(id);
+        pruned.push(id);
+      }
+    }
+    return pruned;
   }
 
   resolveWaiting(sessionId, decision) {

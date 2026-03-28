@@ -164,6 +164,32 @@ describe('SessionManager', () => {
     assert.equal(waiting[1].id, 's2');
   });
 
+  it('pruneIdle removes sessions idle longer than ttl', () => {
+    sm.handleNotify({ session_id: 's1', cwd: '/a', hook_event_name: 'PreToolUse', tool_name: 'Bash' });
+    sm.handleStop({ session_id: 's1', hook_event_name: 'Stop', stop_hook_active: false });
+    // Force idleSince to 10 minutes ago
+    sm.get('s1').idleSince = Date.now() - 600000;
+    const pruned = sm.pruneIdle(300000); // 5 min ttl
+    assert.deepEqual(pruned, ['s1']);
+    assert.equal(sm.get('s1'), undefined);
+  });
+
+  it('pruneIdle keeps sessions idle less than ttl', () => {
+    sm.handleNotify({ session_id: 's1', cwd: '/a', hook_event_name: 'PreToolUse', tool_name: 'Bash' });
+    sm.handleStop({ session_id: 's1', hook_event_name: 'Stop', stop_hook_active: false });
+    // Just went idle
+    const pruned = sm.pruneIdle(300000);
+    assert.deepEqual(pruned, []);
+    assert.ok(sm.get('s1'));
+  });
+
+  it('pruneIdle does not remove WAITING sessions', () => {
+    sm.handlePermission({ session_id: 's1', cwd: '/a', tool_name: 'Bash', tool_input: { command: 'ls' } });
+    sm.get('s1').idleSince = Date.now() - 600000; // even if old
+    const pruned = sm.pruneIdle(300000);
+    assert.deepEqual(pruned, []);
+  });
+
   it('resolves waiting session on button press', () => {
     const input = {
       session_id: 'abc123',
