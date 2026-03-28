@@ -7,8 +7,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const command = process.argv[2];
 
 if (command === 'setup') {
+  const isGlobal = process.argv.includes('--global') || process.argv.includes('-g');
   const setup = await import('../tools/setup.js');
-  await setup.run();
+  await setup.run({ global: isGlobal });
 } else {
   // Default: start bridge
   const server = path.join(__dirname, '..', 'bridge', 'server.js');

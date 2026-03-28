@@ -201,13 +201,14 @@ def start_bridge():
 
 
 def run_setup():
-    print(f"  Registering hooks...")
+    """Register hooks in project-local .claude/settings.json (not global)."""
+    print(f"  Registering hooks (project-local)...")
     result = subprocess.run(
-        ["node", str(SETUP_SCRIPT), "setup"],
+        ["node", str(SETUP_SCRIPT), "setup"],  # no --global flag = project-local
         capture_output=True, text=True, cwd=str(ROOT),
     )
     if result.returncode == 0:
-        print(f"  {green('OK')} Hooks registered")
+        print(f"  {green('OK')} Hooks registered (project-local)")
     else:
         print(f"  {red('FAIL')} Setup failed: {result.stderr}")
         sys.exit(1)
