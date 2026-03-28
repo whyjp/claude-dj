@@ -86,13 +86,12 @@ function _makeSessKey() {
 
 function _makeInfoDisplay() {
   const el = document.createElement('div');
-  el.className = 'k-info idle';
+  el.className = 'k-info';
   el.id = 'infoDisplay';
   el.innerHTML = `
-    <span class="info-ico">💤</span>
-    <span class="info-nam" id="infoNam">—</span>
-    <span class="info-sts" id="infoSts">IDLE</span>
-    <span class="info-ses" id="infoSes"></span>
+    <span class="info-ico">🖥</span>
+    <span class="info-nam">SYSTEM</span>
+    <span class="info-sts">D200 Info Display</span>
   `;
   return el;
 }
@@ -244,33 +243,9 @@ function _updateSessName(name) {
   if (el) el.textContent = name || '—';
 }
 
-/** Update the Session Info display area (non-interactive, system-only) */
-function _updateInfoDisplay({ icon, name, state } = {}) {
-  const el = document.getElementById('infoDisplay');
-  const namEl = document.getElementById('infoNam');
-  const stsEl = document.getElementById('infoSts');
-  if (!el) return;
-
-  if (namEl && name !== undefined) namEl.textContent = name || '—';
-  if (stsEl && state !== undefined) stsEl.textContent = state || 'IDLE';
-
-  const st = (state || 'IDLE').toLowerCase();
-  const ico = el.querySelector('.info-ico');
-
-  el.className = 'k-info';
-  if (st.includes('waiting')) {
-    el.classList.add('wait');
-    if (ico) ico.textContent = '❓';
-  } else if (st === 'processing') {
-    el.classList.add('proc');
-    if (ico) ico.textContent = '⚙️';
-  } else if (st === 'done') {
-    el.classList.add('done');
-    if (ico) ico.textContent = '✅';
-  } else {
-    el.classList.add('idle');
-    if (ico) ico.textContent = icon || '💤';
-  }
+/** System info display — always static, non-interactive */
+function _updateInfoDisplay() {
+  // No-op: system key is always fixed as "SYSTEM / D200 Info Display"
 }
 
 /** Update the state info bar */
