@@ -1,8 +1,11 @@
+import path from 'node:path';
+import os from 'node:os';
+
 export const config = {
   port: parseInt(process.env.CLAUDE_DJ_PORT, 10) || 39200,
   buttonTimeout: parseInt(process.env.CLAUDE_DJ_BUTTON_TIMEOUT, 10) || 30000,
-  responseTimeout: parseInt(process.env.CLAUDE_DJ_RESPONSE_TIMEOUT, 10) || 3000, // 3s to pick a button on Stop
   hookTimeout: 110000,
+  eventsDir: process.env.CLAUDE_DJ_EVENTS_DIR || path.join(os.tmpdir(), 'claude-dj-events'),
   wsPath: '/ws',
   apiPrefix: '/api',
   sessionIdleTimeout: parseInt(process.env.CLAUDE_DJ_IDLE_TIMEOUT, 10) || 300000, // 5 min

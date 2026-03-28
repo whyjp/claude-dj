@@ -27,10 +27,17 @@ describe('Hook scripts', () => {
     assert.ok(content.includes('/api/hook/postToolUse'));
   });
 
+  it('userPrompt.js exists and is valid JS', () => {
+    assert.ok(existsSync('hooks/userPrompt.js'));
+    const content = readFileSync('hooks/userPrompt.js', 'utf8');
+    assert.ok(content.includes('/api/events/'));
+  });
+
   it('hooks.json is valid and references all hook scripts', () => {
     assert.ok(existsSync('hooks/hooks.json'));
     const config = JSON.parse(readFileSync('hooks/hooks.json', 'utf8'));
     assert.ok(config.hooks, 'should have hooks key');
+    assert.ok(config.hooks.UserPromptSubmit, 'should have UserPromptSubmit');
     assert.ok(config.hooks.PermissionRequest, 'should have PermissionRequest');
     assert.ok(config.hooks.PreToolUse, 'should have PreToolUse');
     assert.ok(config.hooks.PostToolUse, 'should have PostToolUse');

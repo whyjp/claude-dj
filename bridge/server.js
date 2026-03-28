@@ -1,6 +1,7 @@
 import express from 'express';
 import http from 'node:http';
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { SessionManager } from './sessionManager.js';
@@ -67,22 +68,21 @@ app.post('/api/hook/stop', (req, res) => {
   sm.setFocus(session.id);
   const layout = ButtonManager.layoutFor(session);
   broadcastLayout(layout);
+  // Non-blocking: deck shows response buttons, events written to file on press
+  res.json({ ok: true });
+});
 
-  // Block for up to responseTimeout — wait for deck button press
-  const timeout = setTimeout(() => {
-    session.respondFn = null;
-    sm.dismissSession(session.id);
-    ws.broadcast({ type: 'ALL_DIM' });
-    res.json({ ok: true }); // no response = Claude shows normal prompt
-  }, config.responseTimeout);
+// --- Events File API ---
 
-  session.respondFn = (decision) => {
-    clearTimeout(timeout);
-    sm.dismissSession(session.id);
-    const response = ButtonManager.buildStopResponse(decision);
-    ws.broadcast({ type: 'ALL_DIM' });
-    res.json(response);
-  };
+fs.mkdirSync(config.eventsDir, { recursive: true });
+
+app.get('/api/events/:sessionId', (req, res) => {
+  const file = path.join(config.eventsDir, `${req.params.sessionId}.jsonl`);
+  if (!fs.existsSync(file)) return res.json({ events: [] });
+  const lines = fs.readFileSync(file, 'utf8').trim().split('\n').filter(Boolean);
+  const events = lines.map((l) => JSON.parse(l));
+  fs.unlinkSync(file); // clear after read
+  res.json({ events });
 });
 
 app.post('/api/hook/permission', (req, res) => {
@@ -141,6 +141,17 @@ ws.onButtonPress = (slot, timestamp) => {
 
   const decision = ButtonManager.resolvePress(slot, focus.state, focus.prompt);
   if (!decision) return;
+
+  if (focus.state === 'WAITING_RESPONSE') {
+    // Write to events file — Claude reads on next turn
+    const file = path.join(config.eventsDir, `${focus.id}.jsonl`);
+    const event = JSON.stringify({ type: 'button', value: decision.value, timestamp: Date.now() });
+    fs.appendFileSync(file, event + '\n');
+    console.log(`[events] wrote ${decision.value} for session ${focus.id}`);
+    sm.dismissSession(focus.id);
+    ws.broadcast({ type: 'ALL_DIM' });
+    return;
+  }
 
   sm.resolveWaiting(focus.id, decision);
 };

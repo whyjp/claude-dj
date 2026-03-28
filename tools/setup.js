@@ -29,6 +29,7 @@ export async function run({ global = false } = {}) {
 
   const nodeCmd = process.execPath;
 
+  settings.hooks.UserPromptSubmit = settings.hooks.UserPromptSubmit || [];
   settings.hooks.PermissionRequest = settings.hooks.PermissionRequest || [];
   settings.hooks.PreToolUse = settings.hooks.PreToolUse || [];
   settings.hooks.PostToolUse = settings.hooks.PostToolUse || [];
@@ -40,8 +41,10 @@ export async function run({ global = false } = {}) {
     x.command?.includes('hooks/permission.js') ||
     x.command?.includes('hooks/notify.js') ||
     x.command?.includes('hooks/postToolUse.js') ||
+    x.command?.includes('hooks/userPrompt.js') ||
     x.command?.includes('hooks/stop.js'));
 
+  settings.hooks.UserPromptSubmit = settings.hooks.UserPromptSubmit.filter((h) => !isClaudeDjHook(h));
   settings.hooks.PermissionRequest = settings.hooks.PermissionRequest.filter((h) => !isClaudeDjHook(h));
   settings.hooks.PreToolUse = settings.hooks.PreToolUse.filter((h) => !isClaudeDjHook(h));
   settings.hooks.PostToolUse = settings.hooks.PostToolUse.filter((h) => !isClaudeDjHook(h));
@@ -69,14 +72,21 @@ export async function run({ global = false } = {}) {
     }],
   };
 
+  const userPromptHook = {
+    hooks: [{
+      type: 'command',
+      command: `"${nodeCmd}" "${path.join(hooksDir, 'userPrompt.js')}"`,
+    }],
+  };
+
   const stopHook = {
     hooks: [{
       type: 'command',
       command: `"${nodeCmd}" "${path.join(hooksDir, 'stop.js')}"`,
-      timeout: 15,
     }],
   };
 
+  settings.hooks.UserPromptSubmit.push(userPromptHook);
   settings.hooks.PermissionRequest.push(permHook);
   settings.hooks.PreToolUse.push(notifyHook);
   settings.hooks.PostToolUse.push(postToolUseHook);
@@ -86,6 +96,7 @@ export async function run({ global = false } = {}) {
 
   const scope = global ? 'GLOBAL (~/.claude)' : `PROJECT (${settingsDir})`;
   console.log(`[claude-dj] Hooks registered — ${scope}`);
+  console.log(`[claude-dj] UserPromptSubmit → userPrompt.js`);
   console.log(`[claude-dj] PermissionRequest → permission.js`);
   console.log(`[claude-dj] PreToolUse → notify.js`);
   console.log(`[claude-dj] PostToolUse → postToolUse.js`);
