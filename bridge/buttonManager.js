@@ -18,7 +18,7 @@ export class ButtonManager {
       case 'WAITING_CHOICE':
         return { ...base, preset: 'choice', choices: session.prompt.choices };
       case 'WAITING_RESPONSE':
-        return { ...base, preset: 'response' };
+        return { ...base, preset: 'response', choices: session.prompt.choices || null };
       default:
         return { ...base, preset: 'idle' };
     }
@@ -43,7 +43,11 @@ export class ButtonManager {
     }
 
     if (state === 'WAITING_RESPONSE') {
-      if (slot >= 0 && slot <= 9) {
+      const choices = prompt?.choices;
+      if (choices && slot >= 0 && slot < choices.length) {
+        return { type: 'response', value: choices[slot].label };
+      }
+      if (!choices && slot >= 0 && slot <= 9) {
         return { type: 'response', value: String(slot + 1) };
       }
       return null;

@@ -82,11 +82,21 @@ export class SessionManager {
   handleStop(input) {
     const session = this.getOrCreate(input);
     if (input.stop_hook_active) {
-      // Claude is still working, just update state
       return session;
     }
     session.state = 'WAITING_RESPONSE';
     session.prompt = { type: 'RESPONSE' };
+    session.waitingSince = Date.now();
+    return session;
+  }
+
+  handleStopWithChoices(input, choices) {
+    const session = this.getOrCreate(input);
+    session.state = 'WAITING_RESPONSE';
+    session.prompt = {
+      type: 'RESPONSE',
+      choices: choices.slice(0, 10),
+    };
     session.waitingSince = Date.now();
     return session;
   }

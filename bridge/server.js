@@ -67,38 +67,34 @@ app.post('/api/hook/postToolUse', (req, res) => {
 
 app.post('/api/hook/stop', (req, res) => {
   const input = req.body;
-  console.log(`[hook/stop] session=${input.session_id} active=${input.stop_hook_active}`);
+  const choices = input._djChoices || null;
+  console.log(`[hook/stop] session=${input.session_id} active=${input.stop_hook_active} choices=${choices?.length || 0}`);
   if (input.stop_hook_active) {
     return res.json({ ok: true });
   }
 
   const sessionId = input.session_id;
 
-  // Clear any pending response timer for this session
+  // Clear any pending response timer
   if (_stopTimers.has(sessionId)) {
     clearTimeout(_stopTimers.get(sessionId));
     _stopTimers.delete(sessionId);
   }
 
-  // Go to IDLE immediately (dim the deck)
-  sm.dismissSession(sessionId) || sm.getOrCreate(input);
-  ws.broadcast({ type: 'ALL_DIM' });
-
-  // After 2s of no new activity, show response buttons
-  const timer = setTimeout(() => {
-    _stopTimers.delete(sessionId);
-    const session = sm.get(sessionId);
-    if (session && session.state === 'IDLE') {
-      sm.handleStop(input); // transitions to WAITING_RESPONSE
-      const currentFocus = sm.getFocusSession();
-      if (!currentFocus || currentFocus.state === 'WAITING_RESPONSE') {
-        sm.setFocus(session.id);
-      }
-      const layout = ButtonManager.layoutFor(session);
-      broadcastLayout(layout);
+  if (choices && choices.length > 0) {
+    // Choices detected in transcript — show them on deck
+    const session = sm.handleStopWithChoices(input, choices);
+    const currentFocus = sm.getFocusSession();
+    if (!currentFocus || currentFocus.state === 'WAITING_RESPONSE') {
+      sm.setFocus(session.id);
     }
-  }, 2000);
-  _stopTimers.set(sessionId, timer);
+    const layout = ButtonManager.layoutFor(session);
+    broadcastLayout(layout);
+  } else {
+    // No choices — go to IDLE
+    sm.dismissSession(sessionId) || sm.getOrCreate(input);
+    ws.broadcast({ type: 'ALL_DIM' });
+  }
 
   res.json({ ok: true });
 });
