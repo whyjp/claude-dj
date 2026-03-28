@@ -78,7 +78,7 @@ header {
 /* ── MAIN ── */
 main {
   display: grid;
-  grid-template-columns: 420px 1fr;
+  grid-template-columns: minmax(820px, 1fr) 1fr;
   overflow: hidden;
 }
 
@@ -98,25 +98,25 @@ main {
 .dev-model { font-size: 10px; color: var(--bd2); }
 
 .d200-wrap {
-  padding: 18px 22px;
+  padding: 24px 30px;
   display: flex; flex-direction: column; align-items: center;
-  gap: 12px; flex: 1;
+  gap: 16px; flex: 1;
 }
 
 .d200 {
-  background: #090912; border: 2px solid #18182a; border-radius: 6px;
-  padding: 14px 13px 10px; width: 100%;
+  background: #090912; border: 2px solid #18182a; border-radius: 8px;
+  padding: 20px 18px 14px; width: 100%; max-width: 760px;
   box-shadow: 0 0 0 1px #0d0d1e, 0 14px 50px rgba(0,0,0,.8);
   position: relative;
 }
 .d200::before {
   content: 'ULANZI D200';
-  position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
-  font-size: 7px; color: #18182a; letter-spacing: .2em;
+  position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; color: #18182a; letter-spacing: .2em;
 }
 
-.kg5 { display: grid; grid-template-columns: repeat(5,1fr); gap: 5px; margin-bottom: 5px; }
-.kgl { display: grid; grid-template-columns: repeat(3,1fr) 1.85fr; gap: 5px; }
+.kg5 { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin-bottom: 8px; }
+.kgl { display: grid; grid-template-columns: repeat(3,1fr) 1.85fr; gap: 8px; }
 
 /* ── KEYS ── */
 .k {
@@ -131,11 +131,11 @@ main {
 .k:active { transform: scale(.93); }
 .k.dim { opacity: .12; cursor: default; pointer-events: none; }
 .k.dim:active { transform: none; }
-.k .ki { font-size: 18px; line-height: 1; }
-.k .kl { font-size: 7px; color: var(--muted); margin-top: 2px; }
-.k .kn { font-size: 16px; font-weight: 700; line-height: 1; }
+.k .ki { font-size: 32px; line-height: 1; }
+.k .kl { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.k .kn { font-size: 28px; font-weight: 700; line-height: 1; }
 .k .ks {
-  font-size: 6.5px; margin-top: 2px;
+  font-size: 10px; margin-top: 3px;
   max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
@@ -179,8 +179,8 @@ main {
 /* ── SESSION COUNT KEY (slot 10) ── */
 .k.count { border-color: var(--amber); background: var(--adim); cursor: default; pointer-events: none; }
 .k.count:active { transform: none; }
-.k.count .cnt-n { font-size: 18px; font-weight: 700; color: var(--amber); line-height: 1; }
-.k.count .cnt-l { font-size: 6px; color: var(--muted); }
+.k.count .cnt-n { font-size: 32px; font-weight: 700; color: var(--amber); line-height: 1; }
+.k.count .cnt-l { font-size: 10px; color: var(--muted); }
 .k.count.alert  { animation: ga2 1.2s ease-in-out infinite; }
 .k.count .cnt-badge {
   position: absolute; top: 3px; right: 3px;
@@ -193,8 +193,8 @@ main {
 /* ── SESSION NAME/SWITCH KEY (slot 11) ── */
 .k.sess-switch { border-color: var(--blue); background: var(--bdim); cursor: pointer; }
 .k.sess-switch:active { transform: scale(.93); }
-.k.sess-switch .sess-ico { font-size: 14px; line-height: 1; color: var(--blue); }
-.k.sess-switch .sess-n { font-size: 6.5px; color: var(--blue); margin-top: 2px; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.k.sess-switch .sess-ico { font-size: 24px; line-height: 1; color: var(--blue); }
+.k.sess-switch .sess-n { font-size: 11px; color: var(--blue); margin-top: 3px; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── INFO DISPLAY (system-only, non-interactive) ── */
 .k-info {
@@ -216,9 +216,9 @@ main {
 .k-info.proc { border-color: var(--blue);  background: var(--bdim); animation: gb 2s ease-in-out infinite; }
 .k-info.wait { border-color: var(--amber); background: var(--adim); animation: ga2 1.5s ease-in-out infinite; }
 .k-info.done { border-color: var(--green); background: var(--gdim); }
-.k-info .info-ico { font-size: 18px; }
-.k-info .info-nam { font-size: 10px; font-weight: 600; color: var(--white); }
-.k-info .info-sts { font-size: 7px; color: var(--muted); letter-spacing: .06em; }
+.k-info .info-ico { font-size: 28px; }
+.k-info .info-nam { font-size: 14px; font-weight: 600; color: var(--white); }
+.k-info .info-sts { font-size: 10px; color: var(--muted); letter-spacing: .06em; }
 .k-info .info-ses { font-size: 6.5px; color: var(--muted); }
 
 /* ── ANIMATIONS ── */
@@ -238,8 +238,8 @@ main {
   display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px;
 }
 .si { display: flex; gap: 6px; align-items: baseline; }
-.si-k { font-size: 9px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; flex-shrink: 0; }
-.si-v { font-size: 10px; color: var(--white); font-weight: 500; }
+.si-k { font-size: 11px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; flex-shrink: 0; }
+.si-v { font-size: 12px; color: var(--white); font-weight: 500; }
 .si-v.g { color: var(--green); }
 .si-v.a { color: var(--amber); }
 .si-v.b { color: var(--blue); }
