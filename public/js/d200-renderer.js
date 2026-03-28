@@ -104,7 +104,7 @@ function _firePress(slot, el) {
 
 /** Get a key element by slot number */
 function _getK(slot) {
-  return document.querySelector(`[data-slot="${slot}"]`);
+  return document.querySelector(`[data-slot="${Number(slot)}"]`);
 }
 
 /** Dim all dynamic keys (slots 0-9) and reset info display to idle.
@@ -244,7 +244,7 @@ function _setKeyChoice(slot, ci, num, label) {
   if (!k) return;
   k.className = 'k';
   k.dataset.ci = ci;
-  k.innerHTML = `<span class="kn">${num}</span><span class="ks">${label || ''}</span>`;
+  k.innerHTML = `<span class="kn">${_esc(String(num))}</span><span class="ks">${_esc(label || '')}</span>`;
 }
 
 /** Update the session count key (slot 10) */
