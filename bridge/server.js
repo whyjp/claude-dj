@@ -40,9 +40,16 @@ function broadcastLayout(layout) {
 
 // --- Hook Endpoints ---
 
+const _stopTimers = new Map();
+
 app.post('/api/hook/notify', (req, res) => {
   const input = req.body;
   console.log(`[hook/notify] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
+  // Cancel pending response timer — Claude is still working
+  if (_stopTimers.has(input.session_id)) {
+    clearTimeout(_stopTimers.get(input.session_id));
+    _stopTimers.delete(input.session_id);
+  }
   const session = sm.handleNotify(input);
   const layout = ButtonManager.layoutFor(session);
   broadcastLayout(layout);
@@ -64,15 +71,35 @@ app.post('/api/hook/stop', (req, res) => {
   if (input.stop_hook_active) {
     return res.json({ ok: true });
   }
-  const session = sm.handleStop(input);
-  // Only take focus if no higher-priority session is waiting (binary/choice)
-  const currentFocus = sm.getFocusSession();
-  if (!currentFocus || currentFocus.state === 'WAITING_RESPONSE') {
-    sm.setFocus(session.id);
+
+  const sessionId = input.session_id;
+
+  // Clear any pending response timer for this session
+  if (_stopTimers.has(sessionId)) {
+    clearTimeout(_stopTimers.get(sessionId));
+    _stopTimers.delete(sessionId);
   }
-  const layout = ButtonManager.layoutFor(session);
-  broadcastLayout(layout);
-  // Non-blocking: deck shows response buttons, events written to file on press
+
+  // Go to IDLE immediately (dim the deck)
+  sm.dismissSession(sessionId) || sm.getOrCreate(input);
+  ws.broadcast({ type: 'ALL_DIM' });
+
+  // After 2s of no new activity, show response buttons
+  const timer = setTimeout(() => {
+    _stopTimers.delete(sessionId);
+    const session = sm.get(sessionId);
+    if (session && session.state === 'IDLE') {
+      sm.handleStop(input); // transitions to WAITING_RESPONSE
+      const currentFocus = sm.getFocusSession();
+      if (!currentFocus || currentFocus.state === 'WAITING_RESPONSE') {
+        sm.setFocus(session.id);
+      }
+      const layout = ButtonManager.layoutFor(session);
+      broadcastLayout(layout);
+    }
+  }, 2000);
+  _stopTimers.set(sessionId, timer);
+
   res.json({ ok: true });
 });
 
