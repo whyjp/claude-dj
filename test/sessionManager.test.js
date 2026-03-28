@@ -73,7 +73,7 @@ describe('SessionManager', () => {
     assert.equal(session.prompt.choices.length, 2);
   });
 
-  it('transitions to IDLE on Stop', () => {
+  it('transitions to WAITING_RESPONSE on Stop', () => {
     const input = {
       session_id: 'abc123',
       cwd: '/projects/api-server',
@@ -83,7 +83,17 @@ describe('SessionManager', () => {
     sm.getOrCreate(input);
     sm.handleStop(input);
     const session = sm.get('abc123');
+    assert.equal(session.state, 'WAITING_RESPONSE');
+    assert.equal(session.prompt.type, 'RESPONSE');
+  });
+
+  it('dismissSession transitions to IDLE', () => {
+    sm.getOrCreate({ session_id: 'abc123', cwd: '/a' });
+    sm.handleStop({ session_id: 'abc123', stop_hook_active: false });
+    sm.dismissSession('abc123');
+    const session = sm.get('abc123');
     assert.equal(session.state, 'IDLE');
+    assert.ok(session.idleSince);
   });
 
   it('transitions to PROCESSING with lastToolResult on PostToolUse', () => {
@@ -175,18 +185,16 @@ describe('SessionManager', () => {
 
   it('pruneIdle removes sessions idle longer than ttl', () => {
     sm.handleNotify({ session_id: 's1', cwd: '/a', hook_event_name: 'PreToolUse', tool_name: 'Bash' });
-    sm.handleStop({ session_id: 's1', hook_event_name: 'Stop', stop_hook_active: false });
-    // Force idleSince to 10 minutes ago
+    sm.dismissSession('s1'); // transition to IDLE
     sm.get('s1').idleSince = Date.now() - 600000;
-    const pruned = sm.pruneIdle(300000); // 5 min ttl
+    const pruned = sm.pruneIdle(300000);
     assert.deepEqual(pruned, ['s1']);
     assert.equal(sm.get('s1'), undefined);
   });
 
   it('pruneIdle keeps sessions idle less than ttl', () => {
     sm.handleNotify({ session_id: 's1', cwd: '/a', hook_event_name: 'PreToolUse', tool_name: 'Bash' });
-    sm.handleStop({ session_id: 's1', hook_event_name: 'Stop', stop_hook_active: false });
-    // Just went idle
+    sm.dismissSession('s1');
     const pruned = sm.pruneIdle(300000);
     assert.deepEqual(pruned, []);
     assert.ok(sm.get('s1'));

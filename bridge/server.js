@@ -64,8 +64,25 @@ app.post('/api/hook/stop', (req, res) => {
     return res.json({ ok: true });
   }
   const session = sm.handleStop(input);
-  ws.broadcast({ type: 'ALL_DIM' });
-  res.json({ ok: true });
+  sm.setFocus(session.id);
+  const layout = ButtonManager.layoutFor(session);
+  broadcastLayout(layout);
+
+  // Block for up to responseTimeout — wait for deck button press
+  const timeout = setTimeout(() => {
+    session.respondFn = null;
+    sm.dismissSession(session.id);
+    ws.broadcast({ type: 'ALL_DIM' });
+    res.json({ ok: true }); // no response = Claude shows normal prompt
+  }, config.responseTimeout);
+
+  session.respondFn = (decision) => {
+    clearTimeout(timeout);
+    sm.dismissSession(session.id);
+    const response = ButtonManager.buildStopResponse(decision);
+    ws.broadcast({ type: 'ALL_DIM' });
+    res.json(response);
+  };
 });
 
 app.post('/api/hook/permission', (req, res) => {

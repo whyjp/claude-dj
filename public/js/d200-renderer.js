@@ -182,6 +182,14 @@ export function renderLayout(msg) {
       }
       _setInfoState('WAITING_CHOICE');
       break;
+
+    case 'response':
+      // Slots 0-9 show numbers 1-10 for quick text response
+      for (let i = 0; i <= 9; i++) {
+        _setKeyResponse(i, i + 1);
+      }
+      _setInfoState('WAITING_RESPONSE');
+      break;
   }
 
   // Update session count key (slot 10) and session name key (slot 11)
@@ -234,6 +242,13 @@ function _truncCmd(str, max) {
 }
 
 // esc imported from util.js
+
+function _setKeyResponse(slot, num) {
+  const k = _getK(slot);
+  if (!k) return;
+  k.className = 'k resp';
+  k.innerHTML = `<span class="kn">${num}</span>`;
+}
 
 function _setKeyChoice(slot, ci, num, label) {
   const k = _getK(slot);

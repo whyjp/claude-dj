@@ -73,6 +73,7 @@ export async function run({ global = false } = {}) {
     hooks: [{
       type: 'command',
       command: `"${nodeCmd}" "${path.join(hooksDir, 'stop.js')}"`,
+      timeout: 35,
     }],
   };
 

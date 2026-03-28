@@ -81,6 +81,20 @@ export class SessionManager {
 
   handleStop(input) {
     const session = this.getOrCreate(input);
+    if (input.stop_hook_active) {
+      // Claude is still working, just update state
+      return session;
+    }
+    session.state = 'WAITING_RESPONSE';
+    session.prompt = { type: 'RESPONSE' };
+    session.waitingSince = Date.now();
+    return session;
+  }
+
+  /** Transition session to IDLE (after response timeout or explicit dismiss) */
+  dismissSession(sessionId) {
+    const session = this.sessions.get(sessionId);
+    if (!session) return null;
     session.state = 'IDLE';
     session.prompt = null;
     session.waitingSince = null;
@@ -118,14 +132,14 @@ export class SessionManager {
   /** Get all sessions currently waiting for user input, oldest first */
   getWaitingSessions() {
     return [...this.sessions.values()]
-      .filter((s) => s.state === 'WAITING_BINARY' || s.state === 'WAITING_CHOICE')
+      .filter((s) => s.state.startsWith('WAITING_'))
       .sort((a, b) => (a.waitingSince || 0) - (b.waitingSince || 0));
   }
 
-  /** Get the currently focused session (must be WAITING), or auto-pick oldest waiting */
+  /** Get the currently focused session (must be in a WAITING state), or auto-pick oldest waiting */
   getFocusSession() {
     const focused = this.focusSessionId ? this.sessions.get(this.focusSessionId) : null;
-    if (focused && (focused.state === 'WAITING_BINARY' || focused.state === 'WAITING_CHOICE')) {
+    if (focused && focused.state.startsWith('WAITING_')) {
       return focused;
     }
     // Fallback: oldest waiting session
