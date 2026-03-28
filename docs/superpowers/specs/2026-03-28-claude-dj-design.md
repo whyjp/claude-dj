@@ -222,13 +222,20 @@ WAITING_CHOICE  → PermissionRequest (AskUserQuestion). 번호 버튼 활성.
 ┌────┬────┬────┬────┬────┐
 │  0 │  1 │  2 │  3 │  4 │
 ├────┼────┼────┼────┼────┤
-│  5 │  6 │  7 │  8 │  9 │  ← 9: SESSION_COUNT (고정)
+│  5 │  6 │  7 │  8 │  9 │  ← 9: SESSION_COUNT (고정, 표시 전용)
 ├────┼────┼────┼──────────┤
-│ 10 │ 11 │ 12 │  BIG WIN │  ← BIG: 세션 정보 (고정)
+│ 10 │ 11 │ 12 │ (시스템) │  ← BIG WIN = 시스템 전용 (프로그래밍 불가)
 └────┴────┴────┴──────────┘
 
-동적 슬롯: 0~8, 10~12 (최대 12개 선택지)
+동적 슬롯: 0~8 (최대 9개 선택지)
+세션 정보 슬롯: 10~12 (세션명, 상태, 도구 표시 — Phase 2)
+고정 슬롯: 9 (SESSION_COUNT)
+시스템 키: BIG WIN (제어 불가, 시간/CPU/RAM 표시)
 ```
+
+> **Note:** D200의 BIG WIN 키는 Plugin API로 제어 불가 (시스템 전용).
+> 세션 정보는 슬롯 10~12를 활용. Virtual DJ FE에서는 BIG WIN 영역을
+> 세션 정보 표시용으로 시뮬레이션하되, 실제 D200에서는 슬롯 10~12로 매핑.
 
 ---
 
@@ -377,7 +384,7 @@ Slot 의미 (Bridge가 현재 state 기반으로 해석):
 
 ### Layout
 
-- **좌측:** D200 시뮬레이터 — 5+5+4 그리드 + BIG WIN, 버튼 클릭으로 조작
+- **좌측:** D200 시뮬레이터 — 5+5+4 그리드 (슬롯 0~12 + 시스템 BIG WIN 시뮬레이션), 버튼 클릭으로 조작
 - **우측:** 대시보드 탭
   - **Event Log** — WS 메시지 실시간 로그, 방향(in/out) 표시, 필터
   - **Sessions** — 연결된 세션 목록, 상태, 포커스 전환 (Phase 2)
@@ -416,15 +423,16 @@ Slot 의미 (Bridge가 현재 state 기반으로 해석):
 ### Phase 2 — Multi-session
 
 - Session Manager 확장
-- SESSION_COUNT 슬롯
-- BIG WIN 세션 정보 + rotate
+- SESSION_COUNT 슬롯 (슬롯 9)
+- 세션 정보 표시 슬롯 10~12 (세션명, 상태, 도구)
 - 자동 포커스 전환 로직
 - FE Sessions 탭 활성화
 
 ### Phase 3 — Physical D200
 
-- plugin/app.js 구현
-- Ulanzi SDK 연동
+- plugin/app.js 구현 — Bridge WS ↔ Ulanzi WS 프로토콜 변환기
+- Ulanzi SDK 연동 (common-node)
+- SDK Simulator + Virtual DJ 동시 동작 검증
 - 이미지 에셋 제작 (PNG ~36장 + GIF 3개)
 - UlanziStudio 배포
 
@@ -458,4 +466,51 @@ Slot 의미 (Bridge가 현재 state 기반으로 해석):
 | 랜딩 페이지 HTML | docs/pre-researched/ReactDeck_Landing.html |
 | Claude Code Hooks | https://code.claude.com/docs/en/hooks |
 | Ulanzi Plugin SDK | https://github.com/UlanziTechnology/UlanziDeckPlugin-SDK |
+| Ulanzi SDK (local) | ulanzi/sdk/ (common-node, UlanziDeckSimulator, demo) |
+| Ulanzi SDK Simulator | ulanzi/sdk/UlanziDeckSimulator/ (port 39069) |
+| UlanziStudio (installed) | C:/Program Files (x86)/Ulanzi Studio/ |
 | subagent permission bug | https://github.com/anthropics/claude-code/issues/23983 |
+
+---
+
+## 12. Ulanzi SDK Integration Notes
+
+### BIG WIN 키 제약
+
+D200의 더블 사이즈 키(BIG WIN)는 시스템 전용(시간/CPU/RAM 표시)으로 Plugin API 제어 불가.
+세션 정보는 슬롯 10~12를 활용하며, Virtual DJ FE에서는 BIG WIN 영역을 시뮬레이션용으로 유지.
+
+### Plugin 역할 (Phase 3)
+
+Plugin은 Bridge WS ↔ Ulanzi WS 프로토콜 변환기:
+- Bridge `LAYOUT` → Ulanzi `setPathIcon`/`setGifPathIcon` per key
+- Ulanzi `onRun` (key press) → Bridge `BUTTON_PRESS`
+
+### 테스트 시나리오
+
+| 시나리오 | 경로 | Phase |
+|----------|------|-------|
+| A | Claude Code → Bridge → Virtual DJ (브라우저) | Phase 1 |
+| B | Claude Code → Bridge → Plugin → SDK Simulator | Phase 3 |
+| C | Claude Code → Bridge → Plugin → UlanziStudio → D200 | Phase 3 |
+| D | A + B 동시 (양쪽 모두 동작 확인) | Phase 3 |
+
+### Ulanzi SDK 구조 (vendor)
+
+```
+ulanzi/sdk/common-node/
+├── index.js           # exports: UlanziApi (default), Utils, RandomPort
+├── package.json       # deps: ws ^8.18.0
+├── apiTypes.d.ts      # TypeScript 타입
+└── libs/
+    ├── ulanziApi.js   # UlanziApi class (extends EventEmitter)
+    ├── constants.js   # Event name constants
+    ├── utils.js       # Utility helpers
+    └── randomPort.js  # Port generation
+```
+
+### Ulanzi WS Protocol (Plugin ↔ UlanziStudio)
+
+Plugin → Host: `{ cmd: "state", uuid, key, actionid, param: { statelist: [...] } }`
+Host → Plugin: `{ cmd: "run"|"add"|"clear"|"keydown"|"keyup", uuid, key, actionid, param }`
+Context: `uuid___key___actionid` (3 parts joined by `___`)
