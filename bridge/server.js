@@ -54,7 +54,7 @@ app.post('/api/hook/notify', (req, res) => {
   // Only broadcast if this is the focused session — don't override WAITING_BINARY/CHOICE
   const focus = sm.getFocusSession();
   if (!focus || focus.id === session.id) {
-    const layout = ButtonManager.layoutFor(session);
+    const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
     broadcastLayout(layout);
   }
   res.json({ ok: true });
@@ -67,9 +67,27 @@ app.post('/api/hook/postToolUse', (req, res) => {
   // Only broadcast if this is the focused session
   const focus = sm.getFocusSession();
   if (!focus || focus.id === session.id) {
-    const layout = ButtonManager.layoutFor(session);
+    const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
     broadcastLayout(layout);
   }
+  res.json({ ok: true });
+});
+
+app.post('/api/hook/subagentStart', (req, res) => {
+  const input = req.body;
+  console.log(`[hook/subagentStart] session=${input.session_id} agent=${input.agent_id} type=${input.agent_type}`);
+  const session = sm.handleSubagentStart(input);
+  const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
+  broadcastLayout(layout);
+  res.json({ ok: true });
+});
+
+app.post('/api/hook/subagentStop', (req, res) => {
+  const input = req.body;
+  console.log(`[hook/subagentStop] session=${input.session_id} agent=${input.agent_id}`);
+  const session = sm.handleSubagentStop(input);
+  const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
+  broadcastLayout(layout);
   res.json({ ok: true });
 });
 
@@ -96,7 +114,7 @@ app.post('/api/hook/stop', (req, res) => {
     if (!currentFocus || currentFocus.state === 'WAITING_RESPONSE') {
       sm.setFocus(session.id);
     }
-    const layout = ButtonManager.layoutFor(session);
+    const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
     broadcastLayout(layout);
   } else {
     // No choices — go to IDLE
@@ -126,7 +144,7 @@ app.post('/api/hook/permission', (req, res) => {
   const session = sm.handlePermission(input);
   // Auto-focus: new permission request takes focus
   sm.setFocus(session.id);
-  const layout = ButtonManager.layoutFor(session);
+  const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
   const isChoice = session.state === 'WAITING_CHOICE';
 
   broadcastLayout(layout);
@@ -141,7 +159,7 @@ app.post('/api/hook/permission', (req, res) => {
   session.respondFn = (decision) => {
     clearTimeout(timeout);
     const response = ButtonManager.buildHookResponse(decision, isChoice);
-    const newLayout = ButtonManager.layoutFor(session);
+    const newLayout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
     broadcastLayout(newLayout);
     res.json(response);
   };
@@ -154,7 +172,7 @@ ws.attach(server, config.wsPath);
 ws.onClientReady = (client) => {
   const focus = sm.getFocusSession();
   if (focus) {
-    const layout = ButtonManager.layoutFor(focus);
+    const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
     const msg = JSON.stringify({ type: 'LAYOUT', sessionCount: sm.sessionCount, ...layout });
     if (client.readyState === 1) client.send(msg);
   }
@@ -165,7 +183,18 @@ ws.onButtonPress = (slot, timestamp) => {
   if (slot === 11) {
     const next = sm.cycleFocus();
     if (next) {
-      const layout = ButtonManager.layoutFor(next);
+      const layout = ButtonManager.layoutFor(next, sm.focusAgentId, sm.getAgentCount(next.id));
+      broadcastLayout({ ...layout, focusSwitched: true });
+    }
+    return;
+  }
+
+  // Slot 12: cycle subagents within current root
+  if (slot === 12) {
+    const agent = sm.cycleAgent();
+    const focus = sm.focusSessionId ? sm.get(sm.focusSessionId) : null;
+    if (focus) {
+      const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
       broadcastLayout({ ...layout, focusSwitched: true });
     }
     return;

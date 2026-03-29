@@ -1,11 +1,18 @@
 export class ButtonManager {
-  static layoutFor(session) {
+  static layoutFor(session, focusAgentId = null, agentCount = 0) {
+    const focusedAgent = focusAgentId ? session.agents?.get(focusAgentId) : null;
     const base = {
       session: session.id ? {
         id: session.id,
         name: session.name,
         state: session.state,
       } : undefined,
+      agent: focusedAgent ? {
+        agentId: focusedAgent.agentId,
+        type: focusedAgent.type,
+        state: focusedAgent.state,
+      } : null,
+      agentCount,
     };
 
     switch (session.state) {
