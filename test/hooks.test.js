@@ -54,4 +54,18 @@ describe('Hook scripts', () => {
     assert.ok(manifest.hooks, 'should declare hooks');
     assert.ok(manifest.hooks.includes('hooks.json'), 'should reference hooks.json');
   });
+
+  it('choiceParser.js exists and exports parsers', async () => {
+    assert.ok(existsSync('hooks/choiceParser.js'));
+    const mod = await import('../hooks/choiceParser.js');
+    assert.equal(typeof mod.parseFencedChoices, 'function');
+    assert.equal(typeof mod.parseRegexChoices, 'function');
+  });
+
+  it('choice-format skill exists with correct frontmatter', () => {
+    assert.ok(existsSync('skills/choice-format/SKILL.md'));
+    const content = readFileSync('skills/choice-format/SKILL.md', 'utf8');
+    assert.ok(content.includes('name: choice-format'));
+    assert.ok(content.includes('claude-dj-choices'));
+  });
 });
