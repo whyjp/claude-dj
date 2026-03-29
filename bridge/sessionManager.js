@@ -18,6 +18,7 @@ export class SessionManager {
         prompt: null,
         respondFn: null,
         lastToolResult: null,
+        agents: new Map(),
       });
     }
     return this.sessions.get(id);
@@ -31,8 +32,32 @@ export class SessionManager {
     return this.sessions.size;
   }
 
+  handleSubagentStart(input) {
+    const session = this.getOrCreate(input);
+    session.agents.set(input.agent_id, {
+      agentId: input.agent_id,
+      type: input.agent_type || 'unknown',
+      state: 'PROCESSING',
+      startedAt: Date.now(),
+    });
+    return session;
+  }
+
+  handleSubagentStop(input) {
+    const session = this.getOrCreate(input);
+    session.agents.delete(input.agent_id);
+    if (this.focusAgentId === input.agent_id) {
+      this.focusAgentId = null;
+    }
+    return session;
+  }
+
   handleNotify(input) {
     const session = this.getOrCreate(input);
+    if (input.agent_id && session.agents.has(input.agent_id)) {
+      session.agents.get(input.agent_id).state = 'PROCESSING';
+      return session;
+    }
     session.state = 'PROCESSING';
     session.prompt = null;
     return session;
@@ -70,11 +95,20 @@ export class SessionManager {
     }
 
     session.waitingSince = Date.now();
+
+    if (input.agent_id && session.agents.has(input.agent_id)) {
+      session.agents.get(input.agent_id).state = isChoice ? 'WAITING_CHOICE' : 'WAITING_BINARY';
+    }
+
     return session;
   }
 
   handlePostToolUse(input) {
     const session = this.getOrCreate(input);
+    if (input.agent_id && session.agents.has(input.agent_id)) {
+      session.agents.get(input.agent_id).state = 'PROCESSING';
+      return session;
+    }
     session.state = 'PROCESSING';
     session.lastToolResult = {
       toolName: input.tool_name,

@@ -224,4 +224,51 @@ describe('SessionManager', () => {
     assert.equal(resolved, true);
     assert.equal(sm.get('abc123').state, 'PROCESSING');
   });
+
+  it('getOrCreate initializes empty agents Map', () => {
+    const session = sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    assert.ok(session.agents instanceof Map);
+    assert.equal(session.agents.size, 0);
+  });
+
+  it('handleSubagentStart adds agent to session', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    sm.handleSubagentStart({ session_id: 's1', agent_id: 'ag1', agent_type: 'Explore' });
+    const session = sm.get('s1');
+    assert.equal(session.agents.size, 1);
+    const agent = session.agents.get('ag1');
+    assert.equal(agent.agentId, 'ag1');
+    assert.equal(agent.type, 'Explore');
+    assert.equal(agent.state, 'PROCESSING');
+  });
+
+  it('handleSubagentStop removes agent from session', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    sm.handleSubagentStart({ session_id: 's1', agent_id: 'ag1', agent_type: 'Explore' });
+    sm.handleSubagentStop({ session_id: 's1', agent_id: 'ag1' });
+    assert.equal(sm.get('s1').agents.size, 0);
+  });
+
+  it('handleNotify with agent_id updates agent state, not root', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    sm.handleSubagentStart({ session_id: 's1', agent_id: 'ag1', agent_type: 'Explore' });
+    sm.handleStop({ session_id: 's1', stop_hook_active: false }); // root → WAITING_RESPONSE
+    sm.handleNotify({ session_id: 's1', agent_id: 'ag1', tool_name: 'Bash', hook_event_name: 'PreToolUse' });
+    assert.equal(sm.get('s1').state, 'WAITING_RESPONSE'); // root unchanged
+    assert.equal(sm.get('s1').agents.get('ag1').state, 'PROCESSING');
+  });
+
+  it('handlePermission with agent_id updates agent state', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    sm.handleSubagentStart({ session_id: 's1', agent_id: 'ag1', agent_type: 'Explore' });
+    sm.handlePermission({ session_id: 's1', agent_id: 'ag1', tool_name: 'Bash', tool_input: { command: 'ls' } });
+    assert.equal(sm.get('s1').agents.get('ag1').state, 'WAITING_BINARY');
+  });
+
+  it('handlePostToolUse with agent_id updates agent state', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    sm.handleSubagentStart({ session_id: 's1', agent_id: 'ag1', agent_type: 'Explore' });
+    sm.handlePostToolUse({ session_id: 's1', agent_id: 'ag1', tool_name: 'Bash', tool_result: { errored: false } });
+    assert.equal(sm.get('s1').agents.get('ag1').state, 'PROCESSING');
+  });
 });
