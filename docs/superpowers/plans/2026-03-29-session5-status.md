@@ -122,8 +122,7 @@ Claude Code Session
 
 ### [LOW] Phase 4: Distribution
 - `git push` ✅ (완료)
-- npm publish (`npx claude-dj`)
-- `/install github:whyjp/claude-dj` 검증
+- `/install github:whyjp/claude-dj` 검증 (npm publish 불필요 — 플러그인 = GitHub 리포)
 
 ### [KNOWN LIMITATIONS]
 - **Stop hook delivery**: 텍스트 선택지 → 덱 버튼 인터랙션 불가 (Claude Code 아키텍처 한계)
