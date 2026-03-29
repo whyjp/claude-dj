@@ -2,6 +2,8 @@ import { describe, it, after, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
+import os from 'node:os';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
 
@@ -417,5 +419,73 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
 
     ws1.close();
     ws2.close();
+  });
+
+  it('stop.js: fenced choices in transcript → deck shows buttons → button press returns selection', async () => {
+    // Create a fake transcript JSONL with fenced choices
+    const tmpDir = path.join(os.tmpdir(), 'claude-dj-test-' + Date.now());
+    fs.mkdirSync(tmpDir, { recursive: true });
+    const transcriptPath = path.join(tmpDir, 'transcript.jsonl');
+    const entry = {
+      type: 'assistant',
+      message: {
+        content: [
+          {
+            type: 'text',
+            text: 'Which approach?\n\n<!-- claude-dj-choices -->\n1. Refactor\n2. Rewrite\n  2a. New schema\n<!-- /claude-dj-choices -->',
+          },
+        ],
+      },
+    };
+    fs.writeFileSync(transcriptPath, JSON.stringify(entry) + '\n');
+
+    // Connect WS client to catch layout and press button
+    const ws = await connectWs(wsUrl);
+    const msgs = collectMessages(ws);
+    await new Promise((r) => setTimeout(r, 100));
+
+    // Spawn stop hook — this should BLOCK until button pressed
+    const hookPromise = runHook('stop.js', {
+      session_id: 'e2e-fence-1',
+      hook_event_name: 'Stop',
+      stop_hook_active: false,
+      transcript_path: transcriptPath,
+    });
+
+    // Wait for response layout with choices
+    await new Promise((resolve) => {
+      const check = setInterval(() => {
+        if (msgs.some((m) => m.type === 'LAYOUT' && m.preset === 'response')) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 50);
+    });
+
+    // Verify choices are shown
+    const layoutMsg = msgs.find((m) => m.type === 'LAYOUT' && m.preset === 'response');
+    assert.ok(layoutMsg.choices);
+    assert.equal(layoutMsg.choices.length, 3);
+    assert.equal(layoutMsg.choices[0].index, '1');
+    assert.equal(layoutMsg.choices[2].index, '2a');
+
+    // Press button for slot 0 (choice "1. Refactor")
+    ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 0, timestamp: Date.now() }));
+
+    // Hook should now return with the selection
+    const result = await hookPromise;
+    assert.equal(result.exitCode, 0);
+
+    // The stdout should contain the decision
+    if (result.stdout.trim()) {
+      const response = JSON.parse(result.stdout);
+      assert.ok(response.decision);
+      assert.ok(response.decision.includes('Refactor'));
+    }
+
+    ws.close();
+
+    // Cleanup
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 });
