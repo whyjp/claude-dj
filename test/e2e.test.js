@@ -569,6 +569,32 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
     ws.close();
   });
 
+  it('permission.js: multiSelect AskUserQuestion bypasses deck (empty response)', async () => {
+    const hookPromise = runHook('permission.js', {
+      session_id: 'e2e-multi-1',
+      hook_event_name: 'PermissionRequest',
+      tool_name: 'AskUserQuestion',
+      tool_input: {
+        questions: [{
+          question: 'Which features?',
+          header: 'Features',
+          multiSelect: true,
+          options: [
+            { label: 'Auth', description: 'Authentication' },
+            { label: 'API', description: 'REST API' },
+            { label: 'UI', description: 'Frontend' },
+          ],
+        }],
+      },
+    });
+
+    const result = await hookPromise;
+    assert.equal(result.exitCode, 0);
+    // Empty response = Claude Code shows default terminal UI
+    const resp = JSON.parse(result.stdout);
+    assert.deepEqual(resp, {});
+  });
+
   it('stop.js: choices in transcript → deck shows awaiting_input notification', async () => {
     // Create a fake transcript JSONL with choices
     const tmpDir = path.join(os.tmpdir(), 'claude-dj-test-' + Date.now());
