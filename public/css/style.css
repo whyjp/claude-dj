@@ -376,6 +376,7 @@ main {
 .sess-dot.PROCESSING     { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
 .sess-dot.WAITING_BINARY { background: var(--amber); box-shadow: 0 0 6px var(--amber); animation: blk .8s ease infinite; }
 .sess-dot.WAITING_CHOICE { background: var(--purple); box-shadow: 0 0 6px var(--purple); animation: blk .8s ease infinite; }
+.sess-dot.DISCONNECTED   { background: var(--red); box-shadow: 0 0 6px var(--red); }
 .sess-name { font-size: 13px; color: var(--white); font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sess-state { font-size: 11px; color: var(--muted); letter-spacing: .06em; flex-shrink: 0; }
 .sess-dur { font-size: 11px; color: var(--muted); flex-shrink: 0; min-width: 36px; text-align: right; }

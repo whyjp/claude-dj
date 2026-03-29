@@ -126,4 +126,44 @@ Which approach should we take?
     assert.equal(result.length, 3);
     assert.equal(result[0].label, 'Refactor the module');
   });
+
+  it('returns null for empty string', () => {
+    assert.equal(parseRegexChoices(''), null);
+  });
+
+  it('returns null for single-line text', () => {
+    assert.equal(parseRegexChoices('just a plain sentence'), null);
+  });
+
+  it('caps at 10 choices', () => {
+    const lines = Array.from({ length: 15 }, (_, i) => `${i + 1}. Option ${i + 1}`).join('\n');
+    const result = parseRegexChoices(lines);
+    assert.ok(result);
+    assert.ok(result.length <= 10);
+  });
+});
+
+describe('parseFencedChoices edge cases', () => {
+  it('returns null for empty string', () => {
+    assert.equal(parseFencedChoices(''), null);
+  });
+
+  it('returns null for fence with no closing tag', () => {
+    const text = '[claude-dj-choices]\n1. Something\n2. Else';
+    assert.equal(parseFencedChoices(text), null);
+  });
+
+  it('handles lines without delimiters inside fence', () => {
+    const text = '[claude-dj-choices]\nSome text without numbers\n1. Valid choice\n2. Another\n[/claude-dj-choices]';
+    const result = parseFencedChoices(text);
+    assert.equal(result.length, 2);
+    assert.equal(result[0].label, 'Valid choice');
+  });
+
+  it('handles unicode in labels', () => {
+    const text = '[claude-dj-choices]\n1. 리팩터링\n2. 새로 작성\n[/claude-dj-choices]';
+    const result = parseFencedChoices(text);
+    assert.equal(result.length, 2);
+    assert.equal(result[0].label, '리팩터링');
+  });
 });

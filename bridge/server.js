@@ -118,8 +118,8 @@ app.post('/api/hook/stop', (req, res) => {
     const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
     broadcastLayout(layout);
   } else {
-    // No choices — go to IDLE
-    sm.dismissSession(sessionId) || sm.getOrCreate(input);
+    // No choices — go to IDLE (dismiss if session exists, ignore if not)
+    sm.dismissSession(sessionId);
     ws.broadcast({ type: 'ALL_DIM' });
   }
 
@@ -131,7 +131,11 @@ app.post('/api/hook/stop', (req, res) => {
 fs.mkdirSync(config.eventsDir, { recursive: true });
 
 app.get('/api/events/:sessionId', (req, res) => {
-  const file = path.join(config.eventsDir, `${req.params.sessionId}.jsonl`);
+  const sessionId = req.params.sessionId;
+  if (!/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
+    return res.status(400).json({ error: 'invalid session id' });
+  }
+  const file = path.join(config.eventsDir, `${sessionId}.jsonl`);
   if (!fs.existsSync(file)) return res.json({ events: [] });
   const lines = fs.readFileSync(file, 'utf8').trim().split('\n').filter(Boolean);
   const events = lines.map((l) => JSON.parse(l));
@@ -153,13 +157,19 @@ app.post('/api/hook/permission', (req, res) => {
 
   const timeout = setTimeout(() => {
     session.respondFn = null;
+    session._permissionTimeout = null;
     sm.handleStop({ session_id: session.id, stop_hook_active: false });
     ws.broadcast({ type: 'ALL_DIM' });
     res.json(ButtonManager.buildTimeoutResponse());
   }, config.buttonTimeout);
 
+  session._permissionTimeout = timeout;
+
   session.respondFn = (decision) => {
-    clearTimeout(timeout);
+    if (session._permissionTimeout) {
+      clearTimeout(session._permissionTimeout);
+      session._permissionTimeout = null;
+    }
     const response = ButtonManager.buildHookResponse(decision, isChoice);
     const newLayout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
     broadcastLayout(newLayout);
@@ -233,6 +243,7 @@ const pruneInterval = setInterval(() => {
   const pruned = sm.pruneIdle(config.sessionIdleTimeout);
   if (pruned.length > 0) {
     console.log(`[claude-dj] Pruned ${pruned.length} idle session(s): ${pruned.join(', ')}`);
+    ws.broadcast({ type: 'SESSION_DISCONNECTED', sessionIds: pruned, reason: 'idle_timeout' });
   }
 }, 60000); // check every minute
 
@@ -242,7 +253,7 @@ const syncInterval = setInterval(() => {
   const { pruned, alive } = sm.syncFromDisk();
   if (pruned.length > 0) {
     console.log(`[claude-dj] Synced: removed ${pruned.length} dead session(s): ${pruned.join(', ')}`);
-    ws.broadcast({ type: 'ALL_DIM' });
+    ws.broadcast({ type: 'SESSION_DISCONNECTED', sessionIds: pruned, reason: 'process_exit' });
   }
 }, 30000); // check every 30s
 

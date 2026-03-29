@@ -363,6 +363,155 @@ describe('SessionManager', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
+  it('resolveWaiting returns false for unknown sessionId', () => {
+    const result = sm.resolveWaiting('nonexistent', { value: 'allow' });
+    assert.equal(result, false);
+  });
+
+  it('resolveWaiting with null respondFn still transitions to PROCESSING', () => {
+    sm.handlePermission({ session_id: 's1', cwd: '/a', tool_name: 'Bash', tool_input: { command: 'ls' } });
+    sm.get('s1').respondFn = null;
+    const result = sm.resolveWaiting('s1', { value: 'allow' });
+    assert.equal(result, true);
+    assert.equal(sm.get('s1').state, 'PROCESSING');
+  });
+
+  it('dismissSession returns null for unknown session', () => {
+    assert.equal(sm.dismissSession('nonexistent'), null);
+  });
+
+  it('dismissSession clears _permissionTimeout', () => {
+    sm.handlePermission({ session_id: 's1', cwd: '/a', tool_name: 'Bash', tool_input: { command: 'ls' } });
+    const session = sm.get('s1');
+    let cleared = false;
+    session._permissionTimeout = setTimeout(() => {}, 99999);
+    sm.dismissSession('s1');
+    assert.equal(session._permissionTimeout, null);
+    assert.equal(session.state, 'IDLE');
+  });
+
+  it('handleStop with stop_hook_active=true returns early without state change', () => {
+    sm.handleNotify({ session_id: 's1', cwd: '/a', hook_event_name: 'PreToolUse', tool_name: 'Bash' });
+    sm.handleStop({ session_id: 's1', stop_hook_active: true });
+    assert.equal(sm.get('s1').state, 'PROCESSING');
+  });
+
+  it('handleStopWithChoices stores choices on session', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    const choices = [{ index: '1', label: 'A' }, { index: '2', label: 'B' }];
+    sm.handleStopWithChoices({ session_id: 's1' }, choices);
+    const session = sm.get('s1');
+    assert.equal(session.state, 'WAITING_RESPONSE');
+    assert.equal(session.prompt.choices.length, 2);
+  });
+
+  it('handleStopWithChoices caps at 10 choices', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    const choices = Array.from({ length: 15 }, (_, i) => ({ index: String(i + 1), label: `Opt ${i + 1}` }));
+    sm.handleStopWithChoices({ session_id: 's1' }, choices);
+    assert.equal(sm.get('s1').prompt.choices.length, 10);
+  });
+
+  it('getOrCreate with missing cwd defaults to unknown', () => {
+    const session = sm.getOrCreate({ session_id: 'nocwd' });
+    assert.ok(session.name.includes('unknown'));
+  });
+
+  it('handlePermission with nested questions[0].options', () => {
+    const input = {
+      session_id: 's1', cwd: '/a', tool_name: 'AskUserQuestion',
+      tool_input: { questions: [{ question: 'Pick one', options: [{ label: 'X' }, { label: 'Y' }] }] },
+    };
+    sm.handlePermission(input);
+    const session = sm.get('s1');
+    assert.equal(session.state, 'WAITING_CHOICE');
+    assert.equal(session.prompt.question, 'Pick one');
+    assert.equal(session.prompt.choices.length, 2);
+  });
+
+  it('handlePermission binary sets hasAlwaysAllow from permission_suggestions', () => {
+    sm.handlePermission({
+      session_id: 's1', cwd: '/a', tool_name: 'Bash',
+      tool_input: { command: 'ls' },
+      permission_suggestions: [{ rule: 'always allow' }],
+    });
+    assert.equal(sm.get('s1').prompt.hasAlwaysAllow, true);
+  });
+
+  it('handlePermission binary without permission_suggestions', () => {
+    sm.handlePermission({ session_id: 's1', cwd: '/a', tool_name: 'Bash', tool_input: { command: 'ls' } });
+    assert.equal(sm.get('s1').prompt.hasAlwaysAllow, false);
+  });
+
+  it('handleSubagentStop clears focusAgentId when matching', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    sm.handleSubagentStart({ session_id: 's1', agent_id: 'ag1', agent_type: 'Explore' });
+    sm.focusAgentId = 'ag1';
+    sm.handleSubagentStop({ session_id: 's1', agent_id: 'ag1' });
+    assert.equal(sm.focusAgentId, null);
+  });
+
+  it('handleSubagentStop does not clear focusAgentId for other agents', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    sm.handleSubagentStart({ session_id: 's1', agent_id: 'ag1', agent_type: 'Explore' });
+    sm.handleSubagentStart({ session_id: 's1', agent_id: 'ag2', agent_type: 'Plan' });
+    sm.focusAgentId = 'ag2';
+    sm.handleSubagentStop({ session_id: 's1', agent_id: 'ag1' });
+    assert.equal(sm.focusAgentId, 'ag2');
+  });
+
+  it('getFocusSession returns null when no sessions', () => {
+    assert.equal(sm.getFocusSession(), null);
+  });
+
+  it('getFocusSession clears focusSessionId when no sessions remain', () => {
+    sm.setFocus('ghost');
+    const result = sm.getFocusSession();
+    assert.equal(result, null);
+    assert.equal(sm.focusSessionId, null);
+  });
+
+  it('toJSON excludes respondFn and converts agents Map', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    sm.handleSubagentStart({ session_id: 's1', agent_id: 'ag1', agent_type: 'Explore' });
+    sm.get('s1').respondFn = () => {};
+    const json = sm.toJSON();
+    assert.equal(json.length, 1);
+    assert.equal(json[0].respondFn, undefined);
+    assert.ok(Array.isArray(json[0].agents));
+    assert.equal(json[0].agents[0].agentId, 'ag1');
+  });
+
+  it('getAgentCount returns 0 for unknown session', () => {
+    assert.equal(sm.getAgentCount('nope'), 0);
+  });
+
+  it('syncFromDisk clears _permissionTimeout on dead session', () => {
+    const tmpDir = path.join(os.tmpdir(), 'claude-dj-sync-timeout-' + Date.now());
+    const sessDir = path.join(tmpDir, '.claude', 'sessions');
+    fs.mkdirSync(sessDir, { recursive: true });
+
+    const sessionId = 'sync-timeout-test';
+    fs.writeFileSync(
+      path.join(sessDir, '999998.json'),
+      JSON.stringify({ pid: 999998, sessionId, cwd: '/tmp', startedAt: Date.now() }),
+    );
+
+    sm.getOrCreate({ session_id: sessionId, cwd: '/tmp' });
+    const session = sm.get(sessionId);
+    session._permissionTimeout = setTimeout(() => {}, 99999);
+    session.respondFn = () => {};
+
+    const origHome = os.homedir;
+    os.homedir = () => tmpDir;
+
+    const { pruned } = sm.syncFromDisk();
+    assert.ok(pruned.includes(sessionId));
+
+    os.homedir = origHome;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
   it('syncFromDisk keeps sessions with alive PIDs', () => {
     const tmpDir = path.join(os.tmpdir(), 'claude-dj-sync-test-' + Date.now());
     const sessDir = path.join(tmpDir, '.claude', 'sessions');

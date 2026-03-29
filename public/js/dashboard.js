@@ -179,6 +179,25 @@ export function dimAllSessions() {
 }
 
 /**
+ * Mark specific sessions as DISCONNECTED and log the event.
+ * @param {string[]} sessionIds
+ * @param {'process_exit'|'idle_timeout'} reason
+ */
+export function disconnectSessions(sessionIds, reason) {
+  const reasonLabel = reason === 'process_exit' ? 'process exited' : 'idle timeout';
+  for (const id of sessionIds) {
+    const s = _sessions.get(id);
+    if (s) {
+      _sessions.set(id, { ...s, state: 'DISCONNECTED', waitingSince: null });
+      log('sys', `Session disconnected: ${s.name} (${reasonLabel})`, id);
+    } else {
+      log('sys', `Session disconnected: ${id.slice(0, 8)} (${reasonLabel})`, id);
+    }
+  }
+  _renderSessions();
+}
+
+/**
  * Bulk-set sessions from WELCOME message.
  * @param {{id:string, name:string, state:string}[]} list
  */
@@ -342,6 +361,7 @@ const STATE_LABELS = {
   PROCESSING: 'processing',
   WAITING_BINARY: 'waiting',
   WAITING_CHOICE: 'choosing',
+  DISCONNECTED: 'disconnected',
 };
 
 function _renderSessions() {

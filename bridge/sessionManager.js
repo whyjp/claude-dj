@@ -152,6 +152,10 @@ export class SessionManager {
   dismissSession(sessionId) {
     const session = this.sessions.get(sessionId);
     if (!session) return null;
+    if (session._permissionTimeout) {
+      clearTimeout(session._permissionTimeout);
+      session._permissionTimeout = null;
+    }
     session.state = 'IDLE';
     session.prompt = null;
     session.waitingSince = null;
@@ -309,6 +313,10 @@ export class SessionManager {
         result.alive.push(id);
       } else {
         // PID dead → clean up
+        if (session._permissionTimeout) {
+          clearTimeout(session._permissionTimeout);
+          session._permissionTimeout = null;
+        }
         if (session.respondFn) {
           // Reject any pending permission with deny (prevents hook timeout)
           session.respondFn({ type: 'binary', value: 'deny' });
@@ -323,7 +331,7 @@ export class SessionManager {
   }
 
   toJSON() {
-    return [...this.sessions.values()].map(({ respondFn, agents, ...rest }) => ({
+    return [...this.sessions.values()].map(({ respondFn, _permissionTimeout, agents, ...rest }) => ({
       ...rest,
       agents: [...agents.values()],
     }));

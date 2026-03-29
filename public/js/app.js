@@ -6,7 +6,7 @@
  */
 
 import { initGrid, onPress, renderLayout, renderAllDim, setConnectionOverlay } from './d200-renderer.js';
-import { initDashboard, log, updateWsStatus, clearLog, updateSession, dimAllSessions, setSessions, switchLogSession } from './dashboard.js';
+import { initDashboard, log, updateWsStatus, clearLog, updateSession, dimAllSessions, disconnectSessions, setSessions, switchLogSession } from './dashboard.js';
 
 const VERSION = '0.1.0';
 const WS_PATH = '/ws';
@@ -171,6 +171,11 @@ function _handleMessage(msg) {
     case 'ALL_DIM':
       renderAllDim();
       dimAllSessions();
+      break;
+
+    case 'SESSION_DISCONNECTED':
+      renderAllDim();
+      disconnectSessions(msg.sessionIds || [], msg.reason || 'process_exit');
       break;
 
     default:

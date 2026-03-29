@@ -99,4 +99,49 @@ describe('Bridge Server', () => {
     assert.equal(res.status, 200);
     assert.ok(Array.isArray(res.body.sessions));
   });
+
+  it('POST /api/hook/stop with stop_hook_active=true returns early', async () => {
+    const res = await post('/api/hook/stop', {
+      session_id: 'test-active',
+      hook_event_name: 'Stop',
+      stop_hook_active: true,
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.ok, true);
+  });
+
+  it('POST /api/hook/stop with choices sets WAITING_RESPONSE', async () => {
+    const res = await post('/api/hook/stop', {
+      session_id: 'test-choices',
+      hook_event_name: 'Stop',
+      stop_hook_active: false,
+      _djChoices: [{ index: '1', label: 'A' }, { index: '2', label: 'B' }],
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.ok, true);
+    // Verify session state via status endpoint
+    const status = await get('/api/status');
+    const session = status.body.sessions.find(s => s.id === 'test-choices');
+    assert.ok(session);
+    assert.equal(session.state, 'WAITING_RESPONSE');
+  });
+
+  it('GET /api/events/:sessionId rejects path traversal', async () => {
+    const res = await get('/api/events/..%2F..%2Fetc%2Fpasswd');
+    assert.equal(res.status, 400);
+    assert.equal(res.body.error, 'invalid session id');
+  });
+
+  it('GET /api/events/:sessionId returns empty for unknown session', async () => {
+    const res = await get('/api/events/unknown-session-id');
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.events, []);
+  });
+
+  it('GET /api/health includes version and uptime', async () => {
+    const res = await get('/api/health');
+    assert.ok(res.body.version);
+    assert.ok(typeof res.body.uptime === 'number');
+    assert.ok(res.body.uptime >= 0);
+  });
 });

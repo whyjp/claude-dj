@@ -183,4 +183,98 @@ describe('ButtonManager', () => {
     const result = ButtonManager.resolvePress(0, 'WAITING_RESPONSE', {});
     assert.equal(result, null);
   });
+
+  // ── Edge cases ──
+
+  it('unknown state defaults to idle preset', () => {
+    const layout = ButtonManager.layoutFor({ state: 'UNKNOWN_STATE', prompt: null });
+    assert.equal(layout.preset, 'idle');
+  });
+
+  it('session without agents property returns empty agents array', () => {
+    const layout = ButtonManager.layoutFor({ state: 'IDLE', prompt: null, agents: undefined });
+    assert.deepEqual(layout.agents, []);
+  });
+
+  it('resolvePress returns null for negative slot', () => {
+    const result = ButtonManager.resolvePress(-1, 'WAITING_BINARY', { type: 'BINARY', hasAlwaysAllow: false });
+    assert.equal(result, null);
+  });
+
+  it('resolvePress returns null for slot beyond choices', () => {
+    const result = ButtonManager.resolvePress(5, 'WAITING_CHOICE', {
+      type: 'CHOICE', choices: [{ index: 1, label: 'A' }, { index: 2, label: 'B' }],
+    });
+    assert.equal(result, null);
+  });
+
+  it('resolvePress returns null for unknown state', () => {
+    const result = ButtonManager.resolvePress(0, 'SOME_STATE', {});
+    assert.equal(result, null);
+  });
+
+  it('resolvePress binary slot 3+ returns null (no alwaysAllow)', () => {
+    const result = ButtonManager.resolvePress(3, 'WAITING_BINARY', { type: 'BINARY', hasAlwaysAllow: false });
+    assert.equal(result, null);
+  });
+
+  it('resolvePress binary slot 3+ returns null (with alwaysAllow)', () => {
+    const result = ButtonManager.resolvePress(3, 'WAITING_BINARY', { type: 'BINARY', hasAlwaysAllow: true });
+    assert.equal(result, null);
+  });
+
+  it('multiSelect slot beyond choices returns null', () => {
+    const prompt = {
+      multiSelect: true, selected: new Set(),
+      choices: [{ index: 1, label: 'A' }],
+    };
+    const result = ButtonManager.resolvePress(5, 'WAITING_CHOICE', prompt);
+    assert.equal(result, null);
+  });
+
+  it('multiSelect submit with empty selection returns "1"', () => {
+    const prompt = {
+      multiSelect: true, selected: new Set(),
+      choices: [{ index: 1, label: 'A' }],
+    };
+    const result = ButtonManager.resolvePress(9, 'WAITING_CHOICE', prompt);
+    assert.equal(result.value, '1');
+  });
+
+  it('choice with empty choices array returns null for any slot', () => {
+    const result = ButtonManager.resolvePress(0, 'WAITING_CHOICE', { type: 'CHOICE', choices: [] });
+    assert.equal(result, null);
+  });
+
+  it('buildHookResponse for choice sets behavior to allow with answer', () => {
+    const resp = ButtonManager.buildHookResponse({ value: '2' }, true);
+    assert.equal(resp.hookSpecificOutput.decision.behavior, 'allow');
+    assert.equal(resp.hookSpecificOutput.decision.updatedInput.answer, '2');
+  });
+
+  it('buildHookResponse for binary sets behavior to decision value', () => {
+    const resp = ButtonManager.buildHookResponse({ value: 'deny' }, false);
+    assert.equal(resp.hookSpecificOutput.decision.behavior, 'deny');
+  });
+
+  it('buildTimeoutResponse returns deny behavior', () => {
+    const resp = ButtonManager.buildTimeoutResponse();
+    assert.equal(resp.hookSpecificOutput.decision.behavior, 'deny');
+    assert.ok(resp.hookSpecificOutput.decision.message.includes('timeout'));
+  });
+
+  it('WAITING_CHOICE layout includes choices and session info', () => {
+    const session = {
+      id: 's1', name: 'test-proj', state: 'WAITING_CHOICE', agents: new Map(),
+      prompt: {
+        type: 'CHOICE', multiSelect: false,
+        choices: [{ index: 1, label: 'A' }, { index: 2, label: 'B' }],
+      },
+    };
+    const layout = ButtonManager.layoutFor(session);
+    assert.equal(layout.preset, 'choice');
+    assert.equal(layout.session.id, 's1');
+    assert.equal(layout.session.state, 'WAITING_CHOICE');
+    assert.equal(layout.choices.length, 2);
+  });
 });
