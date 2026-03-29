@@ -86,4 +86,15 @@ describe('ButtonManager', () => {
     });
     assert.equal(decision, null);
   });
+
+  it('resolves response button press with natural language value', () => {
+    const result = ButtonManager.resolvePress(1, 'WAITING_RESPONSE', {
+      choices: [
+        { index: '1', label: 'Refactor' },
+        { index: '2a', label: 'Rewrite with schema' },
+        { index: '2b', label: 'Keep existing schema' },
+      ],
+    });
+    assert.deepEqual(result, { type: 'response', value: 'I choose option 2a: Rewrite with schema' });
+  });
 });

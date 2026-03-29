@@ -45,7 +45,8 @@ export class ButtonManager {
     if (state === 'WAITING_RESPONSE') {
       const choices = prompt?.choices;
       if (choices && slot >= 0 && slot < choices.length) {
-        return { type: 'response', value: choices[slot].label };
+        const c = choices[slot];
+        return { type: 'response', value: `I choose option ${c.index}: ${c.label}` };
       }
       if (!choices && slot >= 0 && slot <= 9) {
         return { type: 'response', value: String(slot + 1) };
