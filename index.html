@@ -428,6 +428,7 @@ footer {
       <button class="stab" data-s="choice">CHOICE</button>
       <button class="stab" data-s="multi">MULTI</button>
       <button class="stab" data-s="processing">PROC</button>
+      <button class="stab" data-s="awaiting">AWAIT</button>
       <button class="stab" data-s="idle">IDLE</button>
     </div>
     <div class="d200">
@@ -1016,9 +1017,19 @@ const STATES = {
     r2: ['count', 'sess', 'agent'],
     bw: { icon:'🖥', name:'SYSTEM', state:'time / cpu' }
   },
+  awaiting: {
+    r0: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' }],
+    r1: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },
+      { cls:'c1', icon:'⏳', lbl:'Awaiting' }
+    ],
+    r2: ['count', 'sess', 'agent'],
+    bw: { icon:'🖥', name:'SYSTEM', state:'time / cpu' }
+  },
   idle: {
     r0: Array(5).fill({ cls:'dim' }),
-    r1: Array(5).fill({ cls:'dim' }),
+    r1: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },
+      { cls:'dim', icon:'💤', lbl:'Idle' }
+    ],
     r2: ['count', 'sess', 'agent'],
     bw: { icon:'🖥', name:'SYSTEM', state:'time / cpu' }
   }
@@ -1087,7 +1098,7 @@ document.getElementById('stabs').addEventListener('click', e => {
 
 // auto-cycle
 let cycleIdx = 0;
-const cycleOrder = ['binary','processing','choice','multi','idle'];
+const cycleOrder = ['binary','processing','choice','multi','awaiting','idle'];
 let userClicked = false;
 document.getElementById('stabs').addEventListener('click', () => userClicked = true);
 setInterval(() => {
