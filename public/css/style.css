@@ -1,11 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
 :root {
-  --bg:      #080810;
-  --bg2:     #0d0d1c;
-  --surf:    #111122;
-  --bd:      #1e1e34;
-  --bd2:     #2a2a44;
+  --bg:      #0a0a14;
+  --bg2:     #10101e;
+  --surf:    #161628;
+  --bd:      #262640;
+  --bd2:     #3a3a56;
   --green:   #39ff6e;
   --gdim:    rgba(57,255,110,.1);
   --red:     #ff3355;
@@ -16,9 +17,10 @@
   --bdim:    rgba(68,170,255,.09);
   --purple:  #bb88ff;
   --pdim:    rgba(187,136,255,.07);
-  --white:   #f0f0fa;
-  --muted:   #7a7a9a;
+  --white:   #f4f4ff;
+  --muted:   #9090b0;
   --mono:    'JetBrains Mono', monospace;
+  --sans:    'Pretendard', -apple-system, 'Segoe UI', sans-serif;
   /* choice colors */
   --cc0: var(--green);  --cb0: var(--gdim);
   --cc1: var(--amber);  --cb1: var(--adim);
@@ -36,8 +38,8 @@ html, body { height: 100%; }
 body {
   background: var(--bg);
   color: var(--white);
-  font-family: var(--mono);
-  font-size: 13px;
+  font-family: var(--sans);
+  font-size: 14px;
   line-height: 1.5;
   display: grid;
   grid-template-rows: 44px 1fr;
@@ -129,13 +131,13 @@ main {
   user-select: none;
 }
 .k:active { transform: scale(.93); }
-.k.dim { opacity: .12; cursor: default; pointer-events: none; }
+.k.dim { opacity: .18; cursor: default; pointer-events: none; }
 .k.dim:active { transform: none; }
-.k .ki { font-size: 34px; line-height: 1; }
-.k .kl { font-size: 12px; color: var(--muted); margin-top: 4px; }
-.k .kn { font-size: 30px; font-weight: 700; line-height: 1; }
+.k .ki { font-size: 36px; line-height: 1; }
+.k .kl { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.k .kn { font-size: 32px; font-weight: 700; line-height: 1; }
 .k .ks {
-  font-size: 11px; margin-top: 3px;
+  font-size: 12px; margin-top: 3px; color: var(--white);
   max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
@@ -156,15 +158,15 @@ main {
 .k[data-ci="7"] { border-color: var(--cc7); background: var(--cb7); }
 .k[data-ci="8"] { border-color: var(--cc8); background: var(--cb8); }
 
-.k[data-ci="0"] .kn { color: var(--cc0); } .k[data-ci="0"] .ks { color: color-mix(in srgb, var(--cc0) 85%, transparent); }
-.k[data-ci="1"] .kn { color: var(--cc1); } .k[data-ci="1"] .ks { color: color-mix(in srgb, var(--cc1) 85%, transparent); }
-.k[data-ci="2"] .kn { color: var(--cc2); } .k[data-ci="2"] .ks { color: color-mix(in srgb, var(--cc2) 85%, transparent); }
-.k[data-ci="3"] .kn { color: var(--cc3); } .k[data-ci="3"] .ks { color: color-mix(in srgb, var(--cc3) 85%, transparent); }
-.k[data-ci="4"] .kn { color: var(--cc4); } .k[data-ci="4"] .ks { color: color-mix(in srgb, var(--cc4) 85%, transparent); }
-.k[data-ci="5"] .kn { color: var(--cc5); } .k[data-ci="5"] .ks { color: color-mix(in srgb, var(--cc5) 85%, transparent); }
-.k[data-ci="6"] .kn { color: var(--cc6); } .k[data-ci="6"] .ks { color: color-mix(in srgb, var(--cc6) 85%, transparent); }
-.k[data-ci="7"] .kn { color: var(--cc7); } .k[data-ci="7"] .ks { color: color-mix(in srgb, var(--cc7) 85%, transparent); }
-.k[data-ci="8"] .kn { color: var(--cc8); } .k[data-ci="8"] .ks { color: color-mix(in srgb, var(--cc8) 85%, transparent); }
+.k[data-ci="0"] .kn { color: var(--cc0); } .k[data-ci="0"] .ks { color: color-mix(in srgb, var(--cc0) 95%, transparent); }
+.k[data-ci="1"] .kn { color: var(--cc1); } .k[data-ci="1"] .ks { color: color-mix(in srgb, var(--cc1) 95%, transparent); }
+.k[data-ci="2"] .kn { color: var(--cc2); } .k[data-ci="2"] .ks { color: color-mix(in srgb, var(--cc2) 95%, transparent); }
+.k[data-ci="3"] .kn { color: var(--cc3); } .k[data-ci="3"] .ks { color: color-mix(in srgb, var(--cc3) 95%, transparent); }
+.k[data-ci="4"] .kn { color: var(--cc4); } .k[data-ci="4"] .ks { color: color-mix(in srgb, var(--cc4) 95%, transparent); }
+.k[data-ci="5"] .kn { color: var(--cc5); } .k[data-ci="5"] .ks { color: color-mix(in srgb, var(--cc5) 95%, transparent); }
+.k[data-ci="6"] .kn { color: var(--cc6); } .k[data-ci="6"] .ks { color: color-mix(in srgb, var(--cc6) 95%, transparent); }
+.k[data-ci="7"] .kn { color: var(--cc7); } .k[data-ci="7"] .ks { color: color-mix(in srgb, var(--cc7) 95%, transparent); }
+.k[data-ci="8"] .kn { color: var(--cc8); } .k[data-ci="8"] .ks { color: color-mix(in srgb, var(--cc8) 95%, transparent); }
 
 /* ── RESERVED KEY (slot 12) ── */
 .k.reserved {
@@ -305,7 +307,7 @@ main {
 .le-d.in  { color: var(--green); }
 .le-d.sys { color: var(--muted); }
 .le-d.err { color: var(--red); }
-.le-m { color: var(--white); flex: 1; word-break: break-all; }
+.le-m { color: var(--white); flex: 1; word-break: break-all; font-family: var(--mono); }
 .le.in-e  { border-left-color: rgba(57,255,110,.12); }
 .le.out-e { border-left-color: rgba(68,170,255,.12); }
 .le.err-e { border-left-color: rgba(255,51,85,.15); }
@@ -360,7 +362,7 @@ main {
 .pd { font-size: 8px; letter-spacing: .1em; margin-bottom: 4px; }
 .pd.in  { color: var(--green); }
 .pd.out { color: var(--blue); }
-.pc { font-size: 10px; color: var(--white); line-height: 1.75; white-space: pre; font-family: var(--mono); }
+.pc { font-size: 11px; color: var(--white); line-height: 1.75; white-space: pre; font-family: var(--mono); }
 .pn { font-size: 9px; color: var(--muted); margin-top: 4px; }
 
 /* ── SETTINGS ── */
