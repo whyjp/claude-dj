@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Claude DJ</title>
+<title>Claude DJ — 코드는 터미널에, 결정은 덱에서</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&display=swap');
 
@@ -387,24 +387,24 @@ footer {
     <span class="nav-ver">v1.0 dev</span>
   </div>
   <ul class="nav-links">
-    <li><a href="#how">How it works</a></li>
-    <li><a href="#skill">Skill Injection</a></li>
-    <li><a href="#states">States</a></li>
-    <li><a href="#arch">Architecture</a></li>
-    <li><a href="#milestones">Milestones</a></li>
+    <li><a href="#why">왜 Claude DJ</a></li>
+    <li><a href="#how">동작 원리</a></li>
+    <li><a href="#skill">기술 상세</a></li>
+    <li><a href="#arch">아키텍처</a></li>
+    <li><a href="#milestones">로드맵</a></li>
   </ul>
 </nav>
 
 <!-- HERO -->
 <div class="hero">
   <div>
-    <p class="hero-eyebrow">Claude Code × Physical/Virtual Deck</p>
-    <h1>포커스 이동 없이<br><span class="g">Claude 에 반응한다.</span></h1>
+    <p class="hero-eyebrow">Claude Code × DJ Deck Controller</p>
+    <h1>코드는 터미널에.<br><span class="g">결정은 덱에서.</span></h1>
     <p class="hero-desc">
-      <strong>스킬 주입</strong>으로 Claude가 모든 결정을 <strong>AskUserQuestion</strong>으로 출력하게 만들고,<br>
-      Hook API가 이를 가로채 덱 버튼으로 변환한다.<br><br>
-      멀티세션 포커스 관리, 서브에이전트 트래킹, 크로스세션 응답 라우팅까지 —<br>
-      <strong>터미널 없이 버튼만으로 Claude를 제어한다.</strong>
+      여러 세션을 동시에 띄워 놓고 작업하다 보면,<br>
+      Claude가 물어올 때마다 <strong>화면을 옮기고, 1? 2? 3? 을 골라 타이핑하는 일</strong>의 반복이다.<br><br>
+      Claude DJ는 모든 세션의 결정을 <strong>덱 하나로 모은다.</strong><br>
+      어떤 세션이든 선택지가 뜨면 버튼만 누르면 된다 — 포커스 이동도, 타이핑도 없이.
     </p>
     <div class="tag-row">
       <span class="tag g">Skill Injection</span>
@@ -415,8 +415,8 @@ footer {
       <span class="tag">88 Tests</span>
     </div>
     <div class="links">
-      <a href="#skill" class="link-btn primary">스킬 주입 원리</a>
-      <a href="#arch" class="link-btn">아키텍처 →</a>
+      <a href="#why" class="link-btn primary">왜 필요한가</a>
+      <a href="#how" class="link-btn">동작 원리 →</a>
     </div>
   </div>
 
@@ -455,36 +455,100 @@ footer {
   </div>
 </div>
 
+<!-- WHY CLAUDE DJ -->
+<section id="why">
+  <p class="label">왜 Claude DJ인가</p>
+  <h2>멀티 모니터, 멀티 세션, 하나의 덱</h2>
+  <p class="sec-sub">터미널 여러 개를 띄워 놓고 동시 작업을 병행하는 워크플로에서, Claude의 질문에 일일이 대응하는 것은 반복적이고 소모적이다.</p>
+
+  <div class="flow" style="grid-template-columns:repeat(3,1fr);margin-top:2.5rem;">
+    <div class="fc hi">
+      <div class="fc-n" style="color:var(--green);">01</div>
+      <h4>흐름이 끊기지 않는다</h4>
+      <p>Claude가 물어와도 에디터에서 손을 뗄 필요가 없다. 시선은 코드에 두고, 옆에 놓인 덱 버튼만 누르면 응답 완료. 컨텍스트 스위칭 비용을 제거한다.</p>
+    </div>
+    <div class="fc hi">
+      <div class="fc-n" style="color:var(--green);">02</div>
+      <h4>모든 세션, 한 곳에서</h4>
+      <p>메인 작업, 사이드 브랜치, 별도 프로젝트 — 세션이 몇 개든 응답 대기 중인 세션이 자동으로 덱 위에 올라온다. 화면을 찾아 헤매지 않는다.</p>
+    </div>
+    <div class="fc hi">
+      <div class="fc-n" style="color:var(--green);">03</div>
+      <h4>덱이든 터치든</h4>
+      <p>Ulanzi D200 물리 버튼, 브라우저 가상 덱, 터치 모니터까지 — 환경에 맞는 인터페이스를 고르면 된다. 입력 수단이 바뀌어도 동작은 같다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- EXTENSIBILITY -->
+<section id="extend">
+  <p class="label">확장성</p>
+  <h2>어떤 장비든, 덱이 된다</h2>
+  <p class="sec-sub">Claude DJ의 클라이언트는 WebSocket 하나로 Bridge에 연결된다. 입력 장치의 형태에 제약이 없다.</p>
+
+  <div class="flow" style="grid-template-columns:repeat(4,1fr);margin-top:2.5rem;">
+    <div class="fc hi">
+      <div class="fc-n" style="color:var(--green);">A</div>
+      <h4>물리 덱</h4>
+      <p>Ulanzi D200 같은 USB 스트림 덱. 물리 버튼의 촉각 피드백으로 시선 없이도 조작할 수 있다. UlanziDeck SDK를 통해 Bridge와 통신.</p>
+    </div>
+    <div class="fc hi">
+      <div class="fc-n" style="color:var(--green);">B</div>
+      <h4>브라우저 가상 덱</h4>
+      <p>별도 장비 없이 브라우저에서 Virtual DJ를 띄운다. 가장 빠르게 시작할 수 있는 방식. 로컬 Bridge에 WebSocket으로 직결.</p>
+    </div>
+    <div class="fc hi">
+      <div class="fc-n" style="color:var(--amber);">C</div>
+      <h4>터치 모니터 직결</h4>
+      <p>작업 PC에 터치 모니터를 연결하고, 웹앱을 풀스크린으로 띄운다. 넓은 화면에서 선택지를 한눈에 확인하면서 터치로 바로 응답.</p>
+    </div>
+    <div class="fc hi">
+      <div class="fc-n" style="color:var(--amber);">D</div>
+      <h4>리모트 디바이스</h4>
+      <p>자체 CPU를 가진 Android 태블릿이나 미니 PC가 네트워크를 통해 Bridge와 통신한다. 작업 PC와 물리적으로 분리된 독립 덱 단말로 작동.</p>
+    </div>
+  </div>
+
+  <div class="arch" style="margin-top:1.5rem;line-height:1.9;font-size:10px;">                        <span class="w">Claude Code Session</span>
+                              │
+                        <span class="w">Bridge Server</span> (localhost:39200)
+                              │ WebSocket /ws
+              ┌───────────┬───┴───────┬──────────────┐
+        <span class="g">[A] 물리 덱</span>    <span class="g">[B] 브라우저</span>   <span class="a">[C] 터치 모니터</span>   <span class="a">[D] 리모트 디바이스</span>
+         USB 연결       localhost       로컬 네트워크      LAN / Wi-Fi
+       Ulanzi D200    Virtual DJ       풀스크린 웹앱    Android · 미니 PC</div>
+</section>
+
 <!-- HOW IT WORKS -->
 <div class="band" id="how">
   <div class="band-inner">
-    <p class="label">동작 방식</p>
-    <h2>다섯 단계</h2>
+    <p class="label">동작 원리</p>
+    <h2>다섯 단계로 완성되는 루프</h2>
     <div class="flow" style="grid-template-columns:repeat(5,1fr);">
       <div class="fc hi">
         <div class="fc-n">00</div>
         <h4>스킬 주입</h4>
-        <p><code>choice-format</code> 스킬이 세션에 자동 로드. Claude가 모든 결정을 <strong>AskUserQuestion</strong> 도구로 출력하도록 행동을 변경.</p>
+        <p><code>choice-format</code> 스킬이 세션에 자동으로 주입된다. 이후 Claude는 모든 결정을 <strong>AskUserQuestion</strong> 도구 호출로 출력한다.</p>
       </div>
       <div class="fc">
         <div class="fc-n">01</div>
         <h4>Hook 이벤트 수신</h4>
-        <p>AskUserQuestion → PermissionRequest hook 발화 → Bridge가 WAITING_CHOICE로 전환. 일반 tool이면 WAITING_BINARY. <strong>HTTP 블로킹 60초.</strong></p>
+        <p>AskUserQuestion 호출이 PermissionRequest 훅을 발화하면, Bridge가 세션을 WAITING_CHOICE로 전환한다. 일반 도구라면 WAITING_BINARY. <strong>응답까지 최대 60초 블로킹.</strong></p>
       </div>
       <div class="fc hi">
         <div class="fc-n">02</div>
-        <h4>버튼 레이아웃 전환</h4>
-        <p>WebSocket으로 LAYOUT 즉시 브로드캐스트. 크로스세션 포커스 필터링 — 다른 세션의 PROCESSING이 현재 CHOICE를 덮지 않음.</p>
+        <h4>레이아웃 전환</h4>
+        <p>상태 변경 즉시 WebSocket으로 새 레이아웃을 브로드캐스트한다. 크로스세션 포커스 필터링 덕분에, 다른 세션의 작업이 현재 선택 화면을 덮어쓰지 않는다.</p>
       </div>
       <div class="fc hi">
         <div class="fc-n">03</div>
         <h4>버튼 입력</h4>
-        <p>화면에서 선택지 확인 후 버튼 프레스. 포커스 이동 없음. 타이핑 없음. 여러 세션 중 포커스된 세션에 정확히 라우팅.</p>
+        <p>덱에서 선택지를 확인하고 버튼을 누른다. 포커스 이동도, 타이핑도 없다. 응답은 포커스된 세션에 정확히 라우팅된다.</p>
       </div>
       <div class="fc">
         <div class="fc-n">04</div>
         <h4>응답 전달</h4>
-        <p>Bridge가 Hook stdout JSON으로 반환. AskUserQuestion이면 <code>updatedInput.answer</code>. Claude Code 즉시 선택된 옵션으로 계속 진행.</p>
+        <p>Bridge가 훅 응답으로 선택 결과를 반환하고, Claude Code는 곧바로 해당 선택지에 따라 다음 단계를 진행한다.</p>
       </div>
     </div>
   </div>
@@ -492,15 +556,15 @@ footer {
 
 <!-- SKILL INJECTION -->
 <section id="skill">
-  <p class="label">핵심 기술</p>
-  <h2>스킬 주입으로 Claude의 출력을 바꾼다</h2>
-  <p class="sec-sub">Claude DJ의 핵심은 <strong>choice-format</strong> 스킬이다. 이 스킬은 Claude의 행동을 모델 레벨에서 변경하여, 모든 결정을 구조화된 AskUserQuestion 도구 호출로 출력하게 만든다.</p>
+  <p class="label">핵심 메커니즘</p>
+  <h2>스킬 하나로 Claude의 출력 형태를 바꾸다</h2>
+  <p class="sec-sub">Claude DJ의 핵심은 <strong>choice-format</strong> 스킬이다. 이 스킬 하나가 Claude의 행동을 모델 수준에서 바꾼다 — 모든 결정 지점에서 구조화된 AskUserQuestion 도구를 호출하게 만드는 것.</p>
 
   <div class="states" style="grid-template-columns:1fr 1fr;margin-top:2rem;">
     <div class="sc">
       <div class="sc-pill"><div class="dot m"></div><span style="color:var(--muted)">기존 (스킬 없음)</span></div>
       <h4>텍스트 기반 선택</h4>
-      <p>Claude가 번호 목록을 텍스트로 출력. 터미널에서 숫자를 타이핑해야 함. 덱은 이를 감지할 수 없음.</p>
+      <p>Claude가 번호 목록을 텍스트로 출력한다. 사용자는 터미널에서 직접 숫자를 타이핑해야 하고, 덱은 이를 감지할 수 없다.</p>
       <div style="background:var(--bg);border:1px solid var(--bd);padding:.75rem;margin-top:.75rem;font-size:10px;color:var(--muted);white-space:pre;line-height:1.7;">Which approach?
 1. Refactor
 2. Rewrite
@@ -510,7 +574,7 @@ footer {
     <div class="sc">
       <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)">스킬 주입 후</span></div>
       <h4>AskUserQuestion 도구 호출</h4>
-      <p>Claude가 <strong>AskUserQuestion</strong> 도구를 호출. <strong>PermissionRequest</strong> hook을 트리거 — 유일한 <strong>블로킹</strong> hook.</p>
+      <p>Claude가 <strong>AskUserQuestion</strong> 도구를 호출한다. 이것이 <strong>PermissionRequest</strong> 훅을 트리거하며, 유일하게 <strong>블로킹</strong>되는 훅이다.</p>
       <div style="background:var(--bg);border:1px solid var(--green);padding:.75rem;margin-top:.75rem;font-size:10px;color:var(--green);white-space:pre;line-height:1.7;">AskUserQuestion({
   options: [
     "Refactor",
@@ -523,14 +587,14 @@ footer {
   </div>
 
   <p class="label" style="margin-top:2.5rem;">핵심 구분</p>
-  <h2>선택지 vs 확인 — 안티패턴 방지</h2>
-  <p class="sec-sub">스킬은 Claude가 <strong>계획 설명을 선택지로 위장</strong>하는 안티패턴을 명시적으로 금지한다. "이렇게 할까?" 는 선택이 아니라 확인이다.</p>
+  <h2>선택과 확인은 다르다</h2>
+  <p class="sec-sub">스킬은 Claude가 <strong>계획 설명을 선택지처럼 나열</strong>하는 안티패턴을 원천 차단한다. "이대로 할까요?"는 선택이 아니라 확인이다.</p>
 
   <div class="states" style="grid-template-columns:1fr 1fr 1fr;margin-top:2rem;">
     <div class="sc">
       <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)">진짜 선택 (Real Choice)</span></div>
       <h4>서로 다른 경로</h4>
-      <p>2~4개의 진정한 대안. 각 옵션이 다른 결과를 만든다.</p>
+      <p>2~4개의 진정한 대안이 존재하고, 어떤 옵션을 고르느냐에 따라 결과가 달라진다.</p>
       <div style="background:var(--bg);border:1px solid var(--green);padding:.75rem;margin-top:.75rem;font-size:10px;line-height:1.7;"><span style="color:var(--green);">[1] Refactor</span>
 <span style="color:var(--amber);">[2] Rewrite</span>
 <span style="color:var(--blue);">[3] Patch</span>
@@ -539,7 +603,7 @@ footer {
     <div class="sc">
       <div class="sc-pill"><div class="dot a"></div><span style="color:var(--amber)">확인 (Confirmation)</span></div>
       <h4>계획 승인 요청</h4>
-      <p>계획을 텍스트로 설명한 후, 2개 옵션으로 승인/거부. "이대로 진행할까?"</p>
+      <p>계획을 텍스트로 설명한 뒤, "진행 / 다른 방향" 두 가지로 승인을 묻는다.</p>
       <div style="background:var(--bg);border:1px solid var(--amber);padding:.75rem;margin-top:.75rem;font-size:10px;line-height:1.7;"><span style="color:var(--muted);">계획: Pioneer에 상위 모델 적용</span>
 <span style="color:var(--green);">[1] 진행</span>
 <span style="color:var(--red);">[2] 다른 방향</span>
@@ -548,7 +612,7 @@ footer {
     <div class="sc">
       <div class="sc-pill"><div class="dot m"></div><span style="color:var(--red)">안티패턴 (금지)</span></div>
       <h4>계획을 선택지로 위장</h4>
-      <p>계획 설명과 추가 범위를 동일 레벨 선택지로 묶는 것. 사용자가 의미있게 "선택"할 수 없다.</p>
+      <p>계획 설명과 추가 범위를 같은 레벨의 선택지로 섞어 놓는 형태. 사용자가 의미 있게 "선택"할 수 없다.</p>
       <div style="background:var(--bg);border:1px solid var(--red);padding:.75rem;margin-top:.75rem;font-size:10px;line-height:1.7;"><span style="color:var(--red);">✗ "X를 수정해서 적용"</span>
 <span style="color:var(--red);">✗ "기존 scaffold에도 적용"</span>
 <span style="color:var(--muted);">→ 범위 번들링. 계획을 먼저 설명,
@@ -559,15 +623,15 @@ footer {
 
 <!-- STATES -->
 <section id="states">
-  <p class="label">세션 상태</p>
-  <h2>State가 버튼을 결정한다</h2>
-  <p class="sec-sub">세션 state가 바뀌는 순간 버튼 레이아웃 전체가 교체된다. PROCESSING에서는 버튼들이 웨이브로 흘러 작업 중임을 시각화한다.</p>
+  <p class="label">상태 머신</p>
+  <h2>상태가 곧 레이아웃이다</h2>
+  <p class="sec-sub">세션 상태가 전환되는 순간, 덱의 버튼 배치가 통째로 바뀐다. 작업 중에는 버튼이 웨이브로 흘러, 지금 무엇이 돌고 있는지를 시각으로 보여준다.</p>
 
   <div class="states">
     <div class="sc">
       <div class="sc-pill"><div class="dot m"></div><span style="color:var(--muted)">IDLE</span></div>
       <h4>대기</h4>
-      <p>완료 또는 프롬프트 대기. 전체 dim. 눌림 무반응.</p>
+      <p>작업 완료 또는 입력 대기 상태. 모든 버튼이 비활성화된다.</p>
       <div class="mini">
         <div class="mk"></div><div class="mk"></div>
         <div class="mk"></div><div class="mk"></div>
@@ -578,7 +642,7 @@ footer {
     <div class="sc">
       <div class="sc-pill"><div class="dot b"></div><span style="color:var(--blue)">PROCESSING</span></div>
       <h4>작업 중</h4>
-      <p>PreToolUse 감지. 버튼들이 offset 딜레이로 웨이브 점멸. "뭔가 하고 있다" 시각화.</p>
+      <p>도구 실행이 감지되면 버튼들이 시차를 두고 점멸하며, 진행 중임을 시각적으로 보여준다.</p>
       <div class="mini">
         <div class="mk b"></div><div class="mk b" style="animation-delay:.15s"></div>
         <div class="mk b" style="animation-delay:.3s"></div><div class="mk b" style="animation-delay:.45s"></div>
@@ -588,8 +652,8 @@ footer {
     </div>
     <div class="sc">
       <div class="sc-pill"><div class="dot a"></div><span style="color:var(--amber)">WAITING_BINARY</span></div>
-      <h4>Permission 대기</h4>
-      <p>PermissionRequest 수신. ✅ Approve와 ❌ Deny만 활성. 나머지 dim.</p>
+      <h4>권한 승인 대기</h4>
+      <p>권한 요청 수신. Approve와 Deny만 활성화되고, 나머지 버튼은 비활성.</p>
       <div class="mini">
         <div class="mk g">✅</div><div class="mk r">❌</div>
         <div class="mk"></div><div class="mk"></div>
@@ -599,8 +663,8 @@ footer {
     </div>
     <div class="sc">
       <div class="sc-pill"><div class="dot a"></div><span style="color:var(--amber)">WAITING_CHOICE</span></div>
-      <h4>AskUserQuestion 선택 대기</h4>
-      <p><strong>choice-format 스킬</strong>로 유도된 AskUserQuestion → PermissionRequest hook 블로킹. 버튼 프레스 시 <code>updatedInput.answer</code>로 반환.</p>
+      <h4>선택지 대기</h4>
+      <p>스킬이 유도한 AskUserQuestion 호출이 훅을 블로킹한다. 버튼을 누르면 선택 결과가 즉시 Claude에게 전달된다.</p>
       <div class="mini">
         <div class="mk n0">1</div><div class="mk n1">2</div>
         <div class="mk n2">3</div><div class="mk n3">4</div>
@@ -610,8 +674,8 @@ footer {
     </div>
     <div class="sc">
       <div class="sc-pill"><div class="dot a"></div><span style="color:var(--amber)">MULTI-SELECT</span></div>
-      <h4>복수 선택 토글+제출</h4>
-      <p><code>multiSelect: true</code> AskUserQuestion → ☐/☑ 토글 버튼 (슬롯 0-8) + ✔ Done (슬롯 9). 선택 후 Done으로 일괄 제출.</p>
+      <h4>복수 선택</h4>
+      <p>복수 선택 모드. 각 항목을 토글로 켜고 끈 뒤, Done 버튼으로 한꺼번에 제출한다.</p>
       <div class="mini">
         <div class="mk g">☑1</div><div class="mk">☐2</div>
         <div class="mk g">☑3</div><div class="mk">☐4</div>
@@ -622,7 +686,7 @@ footer {
     <div class="sc">
       <div class="sc-pill"><div class="dot" style="background:var(--amber)"></div><span style="color:var(--amber)">AWAITING INPUT</span></div>
       <h4>입력 대기 알림</h4>
-      <p>Claude가 텍스트 선택지를 출력하고 멈춘 경우. 덱에 ⏳ 대기 아이콘 표시 — 터미널에서 응답 필요.</p>
+      <p>Claude가 텍스트로 선택지를 출력하고 멈춘 상태. 덱에 대기 표시가 뜨며, 터미널에서 직접 응답해야 한다.</p>
       <div class="mini">
         <div class="mk"></div><div class="mk"></div>
         <div class="mk"></div><div class="mk"></div>
@@ -637,7 +701,7 @@ footer {
 <div class="band" id="arch">
   <div class="band-inner">
     <p class="label">아키텍처</p>
-    <h2>구성도</h2>
+    <h2>시스템 구성도</h2>
     <div class="arch"><span class="w">Claude Code Session</span>
     │
     │  <span class="b">choice-format 스킬</span> 주입 → 모든 결정을 AskUserQuestion으로 출력
@@ -689,8 +753,8 @@ footer {
 <!-- WS PROTOCOL -->
 <section id="protocol">
   <p class="label">WebSocket Protocol</p>
-  <h2>Bridge ↔ Plugin 메시지</h2>
-  <p class="sec-sub">Bridge Server와 Ulanzi Plugin(또는 Virtual D200 FE)이 주고받는 메시지 스키마.</p>
+  <h2>Bridge ↔ 클라이언트 통신 규약</h2>
+  <p class="sec-sub">Bridge Server와 클라이언트(Virtual DJ 또는 Ulanzi D200) 간 주고받는 WebSocket 메시지 스키마.</p>
 
   <div class="proto-grid">
     <div class="proto-card">
@@ -782,7 +846,7 @@ footer {
 <div class="band" id="assets">
   <div class="band-inner">
     <p class="label">전체 애셋</p>
-    <h2>프로덕트를 이루는 것들</h2>
+    <h2>프로덕트를 구성하는 모든 것</h2>
 
     <div class="asset-grid">
       <div class="ac">
@@ -844,7 +908,7 @@ footer {
 <!-- MILESTONES -->
 <section id="milestones">
   <p class="label">구현 마일스톤</p>
-  <h2>Phase별 작업 목록</h2>
+  <h2>단계별 개발 로드맵</h2>
 
   <div class="milestone-list">
     <div class="ml">
@@ -892,7 +956,7 @@ footer {
 </section>
 
 <footer>
-  <span>Claude DJ — Claude Code × Physical/Virtual Deck · v0.1.0 · 88 tests · 2026</span>
+  <span>Claude DJ — 코드는 터미널에, 결정은 덱에서 · v0.1.0 · 88 tests · 2026</span>
   <div class="footer-links">
     <a href="https://code.claude.com/docs/en/hooks">Hooks API</a>
     <a href="https://github.com/UlanziTechnology/UlanziDeckPlugin-SDK">Ulanzi SDK</a>
