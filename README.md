@@ -192,15 +192,17 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 | PROCESSING | Wave pulse | Session name | Agent type or ROOT |
 | WAITING_BINARY | 0=Approve, 1=Always/Deny, 2=Deny | Session name | Agent type or ROOT |
 | WAITING_CHOICE | 0..N = choice buttons | Session name | Agent type or ROOT |
-| WAITING_RESPONSE | Awaiting input indicator (display-only) | Session name | Agent type or ROOT |
+| WAITING_CHOICE (multiSelect) | ☐/☑ toggle (0-8) + ✔ Done (9) | Session name | Agent type or ROOT |
+| WAITING_RESPONSE | ⏳ Awaiting input (display-only) | Session name | Agent type or ROOT |
 
 ## Features
 
 - **Skill-injected choice pipeline** — Claude uses `AskUserQuestion` for all decisions, enabling button-driven interaction
 - **Permission buttons** — Approve / Always Allow / Deny mapped to deck slots
+- **Multi-select toggle+submit** — `multiSelect` questions show ☐/☑ toggle buttons (slots 0-8) + ✔ Done (slot 9), live verified
 - **Cross-session focus** — WAITING_CHOICE/BINARY sessions auto-prioritized, processing events filtered
 - **Subagent tracking** — Tree-view display, independent state per agent, slot 12 cycling
-- **Awaiting input notification** — When Claude stops with text choices, deck shows "awaiting input" indicator
+- **Awaiting input notification** — When Claude stops with text choices, deck shows ⏳ indicator
 - **Multi-session management** — Slot 11 cycles root sessions, focus auto-switches on permission
 - **Late-join sync** — New clients receive current deck state immediately
 - **Plugin packaging** — `.claude-plugin/plugin.json` with portable `${CLAUDE_PLUGIN_ROOT}` paths
@@ -219,7 +221,7 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 
 ```bash
 npm install              # install dependencies
-npm test                 # 96 tests across 9 suites
+npm test                 # 100 tests across 9 suites
 node bridge/server.js    # start bridge
 ```
 

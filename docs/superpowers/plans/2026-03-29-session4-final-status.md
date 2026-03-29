@@ -1,7 +1,7 @@
 # Claude DJ — Session 4 Final Status
 
 > **Date:** 2026-03-29
-> **Tests:** 93 passing, 9 suites
+> **Tests:** 100 passing, 9 suites
 > **Commits this session:** 20+
 > **Push:** Not yet pushed
 
@@ -61,6 +61,13 @@
 - Bilingual KO/EN: Common Mistakes table with concrete mappings
 - "커밋할까요?" → `["Commit", "Not yet"]` style examples
 - Live verified: AskUserQuestion select (3 buttons) + confirm (2 buttons)
+
+### 1.10 MultiSelect Toggle+Submit
+- `multiSelect: true` → preset `multiSelect` with per-choice `selected` state
+- Slots 0-8: ☐/☑ toggle, Slot 9: ✔ Done (submit)
+- Bridge: toggle re-broadcasts layout, submit resolves with comma-separated indices
+- FE: `.multi-on`/`.multi-off` CSS, `.submit` Done button, `.awaiting` indicator
+- Live verified: toggle 2 options → Done → answer "1,2" delivered
 
 ---
 
@@ -155,7 +162,7 @@ claude-dj/
     └── superpowers/plans/2026-03-29-subagent-tracking.md
 ```
 
-Total: **96 automated tests**, 9 suites.
+Total: **100 automated tests**, 9 suites.
 
 ---
 
