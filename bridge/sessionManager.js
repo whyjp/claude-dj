@@ -1,4 +1,6 @@
 import path from 'node:path';
+import fs from 'node:fs';
+import os from 'node:os';
 
 export class SessionManager {
   constructor() {
@@ -273,10 +275,66 @@ export class SessionManager {
     return session ? session.agents.size : 0;
   }
 
+  /**
+   * Sync sessions with Claude Code's on-disk session files (~/.claude/sessions/*.json).
+   * - Removes bridge sessions whose PID is no longer alive
+   * - Returns { pruned: [...sessionIds], alive: [...sessionIds] }
+   */
+  syncFromDisk() {
+    const sessionsDir = path.join(os.homedir(), '.claude', 'sessions');
+    const result = { pruned: [], alive: [] };
+
+    // Read all on-disk session files → Map<sessionId, pid>
+    const diskSessions = new Map();
+    try {
+      const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
+      for (const file of files) {
+        try {
+          const data = JSON.parse(fs.readFileSync(path.join(sessionsDir, file), 'utf8'));
+          if (data.sessionId && data.pid) {
+            diskSessions.set(data.sessionId, data.pid);
+          }
+        } catch { /* skip malformed */ }
+      }
+    } catch { /* sessions dir doesn't exist */ return result; }
+
+    // Check each bridge session against disk state
+    for (const [id, session] of this.sessions) {
+      const pid = diskSessions.get(id);
+      if (pid === undefined) {
+        // Session not on disk at all — might be stale, let idle prune handle it
+        continue;
+      }
+      if (_isPidAlive(pid)) {
+        result.alive.push(id);
+      } else {
+        // PID dead → clean up
+        if (session.respondFn) {
+          // Reject any pending permission with deny (prevents hook timeout)
+          session.respondFn({ type: 'binary', value: 'deny' });
+          session.respondFn = null;
+        }
+        this.sessions.delete(id);
+        result.pruned.push(id);
+      }
+    }
+
+    return result;
+  }
+
   toJSON() {
     return [...this.sessions.values()].map(({ respondFn, agents, ...rest }) => ({
       ...rest,
       agents: [...agents.values()],
     }));
+  }
+}
+
+function _isPidAlive(pid) {
+  try {
+    process.kill(pid, 0); // signal 0 = check existence only
+    return true;
+  } catch {
+    return false;
   }
 }

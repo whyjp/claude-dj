@@ -1,5 +1,8 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { SessionManager } from '../bridge/sessionManager.js';
 
 describe('SessionManager', () => {
@@ -329,5 +332,60 @@ describe('SessionManager', () => {
     assert.equal(sm.getAgentCount('s1'), 0);
     sm.handleSubagentStart({ session_id: 's1', agent_id: 'ag1', agent_type: 'Explore' });
     assert.equal(sm.getAgentCount('s1'), 1);
+  });
+
+  it('syncFromDisk prunes sessions with dead PIDs', () => {
+    // Create a fake sessions dir with a dead PID
+    const tmpDir = path.join(os.tmpdir(), 'claude-dj-sync-test-' + Date.now());
+    const sessDir = path.join(tmpDir, '.claude', 'sessions');
+    fs.mkdirSync(sessDir, { recursive: true });
+
+    // Write a session file with PID 999999 (almost certainly dead)
+    const sessionId = 'sync-test-dead';
+    fs.writeFileSync(
+      path.join(sessDir, '999999.json'),
+      JSON.stringify({ pid: 999999, sessionId, cwd: '/tmp', startedAt: Date.now() }),
+    );
+
+    // Add session to manager
+    sm.getOrCreate({ session_id: sessionId, cwd: '/tmp' });
+    assert.equal(sm.sessions.size, 1);
+
+    // Monkey-patch homedir for test
+    const origHome = os.homedir;
+    os.homedir = () => tmpDir;
+
+    const { pruned } = sm.syncFromDisk();
+    assert.ok(pruned.includes(sessionId));
+    assert.equal(sm.sessions.size, 0);
+
+    os.homedir = origHome;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('syncFromDisk keeps sessions with alive PIDs', () => {
+    const tmpDir = path.join(os.tmpdir(), 'claude-dj-sync-test-' + Date.now());
+    const sessDir = path.join(tmpDir, '.claude', 'sessions');
+    fs.mkdirSync(sessDir, { recursive: true });
+
+    // Use current process PID (guaranteed alive)
+    const sessionId = 'sync-test-alive';
+    fs.writeFileSync(
+      path.join(sessDir, `${process.pid}.json`),
+      JSON.stringify({ pid: process.pid, sessionId, cwd: '/tmp', startedAt: Date.now() }),
+    );
+
+    sm.getOrCreate({ session_id: sessionId, cwd: '/tmp' });
+
+    const origHome = os.homedir;
+    os.homedir = () => tmpDir;
+
+    const { alive, pruned } = sm.syncFromDisk();
+    assert.ok(alive.includes(sessionId));
+    assert.equal(pruned.length, 0);
+    assert.equal(sm.sessions.size, 1);
+
+    os.homedir = origHome;
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 });

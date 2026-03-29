@@ -236,6 +236,16 @@ const pruneInterval = setInterval(() => {
   }
 }, 60000); // check every minute
 
+// --- Session Sync (poll Claude Code disk state) ---
+
+const syncInterval = setInterval(() => {
+  const { pruned, alive } = sm.syncFromDisk();
+  if (pruned.length > 0) {
+    console.log(`[claude-dj] Synced: removed ${pruned.length} dead session(s): ${pruned.join(', ')}`);
+    ws.broadcast({ type: 'ALL_DIM' });
+  }
+}, 30000); // check every 30s
+
 // --- Start ---
 
 const port = config.port;
@@ -245,4 +255,4 @@ server.listen(port, () => {
   console.log(`[claude-dj] WebSocket at ws://localhost:${port}${config.wsPath}`);
 });
 
-export { server, app, pruneInterval };
+export { server, app, pruneInterval, syncInterval };

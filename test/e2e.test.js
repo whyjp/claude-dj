@@ -78,18 +78,20 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
   let server;
   const wsUrl = `ws://127.0.0.1:${PORT}/ws`;
 
-  let pruneInterval;
+  let pruneInterval, syncInterval;
 
   before(async () => {
     process.env.CLAUDE_DJ_PORT = String(PORT);
     const mod = await import('../bridge/server.js');
     server = mod.server;
     pruneInterval = mod.pruneInterval;
+    syncInterval = mod.syncInterval;
     await new Promise((r) => setTimeout(r, 500));
   });
 
   after(() => {
     clearInterval(pruneInterval);
+    clearInterval(syncInterval);
     server?.close();
     delete process.env.CLAUDE_DJ_PORT;
   });
