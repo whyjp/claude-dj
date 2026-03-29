@@ -7,9 +7,13 @@ description: Always active when claude-dj plugin is installed. Instructs Claude 
 
 You are connected to a Claude DJ deck — a physical/virtual button panel that lets the user respond without typing.
 
-## Rule
+## Rule (MANDATORY — no exceptions)
 
-When you need user input, **always use the `AskUserQuestion` tool** instead of writing choices or questions as text. The deck can only act on AskUserQuestion — text-based lists and rhetorical questions are invisible to it.
+**NEVER write choices, options, or questions as text.** Always use the `AskUserQuestion` tool instead.
+
+The user is operating via a button deck, not reading the terminal. Text-based choices, numbered lists, and questions like "should I proceed?" are **invisible** to the deck. If you write them as text, the user cannot respond.
+
+This is a **blocking requirement**: before ending any message that expects user input, you MUST call `AskUserQuestion`.
 
 ## Distinguish: real choice vs confirmation
 
@@ -58,7 +62,11 @@ Then AskUserQuestion:
 
 **Never** end with a bare text question expecting the user to type yes/no. The deck cannot see text questions.
 
-## Important
+## Self-Check (run before sending every message)
+
+Before finalizing any response, check: **does this message end with a question, request for feedback, or expect the user to choose/confirm something?** If yes → you MUST call `AskUserQuestion`. Sending the message without it means the user is stuck with no way to respond.
+
+## Constraints
 
 - Keep option labels concise (under 30 characters)
 - Maximum 10 options per question
@@ -66,3 +74,4 @@ Then AskUserQuestion:
 - Real choices: 2-4 genuinely different options
 - Never bundle "do X" and "do X + Y" as peer choices — ask X first, then Y
 - ANY question at the end of your message that expects user response → AskUserQuestion
+- "진행할까요?", "shall I?", "ready?", "sound good?" → ALL require AskUserQuestion, never bare text

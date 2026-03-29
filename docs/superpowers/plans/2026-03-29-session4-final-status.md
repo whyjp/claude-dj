@@ -1,7 +1,7 @@
 # Claude DJ — Session 4 Final Status
 
 > **Date:** 2026-03-29
-> **Tests:** 82 passing, 8 suites
+> **Tests:** 93 passing, 9 suites
 > **Commits this session:** 20+
 > **Push:** Not yet pushed
 
@@ -39,16 +39,28 @@
 - Header bar 48px, logo 16px
 - Choice label opacity 95%
 
-### 1.6 Subagent Tracking (In Progress — other session)
+### 1.6 Subagent Tracking
 - `SessionManager.handleSubagentStart/Stop` — agent lifecycle
 - `cycleAgent()`, `focusAgentId`, `getAgentCount()`
 - `hooks/subagentStart.js`, `hooks/subagentStop.js`
 - `server.js` endpoints for SubagentStart/Stop
 - Slot 12 repurposed: cycle subagents within session
+- E2E tests: 3 subagent lifecycle tests passing
 
 ### 1.7 Test Timeout Fix
 - Export `pruneInterval` from server.js, clear in test teardown
-- All 82 tests pass (was timing out before)
+
+### 1.8 Stop-Wait Path (WAITING_RESPONSE)
+- `stop.js` → `choiceParser.js` → `POST /api/hook/stop` with `_djChoices`
+- Long-poll `GET /api/stop-wait/:sessionId` (60s timeout)
+- Three resolution paths: direct waiter, earlyResult, events.jsonl fallback
+- Button press delivers `stopResponse` with natural language selection
+- E2E test: `stop.js: choices in transcript → deck shows buttons → button press returns stopResponse`
+
+### 1.9 Trailing Confirmation Pattern
+- choice-format skill updated with "trailing confirmation" guidance
+- Claude's "진행할까?" / "shall I proceed?" → AskUserQuestion instead of bare text
+- Layout tests for agents display in buttonManager
 
 ---
 
@@ -87,7 +99,8 @@ Claude Code Session
 | Permission approve/deny | PermissionRequest → WAITING_BINARY → button → respondFn | ✅ Working |
 | AskUserQuestion choice | PermissionRequest → WAITING_CHOICE → button → respondFn | ✅ Live verified |
 | Session switch | Slot 11 → cycleFocus → broadcast | ✅ Working |
-| Subagent switch | Slot 12 → cycleAgent → broadcast | 🔧 In progress |
+| Subagent switch | Slot 12 → cycleAgent → broadcast | ✅ Working |
+| Stop-wait choice | Stop → choiceParser → WAITING_RESPONSE → button → stopResponse | ✅ Working |
 
 ---
 
@@ -134,35 +147,24 @@ claude-dj/
 │   ├── hooks.test.js           (11 tests)
 │   ├── config.test.js          (3 tests)
 │   ├── bridge.test.js          (5 tests)
-│   └── e2e.test.js             (11 tests: +display-only choices)
+│   ├── e2e.test.js             (11 tests: +display-only choices, +stop-wait)
+│   └── e2e.subagent.test.js    (3 tests: subagent lifecycle)
 └── docs/
     ├── superpowers/specs/2026-03-29-choice-fencing-design.md
     ├── superpowers/specs/2026-03-29-subagent-tracking-design.md
     └── superpowers/plans/2026-03-29-subagent-tracking.md
 ```
 
-Total: **82 automated tests**, 8 suites.
+Total: **93 automated tests**, 9 suites.
 
 ---
 
 ## 4. Next Steps (Priority Order)
 
-### 4.1 [HIGH] Subagent Tracking — Remaining Tasks
-> Plan: `docs/superpowers/plans/2026-03-29-subagent-tracking.md`
+### 4.1 [MEDIUM] Stop-Wait Live Verification
+코드+테스트 통과했지만, 실제 overmind 같은 세션에서 텍스트 선택지 → 덱 버튼 → stopResponse 전달이 되는지 실 환경 확인 필요.
 
-- Task 4: FE dashboard agent display (agent count badge, session detail)
-- Task 5: E2E tests for subagent lifecycle
-- Task 6: Integration test with real subagents
-
-### 4.2 [HIGH] Cross-Session AskUserQuestion
-다른 세션의 AskUserQuestion 선택지에 대한 덱 버튼 응답 전달 확인.
-현재 포커스 관리가 제대로 되는지 검증 필요.
-
-### 4.3 [MEDIUM] Button Timeout Extension
-`bridge/config.js` — `buttonTimeout: 30000` → `60000`+
-30초는 선택에 충분하지 않음 (라이브 테스트에서 확인)
-
-### 4.4 [LOW] Phase 3 — Physical D200 Plugin
+### 4.2 [LOW] Phase 3 — Physical D200 Plugin
 > Ref: `docs/reference/ulanzideck-plugin-dev-guide.md`
 
 ### 4.5 [LOW] Phase 4 — Distribution

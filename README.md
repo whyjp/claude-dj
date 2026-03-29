@@ -126,9 +126,9 @@ Claude DJ supports two distinct choice mechanisms:
 | Path | Trigger | State | Response Method |
 |------|---------|-------|-----------------|
 | **AskUserQuestion** (primary) | `PermissionRequest` hook with `tool_name: "AskUserQuestion"` | `WAITING_CHOICE` | Blocking HTTP response with `updatedInput.answer` |
-| **Transcript parsing** (fallback) | `Stop` hook parses last assistant message for numbered lists | `WAITING_RESPONSE` | File-based event (`events.jsonl`) read on next `UserPromptSubmit` |
+| **Transcript parsing** (fallback) | `Stop` hook parses last assistant message for numbered lists | `WAITING_RESPONSE` | Long-poll `stop-wait` endpoint → button press → `stopResponse` delivered to Claude |
 
-The **AskUserQuestion path** is the primary mechanism — it's real-time, blocking, and guaranteed to deliver the response. The **transcript parsing path** is a display-only fallback for when Claude writes choices as text despite the skill (edge cases, or sessions without the plugin).
+The **AskUserQuestion path** is the primary mechanism — it's real-time, blocking, and guaranteed to deliver the response. The **transcript parsing path** is a fallback for when Claude writes choices as text despite the skill. When the Stop hook detects choices, it POSTs them to the bridge, then long-polls `/api/stop-wait/:sessionId` (60s timeout). The bridge shows buttons on the deck; when pressed, the selection is returned as a `stopResponse` that Claude receives as input for its next turn.
 
 ### Cross-Session Focus Management
 
@@ -218,7 +218,7 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 
 ```bash
 npm install              # install dependencies
-npm test                 # 88 tests across 9 suites
+npm test                 # 93 tests across 9 suites
 node bridge/server.js    # start bridge
 ```
 
