@@ -162,9 +162,8 @@ function _handleMessage(msg) {
     case 'LAYOUT':
       renderLayout(msg);
       updateSession(msg);
-      if (_pendingSessionSwitch && sid) {
+      if (msg.focusSwitched && sid) {
         switchLogSession(sid);
-        _pendingSessionSwitch = false;
       }
       break;
 
@@ -182,10 +181,7 @@ function _handleMessage(msg) {
 
 // ── Outbound ─────────────────────────────────────────────────
 
-let _pendingSessionSwitch = false;
-
 function _sendButtonPress(slot) {
-  if (slot === 11) _pendingSessionSwitch = true;
   const payload = { type: 'BUTTON_PRESS', slot, timestamp: Date.now() };
   _sendJson(payload);
 }
