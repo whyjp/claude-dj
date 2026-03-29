@@ -1116,6 +1116,8 @@ function renderRow(id, defs) {
   });
 }
 
+let resetTimer = null;
+
 function handleAction(action, el) {
   if (interacted && !STATES[currentState]?.multi) return;
   const s = STATES[currentState];
@@ -1128,9 +1130,13 @@ function handleAction(action, el) {
     resultEl.textContent = result;
     resultEl.className = 'prompt-result ' + (s.resultClass ? s.resultClass(action) : '');
   }
+  // Reset to initial state after 3s
+  if (resetTimer) clearTimeout(resetTimer);
+  resetTimer = setTimeout(() => applyState(currentState), 3000);
 }
 
 function applyState(name) {
+  if (resetTimer) { clearTimeout(resetTimer); resetTimer = null; }
   currentState = name;
   interacted = false;
   const s = STATES[name];
