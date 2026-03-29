@@ -82,40 +82,21 @@ app.post('/api/hook/stop', (req, res) => {
   }
 
   if (choices && choices.length > 0) {
-    // Choices detected — show on deck and BLOCK until button pressed
+    // Choices detected in transcript — show on deck (display-only)
     const session = sm.handleStopWithChoices(input, choices);
     const currentFocus = sm.getFocusSession();
     if (!currentFocus || currentFocus.state === 'WAITING_RESPONSE') {
       sm.setFocus(session.id);
     }
-
-    // Hold HTTP response — will be resolved by button press handler
-    session.respondFn = (decision) => {
-      res.json({
-        ok: true,
-        decision: decision.value,
-      });
-    };
-
     const layout = ButtonManager.layoutFor(session);
     broadcastLayout(layout);
-
-    // Timeout: auto-dismiss after 120s
-    const timer = setTimeout(() => {
-      if (session.state === 'WAITING_RESPONSE' && session.respondFn) {
-        session.respondFn({ value: null });
-        session.respondFn = null;
-        sm.dismissSession(sessionId);
-        ws.broadcast({ type: 'ALL_DIM' });
-      }
-    }, 120_000);
-    _stopTimers.set(sessionId, timer);
   } else {
-    // No choices — go to IDLE immediately
+    // No choices — go to IDLE
     sm.dismissSession(sessionId) || sm.getOrCreate(input);
     ws.broadcast({ type: 'ALL_DIM' });
-    res.json({ ok: true });
   }
+
+  res.json({ ok: true });
 });
 
 // --- Events File API ---
@@ -189,13 +170,12 @@ ws.onButtonPress = (slot, timestamp) => {
   if (!decision) return;
 
   if (focus.state === 'WAITING_RESPONSE') {
-    // Clear stop timer
-    if (_stopTimers.has(focus.id)) {
-      clearTimeout(_stopTimers.get(focus.id));
-      _stopTimers.delete(focus.id);
-    }
-    // Resolve via respondFn (unblocks the stop hook HTTP request)
-    sm.resolveWaiting(focus.id, decision);
+    // Display-only: write to events file for reference, dismiss session
+    const file = path.join(config.eventsDir, `${focus.id}.jsonl`);
+    const event = JSON.stringify({ type: 'button', value: decision.value, timestamp: Date.now() });
+    fs.appendFileSync(file, event + '\n');
+    console.log(`[events] wrote ${decision.value} for session ${focus.id}`);
+    sm.dismissSession(focus.id);
     ws.broadcast({ type: 'ALL_DIM' });
     return;
   }

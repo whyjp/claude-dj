@@ -421,8 +421,8 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
     ws2.close();
   });
 
-  it('stop.js: fenced choices in transcript → deck shows buttons → button press returns selection', async () => {
-    // Create a fake transcript JSONL with fenced choices
+  it('stop.js: choices in transcript → deck shows response buttons (display-only)', async () => {
+    // Create a fake transcript JSONL with choices
     const tmpDir = path.join(os.tmpdir(), 'claude-dj-test-' + Date.now());
     fs.mkdirSync(tmpDir, { recursive: true });
     const transcriptPath = path.join(tmpDir, 'transcript.jsonl');
@@ -432,58 +432,29 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
         content: [
           {
             type: 'text',
-            text: 'Which approach?\n\n[claude-dj-choices]\n1. Refactor\n2. Rewrite\n  2a. New schema\n[/claude-dj-choices]',
+            text: 'Which approach?\n\n1. Refactor\n2. Rewrite\n3. Patch',
           },
         ],
       },
     };
     fs.writeFileSync(transcriptPath, JSON.stringify(entry) + '\n');
 
-    // Connect WS client to catch layout and press button
-    const ws = await connectWs(wsUrl);
-    const msgs = collectMessages(ws);
-    await new Promise((r) => setTimeout(r, 100));
+    const wsPromise = waitForWsMessage(wsUrl, 'LAYOUT', 5000);
 
-    // Spawn stop hook — this should BLOCK until button pressed
-    const hookPromise = runHook('stop.js', {
-      session_id: 'e2e-fence-1',
+    const result = await runHook('stop.js', {
+      session_id: 'e2e-display-1',
       hook_event_name: 'Stop',
       stop_hook_active: false,
       transcript_path: transcriptPath,
     });
 
-    // Wait for response layout with choices
-    await new Promise((resolve) => {
-      const check = setInterval(() => {
-        if (msgs.some((m) => m.type === 'LAYOUT' && m.preset === 'response')) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 50);
-    });
-
-    // Verify choices are shown
-    const layoutMsg = msgs.find((m) => m.type === 'LAYOUT' && m.preset === 'response');
-    assert.ok(layoutMsg.choices);
-    assert.equal(layoutMsg.choices.length, 3);
-    assert.equal(layoutMsg.choices[0].index, '1');
-    assert.equal(layoutMsg.choices[2].index, '2a');
-
-    // Press button for slot 0 (choice "1. Refactor")
-    ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 0, timestamp: Date.now() }));
-
-    // Hook should now return with the selection
-    const result = await hookPromise;
     assert.equal(result.exitCode, 0);
 
-    // The stdout should contain the decision
-    if (result.stdout.trim()) {
-      const response = JSON.parse(result.stdout);
-      assert.ok(response.decision);
-      assert.ok(response.decision.includes('Refactor'));
-    }
-
-    ws.close();
+    const msg = await wsPromise;
+    assert.equal(msg.preset, 'response');
+    assert.ok(msg.choices);
+    assert.equal(msg.choices.length, 3);
+    assert.equal(msg.choices[0].index, '1');
 
     // Cleanup
     fs.rmSync(tmpDir, { recursive: true, force: true });

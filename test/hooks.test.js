@@ -66,6 +66,6 @@ describe('Hook scripts', () => {
     assert.ok(existsSync('skills/choice-format/SKILL.md'));
     const content = readFileSync('skills/choice-format/SKILL.md', 'utf8');
     assert.ok(content.includes('name: choice-format'));
-    assert.ok(content.includes('claude-dj-choices'));
+    assert.ok(content.includes('AskUserQuestion'));
   });
 });

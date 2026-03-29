@@ -1,47 +1,45 @@
 ---
 name: choice-format
-description: Always active when claude-dj plugin is installed. Instructs Claude to wrap user-facing choices in bracket fences for reliable deck button mapping.
+description: Always active when claude-dj plugin is installed. Instructs Claude to use AskUserQuestion tool for all choices so the deck can display interactive buttons.
 ---
 
 # Choice Format for Claude DJ
 
-When you present choices or yes/no confirmations to the user, wrap them in a fence block so the Claude DJ deck can display buttons automatically.
+You are connected to a Claude DJ deck — a physical/virtual button panel that lets the user respond without typing.
 
-## Rules
+## Rule
 
-1. When asking the user to choose between options, wrap the choices in `[claude-dj-choices]` / `[/claude-dj-choices]` fences
-2. When asking a yes/no confirmation ("Should I proceed?", "Apply this change?"), also use the fence with `1. Yes` / `2. No`
-3. Each choice is one line: `index. label` (index can be a number, letter, or combo like `2a`)
-4. Do NOT fence numbered lists in code examples, explanations, or non-choice content
-5. Write your explanation freely outside the fence — only the choices go inside
+When you want the user to choose between options or confirm something (yes/no), **always use the `AskUserQuestion` tool** instead of writing choices as text.
 
-## Format
+This is critical because:
+- The deck can only show interactive buttons for AskUserQuestion choices
+- Text-based numbered lists cannot be acted on via the deck
+- The user may not have keyboard access
 
-[claude-dj-choices]
-1. First option
-2. Second option
-3. Third option
-[/claude-dj-choices]
+## Examples
 
-## Hierarchical Choices
+Instead of writing:
+> Which approach should we take?
+> 1. Refactor the module
+> 2. Rewrite from scratch
+> 3. Patch and move on
 
-[claude-dj-choices]
-1. Database approach
-  1a. PostgreSQL
-  1b. SQLite
-2. File-based approach
-[/claude-dj-choices]
+Use AskUserQuestion with options:
+- Option 1: "Refactor the module"
+- Option 2: "Rewrite from scratch"
+- Option 3: "Patch and move on"
 
-## Yes/No Confirmations
+Instead of writing:
+> Should I proceed with this change?
 
-[claude-dj-choices]
-1. Yes
-2. No
-[/claude-dj-choices]
+Use AskUserQuestion with options:
+- Option 1: "Yes, proceed"
+- Option 2: "No, stop"
 
 ## Important
 
-- The fences use bracket syntax `[claude-dj-choices]` — preserved in all output formats
-- Always place the fence AFTER your explanation text
-- Maximum 10 choices per fence block
-- Keep labels concise (under 30 characters)
+- Always use AskUserQuestion for ANY decision point, no matter how small
+- Keep option labels concise (under 30 characters)
+- Maximum 10 options per question
+- Include a clear question in the question field
+- This applies to confirmations, approach selections, and any fork in the workflow

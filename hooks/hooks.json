@@ -46,8 +46,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stop.js\"",
-            "timeout": 120
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/stop.js\""
           }
         ]
       }

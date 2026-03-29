@@ -6,7 +6,7 @@ const BRIDGE_URL = process.env.CLAUDE_DJ_URL || 'http://localhost:39200';
 
 /**
  * Extract last assistant text from transcript JSONL and parse choices.
- * Priority: fenced choices > regex fallback > null.
+ * Used as display-only fallback when Claude doesn't use AskUserQuestion.
  */
 function parseChoices(transcriptPath) {
   try {
@@ -52,37 +52,20 @@ try {
     process.exit(0);
   }
 
-  // Parse transcript for choices
+  // Parse transcript for choices (display-only fallback)
   let choices = null;
   if (parsed.transcript_path) {
     choices = parseChoices(parsed.transcript_path);
   }
 
   const payload = { ...parsed, _djChoices: choices };
-
-  if (choices && choices.length > 0) {
-    // BLOCKING: wait for user to press a deck button (like permission hook)
-    const res = await fetch(`${BRIDGE_URL}/api/hook/stop`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(120_000),
-    });
-    const json = await res.json();
-    // Output the selection so Claude sees it
-    if (json.decision) {
-      process.stdout.write(JSON.stringify(json));
-    }
-  } else {
-    // No choices — fire and forget
-    await fetch(`${BRIDGE_URL}/api/hook/stop`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(5000),
-    });
-  }
+  await fetch(`${BRIDGE_URL}/api/hook/stop`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(5000),
+  });
 } catch (e) {
-  // ignore — bridge down or timeout
+  // ignore
 }
 process.exit(0);
