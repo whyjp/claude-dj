@@ -6,7 +6,7 @@
  */
 
 import { initGrid, onPress, renderLayout, renderAllDim, setConnectionOverlay } from './d200-renderer.js';
-import { initDashboard, log, updateWsStatus, clearLog, updateSession, dimAllSessions, setSessions } from './dashboard.js';
+import { initDashboard, log, updateWsStatus, clearLog, updateSession, dimAllSessions, setSessions, switchLogSession } from './dashboard.js';
 
 const VERSION = '0.1.0';
 const WS_PATH = '/ws';
@@ -95,8 +95,9 @@ function _connect() {
     _ws.onmessage = e => {
       try {
         const msg = JSON.parse(e.data);
-        log('in', e.data);
+        const sid = msg.session?.id || null;
         _handleMessage(msg);
+        log('in', e.data, sid);
       } catch {
         log('err', `Parse error: ${String(e.data).slice(0, 80)}`);
       }
@@ -151,6 +152,7 @@ function _clearReconnect() {
 // ── Message routing ───────────────────────────────────────────
 
 function _handleMessage(msg) {
+  const sid = msg.session?.id || null;
   switch (msg.type) {
     case 'WELCOME':
       log('sys', `Bridge v${msg.version || '?'} — ${(msg.sessions || []).length} session(s)`);
@@ -160,6 +162,10 @@ function _handleMessage(msg) {
     case 'LAYOUT':
       renderLayout(msg);
       updateSession(msg);
+      if (_pendingSessionSwitch && sid) {
+        switchLogSession(sid);
+        _pendingSessionSwitch = false;
+      }
       break;
 
     case 'ALL_DIM':
@@ -171,11 +177,15 @@ function _handleMessage(msg) {
       // Unknown message — already logged by onmessage handler
       break;
   }
+  return sid;
 }
 
 // ── Outbound ─────────────────────────────────────────────────
 
+let _pendingSessionSwitch = false;
+
 function _sendButtonPress(slot) {
+  if (slot === 11) _pendingSessionSwitch = true;
   const payload = { type: 'BUTTON_PRESS', slot, timestamp: Date.now() };
   _sendJson(payload);
 }

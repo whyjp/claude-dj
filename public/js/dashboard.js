@@ -6,6 +6,7 @@ import { esc } from './util.js';
 
 let _logEntries = [];
 let _logFilter = '';
+let _logSessionFilter = '__all__'; // '__all__' or session id
 
 /** @type {Map<string, {id:string, name:string, state:string, waitingSince:number|null}>} */
 let _sessions = new Map();
@@ -42,6 +43,18 @@ export function initDashboard() {
   const clearFn = () => clearLog();
   if (clearBtn1) clearBtn1.addEventListener('click', clearFn);
   if (clearBtn2) clearBtn2.addEventListener('click', clearFn);
+
+  // Log session sub-tabs
+  const logTabs = document.getElementById('logTabs');
+  if (logTabs) {
+    logTabs.addEventListener('click', e => {
+      const tab = e.target.closest('.log-tab');
+      if (!tab) return;
+      _logSessionFilter = tab.dataset.sid;
+      logTabs.querySelectorAll('.log-tab').forEach(t => t.classList.toggle('on', t === tab));
+      _reRenderLog();
+    });
+  }
 }
 
 /** Switch to a named tab */
@@ -58,8 +71,9 @@ function _switchTab(name) {
  * Append an entry to the event log.
  * @param {'in'|'out'|'sys'|'err'} direction
  * @param {string} msg
+ * @param {string} [sessionId] - optional session ID for per-session filtering
  */
-export function log(direction, msg) {
+export function log(direction, msg, sessionId) {
   const now = new Date();
   const t = [
     now.getHours().toString().padStart(2, '0'),
@@ -67,10 +81,11 @@ export function log(direction, msg) {
     now.getSeconds().toString().padStart(2, '0'),
   ].join(':');
 
-  const entry = { dir: direction, msg, t };
+  const entry = { dir: direction, msg, t, sid: sessionId || null };
   _logEntries.push(entry);
   if (_logEntries.length > 500) _logEntries.shift();
 
+  if (sessionId) _ensureLogTab(sessionId);
   _appendEntry(entry);
   _updateBadge();
 }
@@ -174,18 +189,77 @@ export function clearLog() {
   _updateBadge();
 }
 
+/** Ensure a log sub-tab exists for the given session */
+function _ensureLogTab(sessionId) {
+  const container = document.getElementById('logTabs');
+  if (!container) return;
+  if (container.querySelector(`[data-sid="${sessionId}"]`)) return;
+
+  const session = _sessions.get(sessionId);
+  const label = session ? session.name.split(' ')[0] : sessionId.slice(0, 8);
+
+  const tab = document.createElement('div');
+  tab.className = 'log-tab';
+  tab.dataset.sid = sessionId;
+  tab.textContent = label;
+  container.appendChild(tab);
+}
+
+/** Switch event log to a specific session tab */
+export function switchLogSession(sessionId) {
+  if (!sessionId) return;
+  _ensureLogTab(sessionId);
+  _logSessionFilter = sessionId;
+  const container = document.getElementById('logTabs');
+  if (container) {
+    container.querySelectorAll('.log-tab').forEach(t =>
+      t.classList.toggle('on', t.dataset.sid === sessionId)
+    );
+  }
+  _reRenderLog();
+}
+
+/** Sync log sub-tab labels with session names */
+function _syncLogTabLabels() {
+  const container = document.getElementById('logTabs');
+  if (!container) return;
+  for (const tab of container.querySelectorAll('.log-tab')) {
+    const sid = tab.dataset.sid;
+    if (sid === '__all__') continue;
+    const session = _sessions.get(sid);
+    if (session) {
+      tab.textContent = session.name.split(' ')[0];
+    }
+  }
+}
+
 // ── Internals ──────────────────────────────────────────────
 
-function _appendEntry(entry) {
-  const { dir, msg, t } = entry;
-  if (_logFilter && !msg.toLowerCase().includes(_logFilter.toLowerCase())) return;
+function _matchesFilter(entry) {
+  if (_logFilter && !entry.msg.toLowerCase().includes(_logFilter.toLowerCase())) return false;
+  if (_logSessionFilter !== '__all__') {
+    // Show entries belonging to this session + sys/err entries with no session (global events)
+    if (entry.sid && entry.sid !== _logSessionFilter) return false;
+  }
+  return true;
+}
 
+function _appendEntry(entry) {
+  if (!_matchesFilter(entry)) return;
+
+  const { dir, msg, t, sid } = entry;
   const el = document.createElement('div');
   el.className = `le ${DIR_CLASS[dir] || ''}`;
   const truncated = msg.length > 200 ? msg.slice(0, 200) + '…' : msg;
+
+  const sidTag = sid && _logSessionFilter === '__all__'
+    ? `<span class="le-sid">${esc(sid.slice(0, 6))}</span>`
+    : '';
+
   el.innerHTML =
     `<span class="le-t">${t}</span>` +
     `<span class="le-d ${dir}">${DIR_SYMBOL[dir] || '·'}</span>` +
+    sidTag +
     `<span class="le-m">${esc(truncated)}</span>`;
 
   const elog = document.getElementById('elog');
@@ -232,6 +306,7 @@ function _renderSessions() {
   const entries = Array.from(_sessions.values());
 
   if (empty) empty.classList.toggle('hide', entries.length > 0);
+  _syncLogTabLabels();
 
   for (const s of entries) {
     const row = document.createElement('div');

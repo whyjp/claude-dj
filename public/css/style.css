@@ -270,6 +270,28 @@ main {
 .pane { display: none; flex: 1; overflow: hidden; flex-direction: column; min-height: 0; }
 .pane.on { display: flex; }
 
+/* ── LOG SUB-TABS ── */
+.log-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--bd);
+  background: var(--bg); flex-shrink: 0; overflow-x: auto;
+  scrollbar-width: none;
+}
+.log-tabs::-webkit-scrollbar { display: none; }
+.log-tab {
+  padding: 4px 10px; font-size: 9px; color: var(--muted);
+  letter-spacing: .04em; cursor: pointer; white-space: nowrap;
+  border-bottom: 2px solid transparent; transition: all .15s;
+  flex-shrink: 0;
+}
+.log-tab:hover { color: var(--white); }
+.log-tab.on { color: var(--blue); border-bottom-color: var(--blue); }
+
+.le-sid {
+  font-size: 8px; color: var(--bg); background: var(--bd2);
+  padding: 0 3px; border-radius: 2px; flex-shrink: 0;
+  letter-spacing: .02em; font-weight: 600;
+}
+
 /* ── EVENT LOG ── */
 .elog { flex: 1; overflow-y: auto; padding: 6px 0; font-size: 10px; min-height: 0; }
 .le {
