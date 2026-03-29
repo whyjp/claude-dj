@@ -361,10 +361,21 @@ main {
 .sess-state { font-size: 11px; color: var(--muted); letter-spacing: .06em; flex-shrink: 0; }
 .sess-dur { font-size: 11px; color: var(--muted); flex-shrink: 0; min-width: 36px; text-align: right; }
 
-/* ── SESSION CHILD ROWS ── */
-.sess-child { padding-left: 30px; }
-.sess-child .sess-name { color: var(--muted); font-weight: 400; }
-.sess-child .sess-name::before { content: '└ '; color: var(--bd2); }
+/* ── SESSION AGENT BADGE ── */
+.sess-agents {
+  font-size: 9px; color: var(--purple); background: var(--pdim);
+  padding: 1px 5px; border-radius: 3px; flex-shrink: 0;
+  border: 1px solid rgba(187,136,255,.2);
+}
+
+/* ── LOG CHILD TAB ── */
+.log-tab-child {
+  color: var(--purple);
+  border-bottom-color: transparent;
+  font-style: italic;
+}
+.log-tab-child::before { content: '└ '; color: var(--bd2); font-style: normal; }
+.log-tab-child.on { color: var(--purple); border-bottom-color: var(--purple); }
 
 /* ── PROTOCOL ── */
 .proto { padding: 12px 14px; overflow-y: auto; flex: 1; }

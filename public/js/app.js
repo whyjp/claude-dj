@@ -96,8 +96,9 @@ function _connect() {
       try {
         const msg = JSON.parse(e.data);
         const sid = msg.session?.id || null;
+        const aid = msg.agent?.agentId || null;
         _handleMessage(msg);
-        log('in', e.data, sid);
+        log('in', e.data, sid, aid);
       } catch {
         log('err', `Parse error: ${String(e.data).slice(0, 80)}`);
       }
@@ -163,7 +164,7 @@ function _handleMessage(msg) {
       renderLayout(msg);
       updateSession(msg);
       if (msg.focusSwitched && sid) {
-        switchLogSession(sid);
+        switchLogSession(sid, msg.agent?.agentId || null);
       }
       break;
 

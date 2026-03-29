@@ -7,6 +7,7 @@ import { esc } from './util.js';
 let _logEntries = [];
 let _logFilter = '';
 let _logSessionFilter = '__all__'; // '__all__' or session id
+let _logAgentFilter = null; // null = all agents in session, or agent id
 
 /** @type {Map<string, {id:string, name:string, state:string, waitingSince:number|null, agents:Array}>} */
 let _sessions = new Map();
@@ -50,8 +51,21 @@ export function initDashboard() {
     logTabs.addEventListener('click', e => {
       const tab = e.target.closest('.log-tab');
       if (!tab) return;
-      _logSessionFilter = tab.dataset.sid;
-      logTabs.querySelectorAll('.log-tab').forEach(t => t.classList.toggle('on', t === tab));
+      const sid = tab.dataset.sid;
+      const aid = tab.dataset.aid || null;
+
+      if (sid === '__all__') {
+        _logSessionFilter = '__all__';
+        _logAgentFilter = null;
+      } else if (aid) {
+        // Child agent tab clicked
+        _logAgentFilter = aid;
+      } else {
+        // Root session tab clicked
+        _logSessionFilter = sid;
+        _logAgentFilter = null;
+      }
+      _rebuildLogTabs();
       _reRenderLog();
     });
   }
@@ -72,8 +86,9 @@ function _switchTab(name) {
  * @param {'in'|'out'|'sys'|'err'} direction
  * @param {string} msg
  * @param {string} [sessionId] - optional session ID for per-session filtering
+ * @param {string} [agentId] - optional agent ID for per-agent filtering
  */
-export function log(direction, msg, sessionId) {
+export function log(direction, msg, sessionId, agentId) {
   const now = new Date();
   const t = [
     now.getHours().toString().padStart(2, '0'),
@@ -81,11 +96,10 @@ export function log(direction, msg, sessionId) {
     now.getSeconds().toString().padStart(2, '0'),
   ].join(':');
 
-  const entry = { dir: direction, msg, t, sid: sessionId || null };
+  const entry = { dir: direction, msg, t, sid: sessionId || null, aid: agentId || null };
   _logEntries.push(entry);
   if (_logEntries.length > 500) _logEntries.shift();
 
-  if (sessionId) _ensureLogTab(sessionId);
   _appendEntry(entry);
   _updateBadge();
 }
@@ -209,48 +223,54 @@ export function clearLog() {
   _updateBadge();
 }
 
-/** Ensure a log sub-tab exists for the given session */
-function _ensureLogTab(sessionId) {
+/** Rebuild log tabs: All + root sessions. If a root is selected, also show its child agents. */
+function _rebuildLogTabs() {
   const container = document.getElementById('logTabs');
   if (!container) return;
-  if (container.querySelector(`[data-sid="${sessionId}"]`)) return;
 
-  const session = _sessions.get(sessionId);
-  const label = session ? session.name.split(' ')[0] : sessionId.slice(0, 8);
+  container.innerHTML = '';
 
-  const tab = document.createElement('div');
-  tab.className = 'log-tab';
-  tab.dataset.sid = sessionId;
-  tab.textContent = label;
-  container.appendChild(tab);
-}
+  // All tab
+  const allTab = document.createElement('div');
+  allTab.className = `log-tab ${_logSessionFilter === '__all__' ? 'on' : ''}`;
+  allTab.dataset.sid = '__all__';
+  allTab.textContent = 'All';
+  container.appendChild(allTab);
 
-/** Switch event log to a specific session tab */
-export function switchLogSession(sessionId) {
-  if (!sessionId) return;
-  _ensureLogTab(sessionId);
-  _logSessionFilter = sessionId;
-  const container = document.getElementById('logTabs');
-  if (container) {
-    container.querySelectorAll('.log-tab').forEach(t =>
-      t.classList.toggle('on', t.dataset.sid === sessionId)
-    );
+  // Root session tabs
+  for (const s of _sessions.values()) {
+    const tab = document.createElement('div');
+    const isActive = _logSessionFilter === s.id && _logAgentFilter === null;
+    tab.className = `log-tab ${isActive ? 'on' : ''}`;
+    tab.dataset.sid = s.id;
+    tab.textContent = s.name.split(' ')[0];
+    container.appendChild(tab);
   }
-  _reRenderLog();
-}
 
-/** Sync log sub-tab labels with session names */
-function _syncLogTabLabels() {
-  const container = document.getElementById('logTabs');
-  if (!container) return;
-  for (const tab of container.querySelectorAll('.log-tab')) {
-    const sid = tab.dataset.sid;
-    if (sid === '__all__') continue;
-    const session = _sessions.get(sid);
-    if (session) {
-      tab.textContent = session.name.split(' ')[0];
+  // If a root is selected, show child agent sub-tabs
+  if (_logSessionFilter !== '__all__') {
+    const sess = _sessions.get(_logSessionFilter);
+    if (sess && sess.agents && sess.agents.length > 0) {
+      for (const a of sess.agents) {
+        const tab = document.createElement('div');
+        const isActive = _logAgentFilter === a.agentId;
+        tab.className = `log-tab log-tab-child ${isActive ? 'on' : ''}`;
+        tab.dataset.sid = _logSessionFilter;
+        tab.dataset.aid = a.agentId;
+        tab.textContent = a.type || a.agentId.slice(0, 6);
+        container.appendChild(tab);
+      }
     }
   }
+}
+
+/** Switch event log to a specific session/agent tab */
+export function switchLogSession(sessionId, agentId) {
+  if (!sessionId) return;
+  _logSessionFilter = sessionId;
+  _logAgentFilter = agentId || null;
+  _rebuildLogTabs();
+  _reRenderLog();
 }
 
 // ── Internals ──────────────────────────────────────────────
@@ -258,8 +278,9 @@ function _syncLogTabLabels() {
 function _matchesFilter(entry) {
   if (_logFilter && !entry.msg.toLowerCase().includes(_logFilter.toLowerCase())) return false;
   if (_logSessionFilter !== '__all__') {
-    // Show entries belonging to this session + sys/err entries with no session (global events)
     if (entry.sid && entry.sid !== _logSessionFilter) return false;
+    // Agent filter: if set, only show entries from that agent (+ root entries with no aid)
+    if (_logAgentFilter && entry.aid && entry.aid !== _logAgentFilter) return false;
   }
   return true;
 }
@@ -326,40 +347,27 @@ function _renderSessions() {
   const entries = Array.from(_sessions.values());
 
   if (empty) empty.classList.toggle('hide', entries.length > 0);
-  _syncLogTabLabels();
+  _rebuildLogTabs();
 
   for (const s of entries) {
-    // Root row
     const row = document.createElement('div');
     row.className = 'sess-row';
     row.dataset.sid = s.id;
 
     const dur = s.waitingSince ? _fmtDur(Date.now() - s.waitingSince) : '';
+    const agentCount = s.agents ? s.agents.length : 0;
+    const agentBadge = agentCount > 0
+      ? `<span class="sess-agents">${agentCount} agent${agentCount > 1 ? 's' : ''}</span>`
+      : '';
 
     row.innerHTML =
       `<span class="sess-dot ${esc(s.state)}"></span>` +
       `<span class="sess-name">${esc(s.name)}</span>` +
+      agentBadge +
       `<span class="sess-state">${STATE_LABELS[s.state] || s.state}</span>` +
       `<span class="sess-dur">${dur}</span>`;
 
     list.appendChild(row);
-
-    // Child agent rows
-    if (s.agents && s.agents.length > 0) {
-      for (const a of s.agents) {
-        const child = document.createElement('div');
-        child.className = 'sess-row sess-child';
-        child.dataset.sid = s.id;
-        child.dataset.aid = a.agentId;
-
-        child.innerHTML =
-          `<span class="sess-dot ${esc(a.state || 'PROCESSING')}"></span>` +
-          `<span class="sess-name">${esc(a.type || 'agent')}</span>` +
-          `<span class="sess-state">${STATE_LABELS[a.state] || a.state || 'processing'}</span>`;
-
-        list.appendChild(child);
-      }
-    }
   }
 
   _updateSessionBadge();
