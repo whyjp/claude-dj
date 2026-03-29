@@ -19,7 +19,13 @@ export class ButtonManager {
       agentCount,
     };
 
-    switch (session.state) {
+    // When viewing a specific agent, use that agent's state for the preset.
+    // When root is focused but the permission came from an agent, show processing.
+    const effectiveState = focusedAgent
+      ? focusedAgent.state
+      : (session._permissionAgentId ? 'PROCESSING' : session.state);
+
+    switch (effectiveState) {
       case 'IDLE':
         return { ...base, preset: 'idle' };
       case 'PROCESSING':

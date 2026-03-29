@@ -102,6 +102,7 @@ export class SessionManager {
     }
 
     session.waitingSince = Date.now();
+    session._permissionAgentId = input.agent_id || null;
 
     if (input.agent_id && session.agents.has(input.agent_id)) {
       session.agents.get(input.agent_id).state = isChoice ? 'WAITING_CHOICE' : 'WAITING_BINARY';
@@ -180,13 +181,15 @@ export class SessionManager {
   resolveWaiting(sessionId, decision) {
     const session = this.sessions.get(sessionId);
     if (!session) return false;
+    // Transition state BEFORE calling respondFn so broadcast reflects new state
+    session.state = 'PROCESSING';
+    session.prompt = null;
+    session.waitingSince = null;
+    session._permissionAgentId = null;
     if (session.respondFn) {
       session.respondFn(decision);
       session.respondFn = null;
     }
-    session.state = 'PROCESSING';
-    session.prompt = null;
-    session.waitingSince = null;
     return true;
   }
 

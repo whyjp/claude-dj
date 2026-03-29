@@ -158,8 +158,9 @@ app.post('/api/hook/permission', (req, res) => {
   }
 
   const session = sm.handlePermission(input);
-  // Auto-focus: new permission request takes focus
+  // Auto-focus: new permission request takes focus (including subagent)
   sm.setFocus(session.id);
+  if (input.agent_id) sm.focusAgentId = input.agent_id;
   const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
   const isChoice = session.state === 'WAITING_CHOICE';
 
