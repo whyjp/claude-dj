@@ -4,3 +4,5 @@ node_modules/
 ulanzi/sdk/
 ulanzi/software/
 test/live/scratch.txt
+.playwright-mcp/
+*.png
