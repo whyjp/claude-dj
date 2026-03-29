@@ -11,10 +11,13 @@ Control Claude Code with physical buttons or browser — no terminal focus neede
 The Bridge must be running before Claude Code can communicate with the deck.
 
 ```bash
-cd /path/to/claude-dj
-node bridge/server.js
-# [claude-dj] Bridge running at http://localhost:39200
-# [claude-dj] Virtual DJ at http://localhost:39200
+# Linux/Mac
+./scripts/start-bridge.sh          # default port 39200
+./scripts/start-bridge.sh 8080     # custom port
+
+# Windows
+scripts\start-bridge.bat
+scripts\start-bridge.bat 8080
 ```
 
 Open **http://localhost:39200** in a browser to see the Virtual DJ.
@@ -27,16 +30,24 @@ Open **http://localhost:39200** in a browser to see the Virtual DJ.
 claude --plugin-dir /path/to/claude-dj
 ```
 
-**Option B: Manual hook registration**
+**Option B: Hook scripts**
 ```bash
-# Project-local (only this directory)
-node tools/setup.js
+# Install globally (all Claude sessions)
+./scripts/install-hooks.sh              # Linux/Mac
+scripts\install-hooks.bat               # Windows
 
-# Or global (all Claude sessions)
-node tools/setup.js --global
+# Or project-local only
+./scripts/install-hooks.sh --project    # Linux/Mac
+scripts\install-hooks.bat --project     # Windows
 
 # Then start Claude normally
 claude
+```
+
+**Uninstall hooks**
+```bash
+./scripts/uninstall-hooks.sh            # Linux/Mac
+scripts\uninstall-hooks.bat             # Windows
 ```
 
 ### 3. Use the Deck
@@ -82,6 +93,16 @@ Claude Code Session
 | `CLAUDE_DJ_URL` | `http://localhost:39200` | Hook → Bridge URL |
 | `CLAUDE_DJ_IDLE_TIMEOUT` | `300000` (5min) | Session prune timeout (ms) |
 
+## Scripts
+
+| Script | Description |
+|--------|-------------|
+| `scripts/start-bridge.sh` / `.bat` | Start bridge server (auto-installs deps) |
+| `scripts/install-hooks.sh` / `.bat` | Register hooks in Claude Code settings |
+| `scripts/uninstall-hooks.sh` / `.bat` | Remove hooks from Claude Code settings |
+
+All scripts accept `--project` (hooks only) for project-local instead of global scope.
+
 ## Development
 
 ```bash
@@ -92,7 +113,7 @@ npm install
 npm test
 
 # Start bridge in dev
-node bridge/server.js
+./scripts/start-bridge.sh
 ```
 
 ## License
