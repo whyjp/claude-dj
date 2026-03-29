@@ -260,6 +260,27 @@ h1 .g { color: var(--green); }
 .stab:not(:last-child) { border-right: 1px solid var(--bd); }
 .stab.on { color: var(--green); background: var(--gdim); }
 
+/* ── PROMPT BOX ── */
+.prompt-box {
+  background: #0c0c18; border: 1px solid var(--bd); border-top: none;
+  padding: 12px 14px; font-family: var(--mono); font-size: 11px;
+  min-height: 48px;
+}
+.prompt-header { margin-bottom: 6px; }
+.prompt-role {
+  font-size: 9px; font-weight: 600; color: var(--blue);
+  letter-spacing: .08em; text-transform: uppercase;
+}
+.prompt-text { color: var(--muted); line-height: 1.6; white-space: pre-wrap; }
+.prompt-text .hl { color: var(--white); }
+.prompt-text .cmd { color: var(--amber); }
+.prompt-text .tool { color: var(--green); }
+.prompt-result {
+  margin-top: 8px; color: var(--green); font-weight: 500;
+  min-height: 14px; transition: opacity .2s;
+}
+.prompt-result.denied { color: var(--red); }
+
 /* ── FLOW ── */
 .flow { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--bd); margin-top: 2.5rem; }
 .fc {
@@ -452,6 +473,12 @@ footer {
           <span class="bs" id="bs" style="font-size:6px;">D200 Info Display</span>
         </div>
       </div>
+    </div>
+    <!-- Prompt example below deck -->
+    <div class="prompt-box" id="promptBox">
+      <div class="prompt-header"><span class="prompt-role">Claude</span></div>
+      <div class="prompt-text" id="promptText"></div>
+      <div class="prompt-result" id="promptResult"></div>
     </div>
   </div>
 </div>
@@ -967,43 +994,58 @@ footer {
 </footer>
 
 <script>
-// D200 hero mock switcher
-// r2 = [slot10:count, slot11:session, slot12:reserved]  — BIG WIN is always 'system' (non-interactive)
+// ── State machine: state = layout = prompt context ──
 const STATES = {
   binary: {
     r0: [
-      { cls:'approve', icon:'✅', lbl:'Approve' },
-      { cls:'deny', icon:'❌', lbl:'Deny' },
+      { cls:'approve', icon:'✅', lbl:'Approve', action:'approve' },
+      { cls:'deny', icon:'❌', lbl:'Deny', action:'deny' },
       { cls:'dim' }, { cls:'dim' }, { cls:'dim' }
     ],
     r1: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' }],
-    r2: ['count', 'sess', 'agent'],
-    bw: { icon:'🖥', name:'SYSTEM', state:'time / cpu' }
+    prompt: '<span class="tool">Bash</span> <span class="cmd">rm -rf node_modules && npm install</span>\n허용하시겠습니까?',
+    onAction(a) { return a === 'approve' ? '✅ Approved — 실행 중...' : '❌ Denied'; },
+    resultClass(a) { return a === 'deny' ? 'denied' : ''; },
   },
   choice: {
     r0: [
-      { cls:'c0', num:'1', nlbl:'g', sub:'Refactor' },
-      { cls:'c1', num:'2', nlbl:'a', sub:'Fix tests' },
-      { cls:'c2', num:'3', nlbl:'b', sub:'Show diff' },
-      { cls:'c3', num:'4', nlbl:'p', sub:'Skip' },
+      { cls:'c0', num:'1', nlbl:'g', sub:'Refactor', action:'c1' },
+      { cls:'c1', num:'2', nlbl:'a', sub:'Fix tests', action:'c2' },
+      { cls:'c2', num:'3', nlbl:'b', sub:'Show diff', action:'c3' },
+      { cls:'c3', num:'4', nlbl:'p', sub:'Skip', action:'c4' },
       { cls:'dim' }
     ],
     r1: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' }],
-    r2: ['count', 'sess', 'agent'],
-    bw: { icon:'🖥', name:'SYSTEM', state:'time / cpu' }
+    prompt: 'Which approach should we take?\n\n<span class="hl">AskUserQuestion</span>: 4개 선택지 → 덱 버튼으로 즉시 응답',
+    onAction(a) { const m={c1:'Refactor',c2:'Fix tests',c3:'Show diff',c4:'Skip'}; return `→ Selected: ${m[a]}`; },
   },
   multi: {
     r0: [
-      { cls:'c0', icon:'☑', lbl:'Auth' },
-      { cls:'dim', icon:'☐', lbl:'API' },
-      { cls:'c2', icon:'☑', lbl:'UI' },
+      { cls:'dim', icon:'☐', lbl:'Auth', action:'t0', toggle:true },
+      { cls:'dim', icon:'☐', lbl:'API', action:'t1', toggle:true },
+      { cls:'dim', icon:'☐', lbl:'UI', action:'t2', toggle:true },
       { cls:'dim' }, { cls:'dim' }
     ],
     r1: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },
-      { cls:'c1', icon:'✔', lbl:'Done' }
+      { cls:'c1', icon:'✔', lbl:'Done', action:'submit' }
     ],
-    r2: ['count', 'sess', 'agent'],
-    bw: { icon:'🖥', name:'SYSTEM', state:'time / cpu' }
+    prompt: 'Which features to enable?\n\n<span class="hl">multiSelect</span>: 토글 후 <span class="hl">Done</span>으로 제출',
+    _selected: new Set(),
+    onAction(a, el) {
+      if (a === 'submit') {
+        const names = ['Auth','API','UI'];
+        const sel = [...this._selected].map(i => names[i]).join(', ');
+        return sel ? `→ Selected: ${sel}` : '→ (none selected)';
+      }
+      const idx = parseInt(a[1]);
+      if (this._selected.has(idx)) { this._selected.delete(idx); }
+      else { this._selected.add(idx); }
+      // Update button visual
+      const on = this._selected.has(idx);
+      el.className = on ? 'k c0' : 'k dim';
+      el.innerHTML = (on ? '☑' : '☐') + `<span class="k-lbl">${['Auth','API','UI'][idx]}</span>`;
+      return null; // no result yet
+    },
   },
   processing: {
     r0: [
@@ -1014,26 +1056,26 @@ const STATES = {
       { cls:'proc', d:'.6s' }, { cls:'proc', d:'.72s' },
       { cls:'proc', d:'.84s' }, { cls:'proc', d:'.96s' }, { cls:'proc', d:'1.08s' }
     ],
-    r2: ['count', 'sess', 'agent'],
-    bw: { icon:'🖥', name:'SYSTEM', state:'time / cpu' }
+    prompt: '<span class="tool">Read</span> src/components/App.tsx\n<span class="tool">Bash</span> npm test\n\n작업 진행 중...',
   },
   awaiting: {
     r0: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' }],
     r1: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },
       { cls:'c1', icon:'⏳', lbl:'Awaiting' }
     ],
-    r2: ['count', 'sess', 'agent'],
-    bw: { icon:'🖥', name:'SYSTEM', state:'time / cpu' }
+    prompt: '3개 파일을 수정하겠습니다. 진행할까요?\n\nClaude가 터미널에서 입력을 기다리고 있습니다.',
   },
   idle: {
     r0: Array(5).fill({ cls:'dim' }),
     r1: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },
       { cls:'dim', icon:'💤', lbl:'Idle' }
     ],
-    r2: ['count', 'sess', 'agent'],
-    bw: { icon:'🖥', name:'SYSTEM', state:'time / cpu' }
+    prompt: '세션 대기 중 — 다음 프롬프트를 기다리는 상태',
   }
 };
+
+let currentState = 'binary';
+let interacted = false;
 
 function renderRow(id, defs) {
   const el = document.getElementById(id);
@@ -1063,44 +1105,72 @@ function renderRow(id, defs) {
     const k = document.createElement('div');
     k.className = 'k ' + d.cls;
     if (d.d) k.style.setProperty('--d', d.d);
+    if (d.action && !d.toggle) k.style.cursor = 'pointer';
+    if (d.action && d.toggle) k.style.cursor = 'pointer';
     if (d.icon) k.innerHTML = d.icon + `<span class="k-lbl">${d.lbl||''}</span>`;
     else if (d.num) k.innerHTML = `<span class="k-num ${d.nlbl}">${d.num}</span><span class="k-sub">${d.sub||''}</span>`;
+    if (d.action) {
+      k.addEventListener('click', () => handleAction(d.action, k));
+    }
     el.appendChild(k);
   });
 }
 
-function applyState(name) {
-  const s = STATES[name];
-  if (!s) return;
-  renderRow('r0', s.r0);
-  renderRow('r1', s.r1);
-  // r2: fixed slots [count, sess, rsvd] + static SYSTEM big-win
-  const r2el = document.getElementById('r2');
-  if (r2el) {
-    r2el.innerHTML = '';
-    renderRow('r2', s.r2);
-    // always re-add system big-win (non-interactive)
-    const bw = document.createElement('div');
-    bw.className = 'k-big';
-    bw.style.cssText = 'cursor:default;pointer-events:none;';
-    bw.innerHTML = `<span class="bi">🖥</span><span class="bn" id="bn">SYSTEM</span><span class="bs" id="bs" style="font-size:6px;">D200 Info Display</span>`;
-    r2el.appendChild(bw);
+function handleAction(action, el) {
+  if (interacted && !STATES[currentState]?.multi) return;
+  const s = STATES[currentState];
+  if (!s || !s.onAction) return;
+  const result = s.onAction(action, el);
+  if (result === null) return; // toggle, no final result
+  interacted = true;
+  const resultEl = document.getElementById('promptResult');
+  if (resultEl) {
+    resultEl.textContent = result;
+    resultEl.className = 'prompt-result ' + (s.resultClass ? s.resultClass(action) : '');
   }
 }
 
+function applyState(name) {
+  currentState = name;
+  interacted = false;
+  const s = STATES[name];
+  if (!s) return;
+  // Reset multi-select state
+  if (s._selected) s._selected.clear();
+  renderRow('r0', s.r0);
+  renderRow('r1', s.r1);
+  // r2
+  const r2el = document.getElementById('r2');
+  if (r2el) {
+    r2el.innerHTML = '';
+    renderRow('r2', ['count', 'sess', 'agent']);
+    const bw = document.createElement('div');
+    bw.className = 'k-big';
+    bw.style.cssText = 'cursor:default;pointer-events:none;';
+    bw.innerHTML = `<span class="bi">🖥</span><span class="bn">SYSTEM</span><span class="bs" style="font-size:6px;">D200 Info Display</span>`;
+    r2el.appendChild(bw);
+  }
+  // Prompt
+  const promptText = document.getElementById('promptText');
+  const promptResult = document.getElementById('promptResult');
+  if (promptText) promptText.innerHTML = s.prompt || '';
+  if (promptResult) { promptResult.textContent = ''; promptResult.className = 'prompt-result'; }
+}
+
+// Tab switching
 document.getElementById('stabs').addEventListener('click', e => {
   const t = e.target.closest('.stab');
   if (!t) return;
+  userClicked = true;
   document.querySelectorAll('.stab').forEach(s => s.classList.remove('on'));
   t.classList.add('on');
   applyState(t.dataset.s);
 });
 
-// auto-cycle
+// Auto-cycle
 let cycleIdx = 0;
 const cycleOrder = ['binary','processing','choice','multi','awaiting','idle'];
 let userClicked = false;
-document.getElementById('stabs').addEventListener('click', () => userClicked = true);
 setInterval(() => {
   if (userClicked) return;
   cycleIdx = (cycleIdx + 1) % cycleOrder.length;
@@ -1108,6 +1178,9 @@ setInterval(() => {
   document.querySelectorAll('.stab').forEach(s => s.classList.toggle('on', s.dataset.s === name));
   applyState(name);
 }, 3200);
+
+// Initial render
+applyState('binary');
 </script>
 </body>
 </html>

@@ -158,9 +158,9 @@ main {
 .k.submit .kl { color: var(--blue); }
 
 /* ── IDLE ── */
-.k.idle-indicator { border-color: var(--bd2); background: var(--surf); opacity: .4; }
+.k.idle-indicator { border-color: var(--bd2); background: var(--surf); opacity: .6; }
 .k.idle-indicator .ki { font-size: 18px; }
-.k.idle-indicator .kl { color: var(--muted); font-size: 11px; }
+.k.idle-indicator .kl { color: var(--white); opacity: .5; font-size: 11px; }
 
 /* ── AWAITING INPUT ── */
 .k.awaiting { border-color: var(--amber); background: var(--adim); opacity: .6; }
