@@ -67,4 +67,22 @@ describe('Hook scripts', () => {
     assert.ok(content.includes('name: choice-format'));
     assert.ok(content.includes('AskUserQuestion'));
   });
+
+  it('subagentStart.js exists and is valid JS', () => {
+    assert.ok(existsSync('hooks/subagentStart.js'));
+    const content = readFileSync('hooks/subagentStart.js', 'utf8');
+    assert.ok(content.includes('/api/hook/subagentStart'));
+  });
+
+  it('subagentStop.js exists and is valid JS', () => {
+    assert.ok(existsSync('hooks/subagentStop.js'));
+    const content = readFileSync('hooks/subagentStop.js', 'utf8');
+    assert.ok(content.includes('/api/hook/subagentStop'));
+  });
+
+  it('hooks.json includes SubagentStart and SubagentStop', () => {
+    const config = JSON.parse(readFileSync('hooks/hooks.json', 'utf8'));
+    assert.ok(config.hooks.SubagentStart, 'should have SubagentStart');
+    assert.ok(config.hooks.SubagentStop, 'should have SubagentStop');
+  });
 });
