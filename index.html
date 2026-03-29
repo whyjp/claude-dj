@@ -495,7 +495,7 @@ footer {
   <h2>스킬 주입으로 Claude의 출력을 바꾼다</h2>
   <p class="sec-sub">Claude DJ의 핵심은 <strong>choice-format</strong> 스킬이다. 이 스킬은 Claude의 행동을 모델 레벨에서 변경하여, 모든 결정을 구조화된 AskUserQuestion 도구 호출로 출력하게 만든다.</p>
 
-  <div class="states" style="grid-template-columns:1fr 1fr 1fr;margin-top:2rem;">
+  <div class="states" style="grid-template-columns:1fr 1fr;margin-top:2rem;">
     <div class="sc">
       <div class="sc-pill"><div class="dot m"></div><span style="color:var(--muted)">기존 (스킬 없음)</span></div>
       <h4>텍스트 기반 선택</h4>
@@ -509,7 +509,7 @@ footer {
     <div class="sc">
       <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)">스킬 주입 후</span></div>
       <h4>AskUserQuestion 도구 호출</h4>
-      <p>Claude가 <strong>AskUserQuestion</strong> 도구를 호출. 이것은 <strong>PermissionRequest</strong> hook을 트리거 — 유일하게 Claude 실행을 <strong>블로킹</strong>하는 hook.</p>
+      <p>Claude가 <strong>AskUserQuestion</strong> 도구를 호출. <strong>PermissionRequest</strong> hook을 트리거 — 유일한 <strong>블로킹</strong> hook.</p>
       <div style="background:var(--bg);border:1px solid var(--green);padding:.75rem;margin-top:.75rem;font-size:10px;color:var(--green);white-space:pre;line-height:1.7;">AskUserQuestion({
   options: [
     "Refactor",
@@ -519,14 +519,39 @@ footer {
 })
 <span style="color:var(--green);">→ 덱 버튼 자동 표시</span></div>
     </div>
+  </div>
+
+  <p class="label" style="margin-top:2.5rem;">핵심 구분</p>
+  <h2>선택지 vs 확인 — 안티패턴 방지</h2>
+  <p class="sec-sub">스킬은 Claude가 <strong>계획 설명을 선택지로 위장</strong>하는 안티패턴을 명시적으로 금지한다. "이렇게 할까?" 는 선택이 아니라 확인이다.</p>
+
+  <div class="states" style="grid-template-columns:1fr 1fr 1fr;margin-top:2rem;">
     <div class="sc">
-      <div class="sc-pill"><div class="dot a"></div><span style="color:var(--amber)">폴백 (transcript)</span></div>
-      <h4>텍스트 파싱 (display-only)</h4>
-      <p>스킬 없이 텍스트로 출력된 경우, Stop hook에서 트랜스크립트를 파싱. 버튼 표시만 가능 — 블로킹 응답은 불가.</p>
-      <div style="background:var(--bg);border:1px solid var(--amber);padding:.75rem;margin-top:.75rem;font-size:10px;color:var(--amber);white-space:pre;line-height:1.7;">WAITING_RESPONSE
-(display only)
-<span style="color:var(--muted);">events.jsonl로 전달
-다음 UserPromptSubmit에서 읽음</span></div>
+      <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)">진짜 선택 (Real Choice)</span></div>
+      <h4>서로 다른 경로</h4>
+      <p>2~4개의 진정한 대안. 각 옵션이 다른 결과를 만든다.</p>
+      <div style="background:var(--bg);border:1px solid var(--green);padding:.75rem;margin-top:.75rem;font-size:10px;line-height:1.7;"><span style="color:var(--green);">[1] Refactor</span>
+<span style="color:var(--amber);">[2] Rewrite</span>
+<span style="color:var(--blue);">[3] Patch</span>
+<span style="color:var(--muted);">→ 3개 버튼, 각각 다른 결과</span></div>
+    </div>
+    <div class="sc">
+      <div class="sc-pill"><div class="dot a"></div><span style="color:var(--amber)">확인 (Confirmation)</span></div>
+      <h4>계획 승인 요청</h4>
+      <p>계획을 텍스트로 설명한 후, 2개 옵션으로 승인/거부. "이대로 진행할까?"</p>
+      <div style="background:var(--bg);border:1px solid var(--amber);padding:.75rem;margin-top:.75rem;font-size:10px;line-height:1.7;"><span style="color:var(--muted);">계획: Pioneer에 상위 모델 적용</span>
+<span style="color:var(--green);">[1] 진행</span>
+<span style="color:var(--red);">[2] 다른 방향</span>
+<span style="color:var(--muted);">→ Y/N 바이너리, 간결</span></div>
+    </div>
+    <div class="sc">
+      <div class="sc-pill"><div class="dot m"></div><span style="color:var(--red)">안티패턴 (금지)</span></div>
+      <h4>계획을 선택지로 위장</h4>
+      <p>계획 설명과 추가 범위를 동일 레벨 선택지로 묶는 것. 사용자가 의미있게 "선택"할 수 없다.</p>
+      <div style="background:var(--bg);border:1px solid var(--red);padding:.75rem;margin-top:.75rem;font-size:10px;line-height:1.7;"><span style="color:var(--red);">✗ "X를 수정해서 적용"</span>
+<span style="color:var(--red);">✗ "기존 scaffold에도 적용"</span>
+<span style="color:var(--muted);">→ 범위 번들링. 계획을 먼저 설명,
+   그 다음 Y/N으로 물어야 함</span></div>
     </div>
   </div>
 </section>

@@ -112,7 +112,12 @@ The `choice-format` skill causes three behavioral shifts in Claude:
 
 2. **Blocking interaction** — `AskUserQuestion` triggers a `PermissionRequest` hook, which is the only hook type that **blocks Claude's execution** until a response arrives. This creates a true pause-and-wait interaction, unlike text choices which Claude writes and immediately continues.
 
-3. **Universal coverage** — The skill instructs Claude to use `AskUserQuestion` for *every* decision point, not just major ones. "Should I proceed?" becomes a button press. "Which file?" becomes a button press. This eliminates all typing for routine confirmations.
+3. **Choice vs Confirmation** — The skill distinguishes two interaction patterns:
+
+   - **Real choice** (multiple genuinely different paths): 2-4 distinct options, e.g. "Refactor" / "Rewrite" / "Patch"
+   - **Confirmation** (plan approval): Claude states its plan as text, then asks with exactly 2 options: "진행" / "다른 방향"
+
+   This prevents a common anti-pattern where Claude presents a plan description *as* a choice option (e.g. "modify X and apply Y" as option 1, "also apply to Z" as option 2). Plan descriptions are not choices — they should be stated as text followed by a yes/no confirmation.
 
 ### Two Choice Paths
 
