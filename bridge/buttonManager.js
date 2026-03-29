@@ -26,8 +26,17 @@ export class ButtonManager {
         return { ...base, preset: 'processing' };
       case 'WAITING_BINARY':
         return { ...base, preset: 'binary', prompt: session.prompt };
-      case 'WAITING_CHOICE':
-        return { ...base, preset: 'choice', choices: session.prompt.choices };
+      case 'WAITING_CHOICE': {
+        const { choices, multiSelect, selected } = session.prompt;
+        if (multiSelect) {
+          return {
+            ...base,
+            preset: 'multiSelect',
+            choices: choices.map((c) => ({ ...c, selected: selected?.has(c.index) || false })),
+          };
+        }
+        return { ...base, preset: 'choice', choices };
+      }
       case 'WAITING_RESPONSE':
         return { ...base, preset: 'awaiting_input' };
       default:
@@ -47,6 +56,26 @@ export class ButtonManager {
 
     if (state === 'WAITING_CHOICE') {
       const choices = prompt.choices || [];
+
+      if (prompt.multiSelect) {
+        // Slot 9 = Submit — resolve with all selected indices
+        if (slot === 9) {
+          const selected = [...(prompt.selected || [])].sort((a, b) => a - b);
+          return { type: 'choice', value: selected.join(',') || '1' };
+        }
+        // Slots 0-8 = toggle selection
+        if (slot >= 0 && slot < choices.length && slot < 9) {
+          const idx = choices[slot].index;
+          if (prompt.selected?.has(idx)) {
+            prompt.selected.delete(idx);
+          } else {
+            prompt.selected?.add(idx);
+          }
+          return { type: 'toggle', index: idx };
+        }
+        return null;
+      }
+
       if (slot >= 0 && slot < choices.length) {
         return { type: 'choice', value: String(choices[slot].index) };
       }

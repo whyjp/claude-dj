@@ -76,10 +76,14 @@ export class SessionManager {
       const question = input.tool_input?.question
         || input.tool_input?.questions?.[0]?.question
         || '';
+      const multiSelect = !!(input.tool_input?.multiSelect
+        || input.tool_input?.questions?.[0]?.multiSelect);
       session.state = 'WAITING_CHOICE';
       session.prompt = {
         type: 'CHOICE',
         question,
+        multiSelect,
+        selected: new Set(), // tracks toggled indices for multiSelect
         choices: options.map((o, i) => ({
           index: i + 1,
           label: o.label || o.description || `Option ${i + 1}`,

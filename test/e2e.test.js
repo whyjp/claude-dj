@@ -569,7 +569,9 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
     ws.close();
   });
 
-  it('permission.js: multiSelect AskUserQuestion bypasses deck (empty response)', async () => {
+  it('permission.js: multiSelect toggle+submit — toggle slots then slot 9 submits', async () => {
+    const ws = await connectWs(wsUrl);
+
     const hookPromise = runHook('permission.js', {
       session_id: 'e2e-multi-1',
       hook_event_name: 'PermissionRequest',
@@ -588,11 +590,26 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
       },
     });
 
+    // Wait for multiSelect layout
+    await new Promise((r) => setTimeout(r, 200));
+
+    // Toggle slot 0 (Auth) and slot 2 (UI)
+    ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 0, timestamp: Date.now() }));
+    await new Promise((r) => setTimeout(r, 100));
+    ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 2, timestamp: Date.now() }));
+    await new Promise((r) => setTimeout(r, 100));
+
+    // Submit via slot 9
+    ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 9, timestamp: Date.now() }));
+
     const result = await hookPromise;
     assert.equal(result.exitCode, 0);
-    // Empty response = Claude Code shows default terminal UI
     const resp = JSON.parse(result.stdout);
-    assert.deepEqual(resp, {});
+    assert.equal(resp.hookSpecificOutput.decision.behavior, 'allow');
+    // Selected indices 1 and 3 (Auth=1, UI=3)
+    assert.equal(resp.hookSpecificOutput.decision.updatedInput.answer, '1,3');
+
+    ws.close();
   });
 
   it('stop.js: choices in transcript → deck shows awaiting_input notification', async () => {

@@ -133,6 +133,46 @@ describe('ButtonManager', () => {
     assert.equal(layout.agentCount, 5);
   });
 
+  it('multiSelect layout shows preset multiSelect with selected state', () => {
+    const session = {
+      id: 's1', name: 'test', state: 'WAITING_CHOICE', agents: new Map(),
+      prompt: {
+        type: 'CHOICE', multiSelect: true, selected: new Set([2]),
+        choices: [{ index: 1, label: 'A' }, { index: 2, label: 'B' }, { index: 3, label: 'C' }],
+      },
+    };
+    const layout = ButtonManager.layoutFor(session);
+    assert.equal(layout.preset, 'multiSelect');
+    assert.equal(layout.choices[0].selected, false);
+    assert.equal(layout.choices[1].selected, true);
+    assert.equal(layout.choices[2].selected, false);
+  });
+
+  it('multiSelect toggle adds/removes from selected set', () => {
+    const prompt = {
+      multiSelect: true, selected: new Set(),
+      choices: [{ index: 1, label: 'A' }, { index: 2, label: 'B' }],
+    };
+    // Toggle on
+    let result = ButtonManager.resolvePress(0, 'WAITING_CHOICE', prompt);
+    assert.equal(result.type, 'toggle');
+    assert.ok(prompt.selected.has(1));
+    // Toggle off
+    result = ButtonManager.resolvePress(0, 'WAITING_CHOICE', prompt);
+    assert.equal(result.type, 'toggle');
+    assert.ok(!prompt.selected.has(1));
+  });
+
+  it('multiSelect slot 9 submits selected indices', () => {
+    const prompt = {
+      multiSelect: true, selected: new Set([1, 3]),
+      choices: [{ index: 1, label: 'A' }, { index: 2, label: 'B' }, { index: 3, label: 'C' }],
+    };
+    const result = ButtonManager.resolvePress(9, 'WAITING_CHOICE', prompt);
+    assert.equal(result.type, 'choice');
+    assert.equal(result.value, '1,3');
+  });
+
   it('WAITING_RESPONSE returns awaiting_input layout (display-only)', () => {
     const session = { id: 's1', name: 'test', state: 'WAITING_RESPONSE', prompt: {}, agents: new Map() };
     const layout = ButtonManager.layoutFor(session);

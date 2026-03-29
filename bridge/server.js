@@ -138,14 +138,6 @@ app.post('/api/hook/permission', (req, res) => {
   const input = req.body;
   console.log(`[hook/permission] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
 
-  // multiSelect AskUserQuestion → skip deck, fall through to terminal UI
-  const isMultiSelect = input.tool_name === 'AskUserQuestion'
-    && (input.tool_input?.multiSelect || input.tool_input?.questions?.[0]?.multiSelect);
-  if (isMultiSelect) {
-    console.log(`[hook/permission] multiSelect detected — bypassing deck`);
-    return res.json({});
-  }
-
   const session = sm.handlePermission(input);
   // Auto-focus: new permission request takes focus
   sm.setFocus(session.id);
@@ -217,6 +209,13 @@ ws.onButtonPress = (slot, timestamp) => {
   if (focus.state === 'WAITING_RESPONSE') {
     // WAITING_RESPONSE is display-only (notification that Claude awaits input)
     // No button interaction — user responds in terminal
+    return;
+  }
+
+  // multiSelect toggle — update layout without resolving
+  if (decision.type === 'toggle') {
+    const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
+    broadcastLayout(layout);
     return;
   }
 
