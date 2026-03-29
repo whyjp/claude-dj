@@ -185,7 +185,7 @@ ws.onButtonPress = (slot, timestamp) => {
 
 // --- Session Cleanup ---
 
-setInterval(() => {
+const pruneInterval = setInterval(() => {
   const pruned = sm.pruneIdle(config.sessionIdleTimeout);
   if (pruned.length > 0) {
     console.log(`[claude-dj] Pruned ${pruned.length} idle session(s): ${pruned.join(', ')}`);
@@ -201,4 +201,4 @@ server.listen(port, () => {
   console.log(`[claude-dj] WebSocket at ws://localhost:${port}${config.wsPath}`);
 });
 
-export { server, app };
+export { server, app, pruneInterval };
