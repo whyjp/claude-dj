@@ -31,11 +31,11 @@ export function initGrid() {
   for (let i = 5; i <= 9; i++) r1.appendChild(_makeKey(i));
   grid.appendChild(r1);
 
-  // Row 2: slot 10 (session count) + slot 11 (session name/switch) + slot 12 (reserved) + Info Display area (system-only, non-interactive)
+  // Row 2: slot 10 (session count) + slot 11 (session name/switch) + slot 12 (agent switch) + Info Display area (system-only, non-interactive)
   const r2 = _makeRow('kgl');
   r2.appendChild(_makeCountKey());
   r2.appendChild(_makeSessKey());
-  r2.appendChild(_makeReservedKey());
+  r2.appendChild(_makeAgentKey());
   r2.appendChild(_makeInfoDisplay());
   grid.appendChild(r2);
 }
@@ -65,13 +65,29 @@ function _makeCountKey() {
   return k;
 }
 
-function _makeReservedKey() {
+function _makeAgentKey() {
   const k = document.createElement('div');
-  k.className = 'k reserved';
+  k.className = 'k agent-switch';
   k.dataset.slot = '12';
-  k.title = 'RESERVED — 향후 용도';
-  // RSVD label rendered via CSS ::after pseudo-element
+  k.innerHTML = `<span class="agent-ico">◈</span><span class="agent-n" id="agentN">ROOT</span>`;
+  k.addEventListener('click', () => {
+    _firePress(12, k);
+  });
   return k;
+}
+
+function _updateAgentKey(agent, agentCount) {
+  const nameEl = document.getElementById('agentN');
+  if (nameEl) nameEl.textContent = agent ? agent.type : 'ROOT';
+  const k = _getK(12);
+  if (!k) return;
+  k.querySelector('.agent-badge')?.remove();
+  if (agentCount > 0) {
+    const b = document.createElement('div');
+    b.className = 'agent-badge';
+    b.textContent = agentCount;
+    k.appendChild(b);
+  }
 }
 
 function _makeSessKey() {
@@ -109,7 +125,7 @@ function _getK(slot) {
 }
 
 /** Dim all dynamic keys (slots 0-9) and reset info display to idle.
- *  Slot 12 is RESERVED (always in reserved state, not dimmed by this function). */
+ *  Slot 12 is the agent-switch key (not dimmed by this function). */
 export function renderAllDim() {
   const dynamic = [0,1,2,3,4,5,6,7,8,9];
   for (const s of dynamic) {
@@ -175,7 +191,7 @@ export function renderLayout(msg) {
 
     case 'choice':
       if (msg.choices) {
-        // Slots 0-9 only (max 10 choices). Slot 12 is RESERVED, never used for choices.
+        // Slots 0-9 only (max 10 choices). Slot 12 is agent-switch, never used for choices.
         msg.choices.forEach((c, i) => {
           if (i < 10) _setKeyChoice(i, i, c.index, c.label);
         });
@@ -199,6 +215,11 @@ export function renderLayout(msg) {
     const waiting = msg.preset === 'binary' || msg.preset === 'choice' ? 1 : 0;
     _updateCount(total, waiting);
     _updateSessName(msg.session.name);
+  }
+
+  // Update agent switch key (slot 12)
+  if (msg.agent !== undefined) {
+    _updateAgentKey(msg.agent, msg.agentCount || 0);
   }
 }
 

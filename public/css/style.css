@@ -168,15 +168,21 @@ main {
 .k[data-ci="7"] .kn { color: var(--cc7); } .k[data-ci="7"] .ks { color: color-mix(in srgb, var(--cc7) 95%, transparent); }
 .k[data-ci="8"] .kn { color: var(--cc8); } .k[data-ci="8"] .ks { color: color-mix(in srgb, var(--cc8) 95%, transparent); }
 
-/* ── RESERVED KEY (slot 12) ── */
-.k.reserved {
-  opacity: .22; cursor: default; pointer-events: none;
+/* ── AGENT SWITCH KEY (slot 12) ── */
+.k.agent-switch { border-color: var(--purple); background: var(--pdim); cursor: pointer; }
+.k.agent-switch:active { transform: scale(.93); }
+.k.agent-switch .agent-ico { font-size: 24px; line-height: 1; color: var(--purple); }
+.k.agent-switch .agent-n {
+  font-size: 11px; color: var(--purple); margin-top: 3px;
+  max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.k.reserved::after {
-  content: 'RSVD';
-  font-size: 7px; letter-spacing: .08em; color: var(--muted);
+.agent-badge {
+  position: absolute; top: 3px; right: 3px;
+  background: var(--purple); color: var(--bg);
+  font-size: 7px; font-weight: 700;
+  width: 12px; height: 12px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
 }
-.k.reserved:active { transform: none; }
 
 /* ── SESSION COUNT KEY (slot 10) ── */
 .k.count { border-color: var(--amber); background: var(--adim); cursor: default; pointer-events: none; }
@@ -353,6 +359,11 @@ main {
 .sess-name { font-size: 13px; color: var(--white); font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sess-state { font-size: 11px; color: var(--muted); letter-spacing: .06em; flex-shrink: 0; }
 .sess-dur { font-size: 11px; color: var(--muted); flex-shrink: 0; min-width: 36px; text-align: right; }
+
+/* ── SESSION CHILD ROWS ── */
+.sess-child { padding-left: 30px; }
+.sess-child .sess-name { color: var(--muted); font-weight: 400; }
+.sess-child .sess-name::before { content: '└ '; color: var(--bd2); }
 
 /* ── PROTOCOL ── */
 .proto { padding: 12px 14px; overflow-y: auto; flex: 1; }

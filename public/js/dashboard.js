@@ -8,7 +8,7 @@ let _logEntries = [];
 let _logFilter = '';
 let _logSessionFilter = '__all__'; // '__all__' or session id
 
-/** @type {Map<string, {id:string, name:string, state:string, waitingSince:number|null}>} */
+/** @type {Map<string, {id:string, name:string, state:string, waitingSince:number|null, agents:Array}>} */
 let _sessions = new Map();
 let _sessionDurTimer = null;
 
@@ -140,7 +140,26 @@ export function updateSession(msg) {
     name: s.name || s.id.slice(0, 8),
     state: s.state,
     waitingSince: isWaiting ? (wasWaiting ? existing.waitingSince : Date.now()) : null,
+    agents: existing?.agents || [],
   });
+
+  // Track agent info from LAYOUT
+  if (msg.agent) {
+    const sess = _sessions.get(s.id);
+    const idx = sess.agents.findIndex(a => a.agentId === msg.agent.agentId);
+    if (idx >= 0) {
+      sess.agents[idx] = { ...msg.agent };
+    } else {
+      sess.agents.push({ ...msg.agent });
+    }
+  }
+  // Remove agents that stopped (agentCount decreased)
+  if (msg.agentCount !== undefined) {
+    const sess = _sessions.get(s.id);
+    if (sess.agents.length > msg.agentCount && msg.agentCount === 0) {
+      sess.agents = [];
+    }
+  }
 
   _renderSessions();
   _ensureDurTimer();
@@ -170,6 +189,7 @@ export function setSessions(list) {
       name: s.name || s.id.slice(0, 8),
       state: s.state || 'IDLE',
       waitingSince: isWaiting ? Date.now() : null,
+      agents: s.agents || [],
     });
   }
   _renderSessions();
@@ -309,6 +329,7 @@ function _renderSessions() {
   _syncLogTabLabels();
 
   for (const s of entries) {
+    // Root row
     const row = document.createElement('div');
     row.className = 'sess-row';
     row.dataset.sid = s.id;
@@ -322,6 +343,23 @@ function _renderSessions() {
       `<span class="sess-dur">${dur}</span>`;
 
     list.appendChild(row);
+
+    // Child agent rows
+    if (s.agents && s.agents.length > 0) {
+      for (const a of s.agents) {
+        const child = document.createElement('div');
+        child.className = 'sess-row sess-child';
+        child.dataset.sid = s.id;
+        child.dataset.aid = a.agentId;
+
+        child.innerHTML =
+          `<span class="sess-dot ${esc(a.state || 'PROCESSING')}"></span>` +
+          `<span class="sess-name">${esc(a.type || 'agent')}</span>` +
+          `<span class="sess-state">${STATE_LABELS[a.state] || a.state || 'processing'}</span>`;
+
+        list.appendChild(child);
+      }
+    }
   }
 
   _updateSessionBadge();
