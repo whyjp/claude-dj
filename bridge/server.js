@@ -175,12 +175,13 @@ app.post('/api/hook/permission', (req, res) => {
 
   session._permissionTimeout = timeout;
 
+  const question = session.prompt?.question || '';
   session.respondFn = (decision) => {
     if (session._permissionTimeout) {
       clearTimeout(session._permissionTimeout);
       session._permissionTimeout = null;
     }
-    const response = ButtonManager.buildHookResponse(decision, isChoice);
+    const response = ButtonManager.buildHookResponse(decision, isChoice, question);
     const newLayout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
     broadcastLayout(newLayout);
     res.json(response);

@@ -88,14 +88,16 @@ export class ButtonManager {
     return null;
   }
 
-  static buildHookResponse(decision, isChoice) {
+  static buildHookResponse(decision, isChoice, question = '') {
     if (isChoice) {
+      const answers = {};
+      if (question) answers[question] = decision.value;
       return {
         hookSpecificOutput: {
           hookEventName: 'PermissionRequest',
           decision: {
             behavior: 'allow',
-            updatedInput: { answer: decision.value },
+            updatedInput: { answer: decision.value, answers },
           },
         },
       };
