@@ -79,10 +79,14 @@
             <div class="pb">
               <div class="pd in">← LAYOUT: full state update</div>
               <div class="pc">{ "type": "LAYOUT",
-  "preset": "idle" | "processing" | "binary" | "choice",
+  "preset": "idle" | "processing" | "binary" | "choice" | "response",
   "session": { "id": "abc", "name": "api-server", "state": "…" },
+  "agent": { "agentId": "ag1", "type": "Explore", "state": "…" } | null,
+  "agentCount": 2,
+  "sessionCount": 3,
   "prompt":  { "toolName": "Bash", "command": "rm -rf", "hasAlwaysAllow": false },
-  "choices": [ { "index": 1, "label": "Refactor" }, { "index": 2, "label": "Fix tests" } ]
+  "choices": [ { "index": 1, "label": "Refactor" }, … ],
+  "focusSwitched": true  // present on slot 11/12 cycle responses
 }</div>
             </div>
             <div class="pb">
@@ -91,7 +95,9 @@
             </div>
             <div class="pb">
               <div class="pd in">← WELCOME: initial handshake</div>
-              <div class="pc">{ "type": "WELCOME", "version": "0.1.0", "sessions": [...] }</div>
+              <div class="pc">{ "type": "WELCOME", "version": "0.1.0",
+  "sessions": [{ "id": "…", "name": "…", "state": "…", "agents": [...] }]
+}</div>
             </div>
           </div>
           <div class="ps">
@@ -99,8 +105,9 @@
             <div class="pb">
               <div class="pd out">→ BUTTON_PRESS: key clicked</div>
               <div class="pc">{ "type": "BUTTON_PRESS", "slot": 0, "timestamp": 1743000000000 }</div>
-              <div class="pn">Slot 0 = Approve, Slot 1 = Deny, Slot 5 = Always Allow<br>
-              Choice mode: Slot N maps to choice index N</div>
+              <div class="pn">Slot 0 = Approve, Slot 1 = Deny/AlwaysAllow (context-dependent)<br>
+              Choice/Response mode: Slot N maps to choice index N<br>
+              Slot 11 = cycle root sessions, Slot 12 = cycle subagents</div>
             </div>
             <div class="pb">
               <div class="pd out">→ CLIENT_READY: sent on connect</div>
@@ -108,19 +115,36 @@
             </div>
           </div>
           <div class="ps">
+            <h4>Hook Endpoints</h4>
+            <div class="pb">
+              <div class="pc">POST /api/hook/notify          PreToolUse (async)
+POST /api/hook/permission       PermissionRequest (blocking)
+POST /api/hook/postToolUse      PostToolUse (async)
+POST /api/hook/stop             Stop — choice detection (async)
+POST /api/hook/subagentStart    SubagentStart (async)
+POST /api/hook/subagentStop     SubagentStop (async)
+GET  /api/hook/events/:sid      Read + clear button events
+GET  /api/health                Health check
+GET  /api/status                All sessions + WS client count</div>
+            </div>
+          </div>
+          <div class="ps">
             <h4>Slot Layout</h4>
             <div class="pb">
               <div class="pc">Row 0: [0] [1] [2] [3] [4]
 Row 1: [5] [6] [7] [8] [9]
-Row 2: [10=session count] [11=session name] [12] [Info Display — system only]
+Row 2: [10=count] [11=root switch] [12=agent switch] [Info Display]
 
-Dynamic slots: 0-9, 12 (max 11 choices)
-Fixed slots:   10 (SESSION_COUNT), 11 (SESSION_NAME/SWITCH)
+Dynamic slots: 0-9 (max 10 choices)
+Slot 10: session count + waiting badge
+Slot 11: root session cycle (resets agent focus)
+Slot 12: subagent cycle within current root (ROOT when none)
 
-IDLE:            slots 0-9, 12 dim (opacity 0.12)
-PROCESSING:      slots 0-9, 12 pulse with wave animation
-WAITING_BINARY:  slot 0=approve, slot 1=deny, slot 5=always (if set)
-WAITING_CHOICE:  slot 0..N = numbered choices (max 11)</div>
+IDLE:             slots 0-9 dim
+PROCESSING:       slots 0-9 pulse with staggered wave
+WAITING_BINARY:   slot 0=approve, slot 1=always/deny, slot 2=deny
+WAITING_CHOICE:   slot 0..N = numbered choices
+WAITING_RESPONSE: slot 0..N = transcript-detected choices</div>
             </div>
           </div>
         </div>
