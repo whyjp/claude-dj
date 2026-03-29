@@ -569,7 +569,7 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
     ws.close();
   });
 
-  it('stop.js: choices in transcript → deck shows response buttons (display-only)', async () => {
+  it('stop.js: choices in transcript → deck shows buttons → button press returns stopResponse', async () => {
     // Create a fake transcript JSONL with choices
     const tmpDir = path.join(os.tmpdir(), 'claude-dj-test-' + Date.now());
     fs.mkdirSync(tmpDir, { recursive: true });
@@ -589,22 +589,37 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
 
     const wsPromise = waitForWsMessage(wsUrl, 'LAYOUT', 5000);
 
-    const result = await runHook('stop.js', {
+    // Start stop hook (will long-poll for button press)
+    const hookPromise = runHook('stop.js', {
       session_id: 'e2e-display-1',
       hook_event_name: 'Stop',
       stop_hook_active: false,
       transcript_path: transcriptPath,
     });
 
-    assert.equal(result.exitCode, 0);
-
+    // Wait for layout to appear on deck
     const msg = await wsPromise;
     assert.equal(msg.preset, 'response');
     assert.ok(msg.choices);
     assert.equal(msg.choices.length, 3);
     assert.equal(msg.choices[0].index, '1');
 
-    // Cleanup
+    // Small delay to let stop.js register its long-poll before button press
+    await new Promise((r) => setTimeout(r, 300));
+
+    // Simulate button press (slot 1 → choice "2. Rewrite")
+    const ws = await connectWs(wsUrl);
+    ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 1, timestamp: Date.now() }));
+
+    // Stop hook should return with stopResponse
+    const result = await hookPromise;
+    assert.equal(result.exitCode, 0);
+    assert.ok(result.stdout.length > 0, 'expected stdout to contain stopResponse JSON');
+    const resp = JSON.parse(result.stdout);
+    assert.equal(resp.hookSpecificOutput.hookEventName, 'Stop');
+    assert.ok(resp.hookSpecificOutput.stopResponse.includes('Rewrite'));
+
+    ws.close();
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 });

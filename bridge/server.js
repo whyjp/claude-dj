@@ -41,6 +41,7 @@ function broadcastLayout(layout) {
 // --- Hook Endpoints ---
 
 const _stopTimers = new Map();
+const _stopWaiters = new Map(); // sessionId → { resolve, timer }
 
 app.post('/api/hook/notify', (req, res) => {
   const input = req.body;
@@ -116,6 +117,11 @@ app.post('/api/hook/stop', (req, res) => {
     }
     const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
     broadcastLayout(layout);
+
+    // Pre-register waiter slot so button presses before stop-wait GET are captured
+    if (!_stopWaiters.has(sessionId)) {
+      _stopWaiters.set(sessionId, { resolve: null, timer: null, earlyResult: null });
+    }
   } else {
     // No choices — go to IDLE
     sm.dismissSession(sessionId) || sm.getOrCreate(input);
@@ -123,6 +129,54 @@ app.post('/api/hook/stop', (req, res) => {
   }
 
   res.json({ ok: true });
+});
+
+// --- Stop-Wait (long-poll for WAITING_RESPONSE button press) ---
+
+app.get('/api/stop-wait/:sessionId', (req, res) => {
+  const sid = req.params.sessionId;
+  const timeout = Math.min(parseInt(req.query.timeout, 10) || 60000, 120000);
+  // Check if button was pressed before this request arrived (early result)
+  const existing = _stopWaiters.get(sid);
+  if (existing && existing.earlyResult) {
+    _stopWaiters.delete(sid);
+    return res.json({ selected: true, value: existing.earlyResult });
+  }
+
+  // If there's already a pending selection in events file, return it immediately
+  const file = path.join(config.eventsDir, `${sid}.jsonl`);
+  if (fs.existsSync(file)) {
+    const lines = fs.readFileSync(file, 'utf8').trim().split('\n').filter(Boolean);
+    if (lines.length > 0) {
+      const event = JSON.parse(lines[lines.length - 1]);
+      fs.unlinkSync(file);
+      _stopWaiters.delete(sid);
+      return res.json({ selected: true, value: event.value });
+    }
+  }
+
+  // Long-poll: wait for button press
+  const timer = setTimeout(() => {
+    _stopWaiters.delete(sid);
+    res.json({ selected: false, reason: 'timeout' });
+  }, timeout);
+
+  const waiter = _stopWaiters.get(sid) || {};
+  waiter.resolve = (value) => {
+    clearTimeout(timer);
+    _stopWaiters.delete(sid);
+    res.json({ selected: true, value });
+  };
+  waiter.timer = timer;
+  _stopWaiters.set(sid, waiter);
+
+  // Clean up on client disconnect
+  req.on('close', () => {
+    if (_stopWaiters.has(sid)) {
+      clearTimeout(_stopWaiters.get(sid).timer);
+      _stopWaiters.delete(sid);
+    }
+  });
 });
 
 // --- Events File API ---
@@ -210,11 +264,22 @@ ws.onButtonPress = (slot, timestamp) => {
   if (!decision) return;
 
   if (focus.state === 'WAITING_RESPONSE') {
-    // Display-only: write to events file for reference, dismiss session
-    const file = path.join(config.eventsDir, `${focus.id}.jsonl`);
-    const event = JSON.stringify({ type: 'button', value: decision.value, timestamp: Date.now() });
-    fs.appendFileSync(file, event + '\n');
-    console.log(`[events] wrote ${decision.value} for session ${focus.id}`);
+    const waiter = _stopWaiters.get(focus.id);
+    if (waiter && waiter.resolve) {
+      // Stop hook is waiting — deliver selection directly via stopResponse
+      console.log(`[stop-wait] resolved ${decision.value} for session ${focus.id}`);
+      waiter.resolve(decision.value);
+    } else if (waiter && !waiter.resolve) {
+      // Waiter slot exists but stop-wait GET hasn't arrived yet — store early result
+      console.log(`[stop-wait] early result ${decision.value} for session ${focus.id}`);
+      waiter.earlyResult = decision.value;
+    } else {
+      // No stop hook waiting — fallback to events file for userPrompt pickup
+      const file = path.join(config.eventsDir, `${focus.id}.jsonl`);
+      const event = JSON.stringify({ type: 'button', value: decision.value, timestamp: Date.now() });
+      fs.appendFileSync(file, event + '\n');
+      console.log(`[events] wrote ${decision.value} for session ${focus.id}`);
+    }
     sm.dismissSession(focus.id);
     ws.broadcast({ type: 'ALL_DIM' });
     return;
