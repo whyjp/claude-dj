@@ -102,3 +102,53 @@ export async function run({ global = false } = {}) {
   console.log(`[claude-dj] PostToolUse → postToolUse.js`);
   console.log(`[claude-dj] Stop → stop.js`);
 }
+
+/**
+ * Remove claude-dj hooks from Claude Code settings.
+ * @param {Object} opts
+ * @param {boolean} opts.global - If true, modify ~/.claude/settings.json.
+ *                                 If false (default), modify <cwd>/.claude/settings.json.
+ */
+export async function uninstall({ global = false } = {}) {
+  const settingsPath = global
+    ? path.join(os.homedir(), '.claude', 'settings.json')
+    : path.join(process.cwd(), '.claude', 'settings.json');
+
+  if (!fs.existsSync(settingsPath)) {
+    console.log(`[claude-dj] No settings file found at ${settingsPath}`);
+    return;
+  }
+
+  const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+  if (!settings.hooks) {
+    console.log('[claude-dj] No hooks found — nothing to remove.');
+    return;
+  }
+
+  const isClaudeDjHook = (h) => h.hooks?.some((x) =>
+    x.command?.includes('claude-dj') ||
+    x.command?.includes('hooks/permission.js') ||
+    x.command?.includes('hooks/notify.js') ||
+    x.command?.includes('hooks/postToolUse.js') ||
+    x.command?.includes('hooks/userPrompt.js') ||
+    x.command?.includes('hooks/stop.js'));
+
+  const hookTypes = ['UserPromptSubmit', 'PermissionRequest', 'PreToolUse', 'PostToolUse', 'Stop'];
+  let removed = 0;
+
+  for (const type of hookTypes) {
+    if (!Array.isArray(settings.hooks[type])) continue;
+    const before = settings.hooks[type].length;
+    settings.hooks[type] = settings.hooks[type].filter((h) => !isClaudeDjHook(h));
+    removed += before - settings.hooks[type].length;
+  }
+
+  fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+
+  const scope = global ? 'GLOBAL (~/.claude)' : `PROJECT (${path.dirname(settingsPath)})`;
+  if (removed > 0) {
+    console.log(`[claude-dj] Removed ${removed} hook(s) — ${scope}`);
+  } else {
+    console.log(`[claude-dj] No claude-dj hooks found — ${scope}`);
+  }
+}
