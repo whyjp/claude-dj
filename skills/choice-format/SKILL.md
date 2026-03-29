@@ -46,6 +46,18 @@ Never present a plan description as a choice option. This is wrong:
 
 The user cannot meaningfully "choose" between a description of what you're about to do and a description of extra scope. State the plan, ask yes/no.
 
+### Trailing confirmation ("진행할까?", "should I proceed?")
+
+When you end a message with a yes/no question like "진행할까?", "shall I continue?", or "ready to proceed?" — this IS a confirmation. Use AskUserQuestion:
+
+> 3개 파일을 제거하겠습니다. statistical 테스트가 완전 대체합니다.
+
+Then AskUserQuestion:
+- "진행" — approve
+- "다른 방향" — reject
+
+**Never** end with a bare text question expecting the user to type yes/no. The deck cannot see text questions.
+
 ## Important
 
 - Keep option labels concise (under 30 characters)
@@ -53,3 +65,4 @@ The user cannot meaningfully "choose" between a description of what you're about
 - Confirmations: always exactly 2 options (approve / reject)
 - Real choices: 2-4 genuinely different options
 - Never bundle "do X" and "do X + Y" as peer choices — ask X first, then Y
+- ANY question at the end of your message that expects user response → AskUserQuestion

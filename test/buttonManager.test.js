@@ -87,6 +87,52 @@ describe('ButtonManager', () => {
     assert.equal(decision, null);
   });
 
+  // ── agents array in layoutFor ──
+
+  it('includes empty agents array when session has no agents', () => {
+    const layout = ButtonManager.layoutFor({ state: 'IDLE', prompt: null });
+    assert.deepEqual(layout.agents, []);
+    assert.equal(layout.agentCount, 0);
+    assert.equal(layout.agent, null);
+  });
+
+  it('includes agents array from session.agents Map', () => {
+    const agents = new Map([
+      ['a1', { agentId: 'a1', type: 'Explore', state: 'running' }],
+      ['a2', { agentId: 'a2', type: 'Plan', state: 'done' }],
+    ]);
+    const session = { state: 'PROCESSING', prompt: null, agents };
+    const layout = ButtonManager.layoutFor(session);
+    assert.equal(layout.agents.length, 2);
+    assert.deepEqual(layout.agents[0], { agentId: 'a1', type: 'Explore', state: 'running' });
+    assert.deepEqual(layout.agents[1], { agentId: 'a2', type: 'Plan', state: 'done' });
+  });
+
+  it('includes focused agent when focusAgentId matches', () => {
+    const agents = new Map([
+      ['a1', { agentId: 'a1', type: 'Explore', state: 'running' }],
+    ]);
+    const session = { state: 'PROCESSING', prompt: null, agents };
+    const layout = ButtonManager.layoutFor(session, 'a1', 1);
+    assert.deepEqual(layout.agent, { agentId: 'a1', type: 'Explore', state: 'running' });
+    assert.equal(layout.agentCount, 1);
+  });
+
+  it('agent is null when focusAgentId does not match', () => {
+    const agents = new Map([
+      ['a1', { agentId: 'a1', type: 'Explore', state: 'running' }],
+    ]);
+    const session = { state: 'PROCESSING', prompt: null, agents };
+    const layout = ButtonManager.layoutFor(session, 'nonexistent', 1);
+    assert.equal(layout.agent, null);
+    assert.equal(layout.agentCount, 1);
+  });
+
+  it('passes agentCount through to layout', () => {
+    const layout = ButtonManager.layoutFor({ state: 'IDLE', prompt: null }, null, 5);
+    assert.equal(layout.agentCount, 5);
+  });
+
   it('resolves response button press with natural language value', () => {
     const result = ButtonManager.resolvePress(1, 'WAITING_RESPONSE', {
       choices: [
