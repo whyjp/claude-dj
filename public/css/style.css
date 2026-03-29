@@ -118,7 +118,8 @@ main {
 }
 
 .kg5 { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin-bottom: 8px; }
-.kgl { display: grid; grid-template-columns: repeat(3,1fr) 1.85fr; gap: 8px; }
+.kgl { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; }
+.kgl .k-info { grid-column: span 2; aspect-ratio: auto; }
 
 /* ── KEYS ── */
 .k {
