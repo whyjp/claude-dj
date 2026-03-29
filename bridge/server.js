@@ -51,8 +51,12 @@ app.post('/api/hook/notify', (req, res) => {
     _stopTimers.delete(input.session_id);
   }
   const session = sm.handleNotify(input);
-  const layout = ButtonManager.layoutFor(session);
-  broadcastLayout(layout);
+  // Only broadcast if this is the focused session — don't override WAITING_BINARY/CHOICE
+  const focus = sm.getFocusSession();
+  if (!focus || focus.id === session.id) {
+    const layout = ButtonManager.layoutFor(session);
+    broadcastLayout(layout);
+  }
   res.json({ ok: true });
 });
 
@@ -60,8 +64,12 @@ app.post('/api/hook/postToolUse', (req, res) => {
   const input = req.body;
   console.log(`[hook/postToolUse] session=${input.session_id} tool=${input.tool_name} errored=${input.tool_result?.errored}`);
   const session = sm.handlePostToolUse(input);
-  const layout = ButtonManager.layoutFor(session);
-  broadcastLayout(layout);
+  // Only broadcast if this is the focused session
+  const focus = sm.getFocusSession();
+  if (!focus || focus.id === session.id) {
+    const layout = ButtonManager.layoutFor(session);
+    broadcastLayout(layout);
+  }
   res.json({ ok: true });
 });
 

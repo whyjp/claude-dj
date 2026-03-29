@@ -47,12 +47,11 @@ describe('Hook scripts', () => {
     assert.ok(json.includes('${CLAUDE_PLUGIN_ROOT}'), 'should use ${CLAUDE_PLUGIN_ROOT} paths');
   });
 
-  it('plugin.json is valid and references hooks.json', () => {
+  it('plugin.json is valid', () => {
     assert.ok(existsSync('.claude-plugin/plugin.json'));
     const manifest = JSON.parse(readFileSync('.claude-plugin/plugin.json', 'utf8'));
     assert.equal(manifest.name, 'claude-dj');
-    assert.ok(manifest.hooks, 'should declare hooks');
-    assert.ok(manifest.hooks.includes('hooks.json'), 'should reference hooks.json');
+    // hooks/hooks.json is auto-discovered by Claude Code, no manifest.hooks needed
   });
 
   it('choiceParser.js exists and exports parsers', async () => {
