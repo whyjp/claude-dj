@@ -199,12 +199,19 @@ export function renderLayout(msg) {
       _setInfoState('WAITING_CHOICE');
       break;
 
-    case 'response':
-      if (msg.choices && msg.choices.length > 0) {
+    case 'multiSelect':
+      if (msg.choices) {
         msg.choices.forEach((c, i) => {
-          if (i < 10) _setKeyChoice(i, i, c.index, c.label);
+          if (i < 9) _setKeyMultiChoice(i, i, c.index, c.label, c.selected);
         });
+        // Slot 9 = Submit button
+        _setKeySubmit(9);
       }
+      _setInfoState('WAITING_CHOICE');
+      break;
+
+    case 'awaiting_input':
+      _setKeyAwaitingInput();
       _setInfoState('WAITING_RESPONSE');
       break;
   }
@@ -271,6 +278,29 @@ function _setKeyChoice(slot, ci, num, label) {
   k.className = 'k';
   k.dataset.ci = ci;
   k.innerHTML = `<span class="kn">${esc(String(num))}</span><span class="ks">${esc(label || '')}</span>`;
+}
+
+function _setKeyMultiChoice(slot, ci, num, label, selected) {
+  const k = _getK(slot);
+  if (!k) return;
+  k.className = selected ? 'k multi-on' : 'k multi-off';
+  k.dataset.ci = ci;
+  const check = selected ? '☑' : '☐';
+  k.innerHTML = `<span class="kn">${check} ${esc(String(num))}</span><span class="ks">${esc(label || '')}</span>`;
+}
+
+function _setKeySubmit(slot) {
+  const k = _getK(slot);
+  if (!k) return;
+  k.className = 'k submit';
+  k.innerHTML = `<span class="ki">✔</span><span class="kl">Done</span>`;
+}
+
+function _setKeyAwaitingInput() {
+  const k = _getK(4);
+  if (!k) return;
+  k.className = 'k awaiting';
+  k.innerHTML = `<span class="ki">⏳</span><span class="kl">Awaiting input</span>`;
 }
 
 /** Update the session count key (slot 10) */

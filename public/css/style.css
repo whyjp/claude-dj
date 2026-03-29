@@ -148,6 +148,20 @@ main {
 .k.always  { border-color: var(--amber); background: var(--adim); }
 .k.proc    { animation: gp 1.6s ease-in-out var(--off,0s) infinite; }
 
+/* ── MULTI-SELECT ── */
+.k.multi-off { border-color: var(--bd2); background: var(--surf); opacity: .7; }
+.k.multi-on  { border-color: var(--green); background: var(--gdim); }
+.k.multi-on .kn { color: var(--green); }
+.k.multi-off .kn { color: var(--muted); }
+.k.submit { border-color: var(--blue); background: var(--bdim); }
+.k.submit .ki { font-size: 24px; }
+.k.submit .kl { color: var(--blue); }
+
+/* ── AWAITING INPUT ── */
+.k.awaiting { border-color: var(--amber); background: var(--adim); opacity: .6; }
+.k.awaiting .ki { font-size: 20px; }
+.k.awaiting .kl { color: var(--amber); font-size: 11px; }
+
 /* ── CHOICE COLORS ── */
 .k[data-ci="0"] { border-color: var(--cc0); background: var(--cb0); }
 .k[data-ci="1"] { border-color: var(--cc1); background: var(--cb1); }
