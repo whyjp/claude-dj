@@ -135,6 +135,20 @@ describe('SessionManager', () => {
     assert.equal(focus.id, 's2'); // but binary takes priority
   });
 
+  it('getFocusSession respects setFocus when focused session is urgent', () => {
+    // A fires permission first (older waitingSince)
+    sm.handlePermission({ session_id: 'A', cwd: '/a', tool_name: 'Bash', tool_input: { command: 'ls' } });
+    // B fires AskUserQuestion later → setFocus(B)
+    sm.handlePermission({
+      session_id: 'B', cwd: '/b', tool_name: 'AskUserQuestion',
+      tool_input: { question: 'Which?', options: [{ label: 'X' }, { label: 'Y' }] },
+    });
+    sm.setFocus('B'); // deck now shows B's choices
+    const focus = sm.getFocusSession();
+    // Must return B (the focused session), NOT A (the older one)
+    assert.equal(focus.id, 'B');
+  });
+
   it('getFocusSession falls back to oldest waiting when focus is not waiting', () => {
     sm.handlePermission({ session_id: 's1', cwd: '/a', tool_name: 'Bash', tool_input: { command: 'ls' } });
     sm.handlePermission({ session_id: 's2', cwd: '/b', tool_name: 'Write', tool_input: { file_path: '/x' } });

@@ -498,6 +498,77 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
     ws.close();
   });
 
+  it('cross-session: both A and B waiting — button resolves the focused session', async () => {
+    const ws = await connectWs(wsUrl);
+    const msgs = collectMessages(ws);
+    await new Promise((r) => setTimeout(r, 100));
+
+    // Session A: permission (WAITING_BINARY) — fires first (older waitingSince)
+    const hookA = runHook('permission.js', {
+      session_id: 'e2e-dual-A',
+      cwd: '/tmp/dualA',
+      hook_event_name: 'PermissionRequest',
+      tool_name: 'Bash',
+      tool_input: { command: 'rm -rf /tmp/old' },
+    });
+
+    // Wait for A's binary layout
+    await new Promise((resolve) => {
+      const check = setInterval(() => {
+        if (msgs.some((m) => m.type === 'LAYOUT' && m.preset === 'binary')) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 50);
+    });
+
+    // Session B: AskUserQuestion (WAITING_CHOICE) — fires second, takes focus
+    const hookB = runHook('permission.js', {
+      session_id: 'e2e-dual-B',
+      cwd: '/tmp/dualB',
+      hook_event_name: 'PermissionRequest',
+      tool_name: 'AskUserQuestion',
+      tool_input: {
+        questions: [{
+          question: 'Pick one',
+          options: [
+            { label: 'Alpha', description: 'First' },
+            { label: 'Beta', description: 'Second' },
+          ],
+        }],
+      },
+    });
+
+    // Wait for B's choice layout (should override A's binary on deck)
+    await new Promise((resolve) => {
+      const check = setInterval(() => {
+        if (msgs.some((m) => m.type === 'LAYOUT' && m.preset === 'choice')) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 50);
+    });
+
+    // Press choice button (slot 1 = option 2) — must resolve B, not A
+    ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 1, timestamp: Date.now() }));
+
+    const resultB = await hookB;
+    assert.equal(resultB.exitCode, 0);
+    const respB = JSON.parse(resultB.stdout);
+    assert.equal(respB.hookSpecificOutput.decision.behavior, 'allow');
+    assert.equal(respB.hookSpecificOutput.decision.updatedInput.answer, '2');
+
+    // Now A is still waiting — approve it
+    ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 0, timestamp: Date.now() }));
+
+    const resultA = await hookA;
+    assert.equal(resultA.exitCode, 0);
+    const respA = JSON.parse(resultA.stdout);
+    assert.equal(respA.hookSpecificOutput.decision.behavior, 'allow');
+
+    ws.close();
+  });
+
   it('stop.js: choices in transcript → deck shows response buttons (display-only)', async () => {
     // Create a fake transcript JSONL with choices
     const tmpDir = path.join(os.tmpdir(), 'claude-dj-test-' + Date.now());
