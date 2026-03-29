@@ -144,4 +144,43 @@ describe('Bridge Server', () => {
     assert.ok(typeof res.body.uptime === 'number');
     assert.ok(res.body.uptime >= 0);
   });
+
+  // --- Security hardening ---
+
+  it('GET /api/events with null byte in sessionId returns 400', async () => {
+    const res = await get('/api/events/test%00evil');
+    assert.equal(res.status, 400);
+  });
+
+  it('GET /api/events with extremely long sessionId returns 400', async () => {
+    const longId = 'a'.repeat(10000);
+    const res = await get(`/api/events/${longId}`);
+    assert.equal(res.status, 400);
+  });
+
+  it('GET to POST-only endpoint returns 404', async () => {
+    return new Promise((resolve, reject) => {
+      http.get(`http://127.0.0.1:${PORT}/api/hook/notify`, (res) => {
+        assert.equal(res.statusCode, 404);
+        res.resume(); // drain
+        res.on('end', resolve);
+      }).on('error', reject);
+    });
+  });
+
+  it('POST with malformed JSON returns 400', async () => {
+    return new Promise((resolve, reject) => {
+      const data = '{invalid json!!!';
+      const req = http.request({
+        hostname: '127.0.0.1', port: PORT, path: '/api/hook/notify', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) },
+      }, (res) => {
+        assert.equal(res.statusCode, 400);
+        resolve();
+      });
+      req.on('error', reject);
+      req.write(data);
+      req.end();
+    });
+  });
 });

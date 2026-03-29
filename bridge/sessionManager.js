@@ -333,6 +333,9 @@ export class SessionManager {
   toJSON() {
     return [...this.sessions.values()].map(({ respondFn, _permissionTimeout, agents, ...rest }) => ({
       ...rest,
+      prompt: rest.prompt?.selected instanceof Set
+        ? { ...rest.prompt, selected: [...rest.prompt.selected] }
+        : rest.prompt,
       agents: [...agents.values()],
     }));
   }

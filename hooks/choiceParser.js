@@ -40,7 +40,7 @@ export function parseFencedChoices(text) {
  */
 export function parseRegexChoices(text) {
   // Only scan the tail — real choices are always at the end of a message
-  const tail = text.length > 800 ? text.slice(-800) : text;
+  const tail = (text.length > 800 ? text.slice(-800) : text).replace(/\r\n/g, '\n');
 
   const patterns = [
     /^(?:\*\*)?(\d+)[.):\]]\s*\*?\*?\s*(.+)/gm,

@@ -24,6 +24,11 @@ export class WsServer {
         }
       });
 
+      ws.on('error', (err) => {
+        console.error('[ws] client error:', err.message);
+        this.clients.delete(ws);
+      });
+
       ws.on('close', () => {
         this.clients.delete(ws);
         console.log(`[ws] client disconnected (total: ${this.clients.size})`);

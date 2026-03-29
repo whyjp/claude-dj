@@ -132,7 +132,7 @@ fs.mkdirSync(config.eventsDir, { recursive: true });
 
 app.get('/api/events/:sessionId', (req, res) => {
   const sessionId = req.params.sessionId;
-  if (!/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
+  if (!sessionId || sessionId.length > 256 || !/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
     return res.status(400).json({ error: 'invalid session id' });
   }
   const file = path.join(config.eventsDir, `${sessionId}.jsonl`);
@@ -146,6 +146,16 @@ app.get('/api/events/:sessionId', (req, res) => {
 app.post('/api/hook/permission', (req, res) => {
   const input = req.body;
   console.log(`[hook/permission] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
+
+  // Auto-deny previous pending permission to prevent orphaned HTTP responses
+  const existing = sm.get(input.session_id);
+  if (existing?.respondFn) {
+    existing.respondFn({ type: 'binary', value: 'deny' });
+  }
+  if (existing?._permissionTimeout) {
+    clearTimeout(existing._permissionTimeout);
+    existing._permissionTimeout = null;
+  }
 
   const session = sm.handlePermission(input);
   // Auto-focus: new permission request takes focus
@@ -242,6 +252,12 @@ ws.onButtonPress = (slot, timestamp) => {
 const pruneInterval = setInterval(() => {
   const pruned = sm.pruneIdle(config.sessionIdleTimeout);
   if (pruned.length > 0) {
+    for (const id of pruned) {
+      if (_stopTimers.has(id)) {
+        clearTimeout(_stopTimers.get(id));
+        _stopTimers.delete(id);
+      }
+    }
     console.log(`[claude-dj] Pruned ${pruned.length} idle session(s): ${pruned.join(', ')}`);
     ws.broadcast({ type: 'SESSION_DISCONNECTED', sessionIds: pruned, reason: 'idle_timeout' });
   }
@@ -252,6 +268,12 @@ const pruneInterval = setInterval(() => {
 const syncInterval = setInterval(() => {
   const { pruned, alive } = sm.syncFromDisk();
   if (pruned.length > 0) {
+    for (const id of pruned) {
+      if (_stopTimers.has(id)) {
+        clearTimeout(_stopTimers.get(id));
+        _stopTimers.delete(id);
+      }
+    }
     console.log(`[claude-dj] Synced: removed ${pruned.length} dead session(s): ${pruned.join(', ')}`);
     ws.broadcast({ type: 'SESSION_DISCONNECTED', sessionIds: pruned, reason: 'process_exit' });
   }

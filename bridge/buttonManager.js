@@ -45,6 +45,7 @@ export class ButtonManager {
   }
 
   static resolvePress(slot, state, prompt) {
+    if (!prompt) return null;
     // Match Claude Code's permission dialog order: 1=Allow, 2=Always, 3=Deny
     if (state === 'WAITING_BINARY') {
       if (slot === 0) return { type: 'binary', value: 'allow' };
