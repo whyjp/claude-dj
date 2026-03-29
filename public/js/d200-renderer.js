@@ -152,9 +152,15 @@ export function renderLayout(msg) {
   }
 
   switch (msg.preset) {
-    case 'idle':
+    case 'idle': {
+      const k9 = _getK(9);
+      if (k9) {
+        k9.className = 'k idle-indicator';
+        k9.innerHTML = `<span class="ki">💤</span><span class="kl">Idle</span>`;
+      }
       _setInfoState('IDLE');
       break;
+    }
 
     case 'processing':
       // Dynamic keys 0-9 pulse (staggered). Slot 12 stays reserved.
