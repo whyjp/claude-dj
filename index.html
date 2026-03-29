@@ -426,6 +426,7 @@ footer {
     <div class="state-tabs" id="stabs">
       <button class="stab on" data-s="binary">BINARY</button>
       <button class="stab" data-s="choice">CHOICE</button>
+      <button class="stab" data-s="multi">MULTI</button>
       <button class="stab" data-s="processing">PROC</button>
       <button class="stab" data-s="idle">IDLE</button>
     </div>
@@ -604,6 +605,28 @@ footer {
         <div class="mk n0">1</div><div class="mk n1">2</div>
         <div class="mk n2">3</div><div class="mk n3">4</div>
         <div class="mk"></div><div class="mk"></div>
+        <div class="mk"></div><div class="mk"></div>
+      </div>
+    </div>
+    <div class="sc">
+      <div class="sc-pill"><div class="dot a"></div><span style="color:var(--amber)">MULTI-SELECT</span></div>
+      <h4>복수 선택 토글+제출</h4>
+      <p><code>multiSelect: true</code> AskUserQuestion → ☐/☑ 토글 버튼 (슬롯 0-8) + ✔ Done (슬롯 9). 선택 후 Done으로 일괄 제출.</p>
+      <div class="mini">
+        <div class="mk g">☑1</div><div class="mk">☐2</div>
+        <div class="mk g">☑3</div><div class="mk">☐4</div>
+        <div class="mk"></div><div class="mk"></div>
+        <div class="mk"></div><div class="mk b">✔</div>
+      </div>
+    </div>
+    <div class="sc">
+      <div class="sc-pill"><div class="dot" style="background:var(--amber)"></div><span style="color:var(--amber)">AWAITING INPUT</span></div>
+      <h4>입력 대기 알림</h4>
+      <p>Claude가 텍스트 선택지를 출력하고 멈춘 경우. 덱에 ⏳ 대기 아이콘 표시 — 터미널에서 응답 필요.</p>
+      <div class="mini">
+        <div class="mk"></div><div class="mk"></div>
+        <div class="mk"></div><div class="mk"></div>
+        <div class="mk" style="border-color:var(--amber);opacity:.6">⏳</div><div class="mk"></div>
         <div class="mk"></div><div class="mk"></div>
       </div>
     </div>
@@ -904,6 +927,19 @@ const STATES = {
     r2: ['count', 'sess', 'agent'],
     bw: { icon:'🖥', name:'SYSTEM', state:'time / cpu' }
   },
+  multi: {
+    r0: [
+      { cls:'c0', icon:'☑', lbl:'Auth' },
+      { cls:'dim', icon:'☐', lbl:'API' },
+      { cls:'c2', icon:'☑', lbl:'UI' },
+      { cls:'dim' }, { cls:'dim' }
+    ],
+    r1: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },
+      { cls:'c1', icon:'✔', lbl:'Done' }
+    ],
+    r2: ['count', 'sess', 'agent'],
+    bw: { icon:'🖥', name:'SYSTEM', state:'time / cpu' }
+  },
   processing: {
     r0: [
       { cls:'proc', d:'.0s' }, { cls:'proc', d:'.12s' }, { cls:'proc', d:'.24s' },
@@ -987,7 +1023,7 @@ document.getElementById('stabs').addEventListener('click', e => {
 
 // auto-cycle
 let cycleIdx = 0;
-const cycleOrder = ['binary','processing','choice','idle'];
+const cycleOrder = ['binary','processing','choice','multi','idle'];
 let userClicked = false;
 document.getElementById('stabs').addEventListener('click', () => userClicked = true);
 setInterval(() => {

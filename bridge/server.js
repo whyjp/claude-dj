@@ -17,6 +17,11 @@ const ws = new WsServer();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+// Landing page served at /landing for local debugging (source: repo root index.html)
+app.get('/landing', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'index.html'));
+});
+
 // --- Health & Status ---
 
 app.get('/api/health', (req, res) => {
