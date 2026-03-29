@@ -1,5 +1,6 @@
 .superpowers/
 .claude/
+.omc/
 node_modules/
 ulanzi/sdk/
 ulanzi/software/
