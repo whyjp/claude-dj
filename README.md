@@ -126,9 +126,9 @@ Claude DJ supports two distinct choice mechanisms:
 | Path | Trigger | State | Response Method |
 |------|---------|-------|-----------------|
 | **AskUserQuestion** (primary) | `PermissionRequest` hook with `tool_name: "AskUserQuestion"` | `WAITING_CHOICE` | Blocking HTTP response with `updatedInput.answer` |
-| **Transcript parsing** (fallback) | `Stop` hook parses last assistant message for numbered lists | `WAITING_RESPONSE` | Long-poll `stop-wait` endpoint → button press → `stopResponse` delivered to Claude |
+| **Transcript parsing** (notification) | `Stop` hook parses last assistant message for numbered lists | `WAITING_RESPONSE` | Display-only — deck shows "awaiting input" indicator |
 
-The **AskUserQuestion path** is the primary mechanism — it's real-time, blocking, and guaranteed to deliver the response. The **transcript parsing path** is a fallback for when Claude writes choices as text despite the skill. When the Stop hook detects choices, it POSTs them to the bridge, then long-polls `/api/stop-wait/:sessionId` (60s timeout). The bridge shows buttons on the deck; when pressed, the selection is returned as a `stopResponse` that Claude receives as input for its next turn.
+The **AskUserQuestion path** is the primary mechanism — it's real-time, blocking, and guaranteed to deliver the response. The **transcript parsing path** is a display-only notification for when Claude writes choices as text despite the skill. The deck shows an "awaiting input" indicator so the user knows Claude is waiting, but interaction happens in the terminal. Stop hooks cannot inject user turns back to Claude, so this path is intentionally non-interactive.
 
 ### Cross-Session Focus Management
 
@@ -159,7 +159,7 @@ Claude Code Session
     ├─ PreToolUse      → hooks/notify.js       → POST /api/hook/notify      (async)
     ├─ PostToolUse     → hooks/postToolUse.js  → POST /api/hook/postToolUse (async)
     ├─ PermissionReq   → hooks/permission.js   → POST /api/hook/permission  (blocking, 60s)
-    ├─ Stop            → hooks/stop.js         → POST /api/hook/stop        (async + transcript parse)
+    ├─ Stop            → hooks/stop.js         → POST /api/hook/stop        (async, display-only notification)
     ├─ UserPromptSubmit→ hooks/userPrompt.js   → GET  /api/events/:id       (reads deck events)
     ├─ SubagentStart   → hooks/subagentStart.js→ POST /api/hook/subagentStart (async)
     └─ SubagentStop    → hooks/subagentStop.js → POST /api/hook/subagentStop  (async)
@@ -192,6 +192,7 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 | PROCESSING | Wave pulse | Session name | Agent type or ROOT |
 | WAITING_BINARY | 0=Approve, 1=Always/Deny, 2=Deny | Session name | Agent type or ROOT |
 | WAITING_CHOICE | 0..N = choice buttons | Session name | Agent type or ROOT |
+| WAITING_RESPONSE | Awaiting input indicator (display-only) | Session name | Agent type or ROOT |
 
 ## Features
 
@@ -199,7 +200,7 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 - **Permission buttons** — Approve / Always Allow / Deny mapped to deck slots
 - **Cross-session focus** — WAITING_CHOICE/BINARY sessions auto-prioritized, processing events filtered
 - **Subagent tracking** — Tree-view display, independent state per agent, slot 12 cycling
-- **Transcript choice fallback** — Parses numbered/lettered lists from Claude's output as display-only buttons
+- **Awaiting input notification** — When Claude stops with text choices, deck shows "awaiting input" indicator
 - **Multi-session management** — Slot 11 cycles root sessions, focus auto-switches on permission
 - **Late-join sync** — New clients receive current deck state immediately
 - **Plugin packaging** — `.claude-plugin/plugin.json` with portable `${CLAUDE_PLUGIN_ROOT}` paths
@@ -218,7 +219,7 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 
 ```bash
 npm install              # install dependencies
-npm test                 # 93 tests across 9 suites
+npm test                 # 96 tests across 9 suites
 node bridge/server.js    # start bridge
 ```
 

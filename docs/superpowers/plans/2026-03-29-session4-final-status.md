@@ -50,17 +50,17 @@
 ### 1.7 Test Timeout Fix
 - Export `pruneInterval` from server.js, clear in test teardown
 
-### 1.8 Stop-Wait Path (WAITING_RESPONSE)
+### 1.8 Stop Notification (WAITING_RESPONSE → awaiting_input)
 - `stop.js` → `choiceParser.js` → `POST /api/hook/stop` with `_djChoices`
-- Long-poll `GET /api/stop-wait/:sessionId` (60s timeout)
-- Three resolution paths: direct waiter, earlyResult, events.jsonl fallback
-- Button press delivers `stopResponse` with natural language selection
-- E2E test: `stop.js: choices in transcript → deck shows buttons → button press returns stopResponse`
+- Display-only notification: deck shows "awaiting input" indicator (no interactive buttons)
+- Stop hooks cannot inject user turns — interactive button delivery removed after live testing
+- Transcript choice parsing retained for display context
 
-### 1.9 Trailing Confirmation Pattern
-- choice-format skill updated with "trailing confirmation" guidance
-- Claude's "진행할까?" / "shall I proceed?" → AskUserQuestion instead of bare text
-- Layout tests for agents display in buttonManager
+### 1.9 Choice-Format Skill Rewrite
+- Concise procedural format (78→56 lines), "The One Rule" at top
+- Bilingual KO/EN: Common Mistakes table with concrete mappings
+- "커밋할까요?" → `["Commit", "Not yet"]` style examples
+- Live verified: AskUserQuestion select (3 buttons) + confirm (2 buttons)
 
 ---
 
@@ -71,7 +71,7 @@ Claude Code Session
     ├─ PreToolUse    → hooks/notify.js       → POST /api/hook/notify      (async, focus-filtered)
     ├─ PostToolUse   → hooks/postToolUse.js  → POST /api/hook/postToolUse (async, focus-filtered)
     ├─ PermissionReq → hooks/permission.js   → POST /api/hook/permission  (blocking)
-    ├─ Stop          → hooks/stop.js         → POST /api/hook/stop        (async + regex fallback)
+    ├─ Stop          → hooks/stop.js         → POST /api/hook/stop        (async, display-only notification)
     ├─ UserPrompt    → hooks/userPrompt.js   → GET /api/events/:id       (reads deck events)
     ├─ SubagentStart → hooks/subagentStart.js→ POST /api/hook/subagentStart (async)
     └─ SubagentStop  → hooks/subagentStop.js → POST /api/hook/subagentStop  (async)
@@ -100,7 +100,7 @@ Claude Code Session
 | AskUserQuestion choice | PermissionRequest → WAITING_CHOICE → button → respondFn | ✅ Live verified |
 | Session switch | Slot 11 → cycleFocus → broadcast | ✅ Working |
 | Subagent switch | Slot 12 → cycleAgent → broadcast | ✅ Working |
-| Stop-wait choice | Stop → choiceParser → WAITING_RESPONSE → button → stopResponse | ✅ Working |
+| Awaiting input | Stop → choiceParser → WAITING_RESPONSE → awaiting_input notification | ✅ Display-only |
 
 ---
 
@@ -114,7 +114,7 @@ claude-dj/
 ├── bridge/
 │   ├── config.js            (3 tests)
 │   ├── sessionManager.js    (32 tests: +agent lifecycle, cycleAgent)
-│   ├── buttonManager.js     (11 tests: +natural language response)
+│   ├── buttonManager.js     (12 tests: +awaiting_input display-only)
 │   ├── wsServer.js
 │   └── server.js            (5 tests, focus-filtered broadcast, subagent endpoints)
 ├── hooks/
@@ -155,7 +155,7 @@ claude-dj/
     └── superpowers/plans/2026-03-29-subagent-tracking.md
 ```
 
-Total: **93 automated tests**, 9 suites.
+Total: **96 automated tests**, 9 suites.
 
 ---
 
