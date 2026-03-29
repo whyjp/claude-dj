@@ -45,26 +45,33 @@ export function initDashboard() {
   if (clearBtn1) clearBtn1.addEventListener('click', clearFn);
   if (clearBtn2) clearBtn2.addEventListener('click', clearFn);
 
-  // Log session sub-tabs
+  // Log session sub-tabs (root row)
   const logTabs = document.getElementById('logTabs');
   if (logTabs) {
     logTabs.addEventListener('click', e => {
       const tab = e.target.closest('.log-tab');
       if (!tab) return;
       const sid = tab.dataset.sid;
-      const aid = tab.dataset.aid || null;
-
       if (sid === '__all__') {
         _logSessionFilter = '__all__';
         _logAgentFilter = null;
-      } else if (aid) {
-        // Child agent tab clicked
-        _logAgentFilter = aid;
       } else {
-        // Root session tab clicked
         _logSessionFilter = sid;
         _logAgentFilter = null;
       }
+      _rebuildLogTabs();
+      _reRenderLog();
+    });
+  }
+
+  // Log agent sub-tabs (child row)
+  const logTabsChild = document.getElementById('logTabsChild');
+  if (logTabsChild) {
+    logTabsChild.addEventListener('click', e => {
+      const tab = e.target.closest('.log-tab');
+      if (!tab) return;
+      const aid = tab.dataset.aid || null;
+      _logAgentFilter = aid;
       _rebuildLogTabs();
       _reRenderLog();
     });
@@ -205,9 +212,10 @@ export function clearLog() {
   _updateBadge();
 }
 
-/** Rebuild log tabs: All + root sessions. If a root is selected, also show its child agents. */
+/** Rebuild log tabs: Row 1 = All + root sessions. Row 2 = child agents (visible when root selected). */
 function _rebuildLogTabs() {
   const container = document.getElementById('logTabs');
+  const childContainer = document.getElementById('logTabsChild');
   if (!container) return;
 
   container.innerHTML = '';
@@ -222,26 +230,42 @@ function _rebuildLogTabs() {
   // Root session tabs
   for (const s of _sessions.values()) {
     const tab = document.createElement('div');
-    const isActive = _logSessionFilter === s.id && _logAgentFilter === null;
+    const isActive = _logSessionFilter === s.id;
+    const agentCount = s.agents ? s.agents.length : 0;
     tab.className = `log-tab ${isActive ? 'on' : ''}`;
     tab.dataset.sid = s.id;
-    tab.textContent = s.name.split(' ')[0];
+    tab.textContent = s.name.split(' ')[0] + (agentCount > 0 ? ` (${agentCount})` : '');
     container.appendChild(tab);
   }
 
-  // If a root is selected, show child agent sub-tabs
-  if (_logSessionFilter !== '__all__') {
-    const sess = _sessions.get(_logSessionFilter);
-    if (sess && sess.agents && sess.agents.length > 0) {
-      for (const a of sess.agents) {
-        const tab = document.createElement('div');
-        const isActive = _logAgentFilter === a.agentId;
-        tab.className = `log-tab log-tab-child ${isActive ? 'on' : ''}`;
-        tab.dataset.sid = _logSessionFilter;
-        tab.dataset.aid = a.agentId;
-        tab.textContent = a.type || a.agentId.slice(0, 6);
-        container.appendChild(tab);
+  // Child row: only visible when a root with agents is selected
+  if (childContainer) {
+    childContainer.innerHTML = '';
+    if (_logSessionFilter !== '__all__') {
+      const sess = _sessions.get(_logSessionFilter);
+      if (sess && sess.agents && sess.agents.length > 0) {
+        // "Root" tab = show all logs for this session (no agent filter)
+        const rootTab = document.createElement('div');
+        rootTab.className = `log-tab ${_logAgentFilter === null ? 'on' : ''}`;
+        rootTab.dataset.sid = _logSessionFilter;
+        rootTab.textContent = 'root';
+        childContainer.appendChild(rootTab);
+
+        for (const a of sess.agents) {
+          const tab = document.createElement('div');
+          const isActive = _logAgentFilter === a.agentId;
+          tab.className = `log-tab ${isActive ? 'on' : ''}`;
+          tab.dataset.sid = _logSessionFilter;
+          tab.dataset.aid = a.agentId;
+          tab.textContent = a.type || a.agentId.slice(0, 6);
+          childContainer.appendChild(tab);
+        }
+        childContainer.style.display = '';
+      } else {
+        childContainer.style.display = 'none';
       }
+    } else {
+      childContainer.style.display = 'none';
     }
   }
 }
