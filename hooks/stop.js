@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
+import { parseFencedChoices, parseRegexChoices } from './choiceParser.js';
 
 const BRIDGE_URL = process.env.CLAUDE_DJ_URL || 'http://localhost:39200';
 
 /**
- * Parse the last assistant message from transcript for numbered choices.
- * Returns array of {index, label} or null if no choices found.
+ * Extract last assistant text from transcript JSONL and parse choices.
+ * Priority: fenced choices > regex fallback > null.
  */
 function parseChoices(transcriptPath) {
   try {
     const content = readFileSync(transcriptPath, 'utf8');
     const lines = content.trim().split('\n');
 
-    // Find last assistant message — walk backwards
     let lastAssistant = null;
     for (let i = lines.length - 1; i >= 0; i--) {
       try {
@@ -32,27 +32,7 @@ function parseChoices(transcriptPath) {
 
     if (!lastAssistant) return null;
 
-    // Match numbered choice patterns:
-    // "1. text", "1) text", "(1) text", "1: text"
-    // Also "A. text", "A) text", "(A) text", "a) text"
-    const patterns = [
-      /^(?:\*\*)?(\d+)[.):\]]\s*\*?\*?\s*(.+)/gm,           // 1. text, 1) text, 1: text
-      /^\((\d+)\)\s*(.+)/gm,                                   // (1) text
-      /^(?:\*\*)?([A-Za-z])[.):\]]\s*\*?\*?\s*(.+)/gm,       // A. text, A) text
-      /^\(([A-Za-z])\)\s*(.+)/gm,                              // (A) text
-    ];
-
-    for (const pattern of patterns) {
-      const matches = [...lastAssistant.matchAll(pattern)];
-      if (matches.length >= 2) {
-        return matches.slice(0, 10).map((m, i) => ({
-          index: i + 1,
-          label: m[1] + ') ' + m[2].trim().slice(0, 30),
-        }));
-      }
-    }
-
-    return null;
+    return parseFencedChoices(lastAssistant) || parseRegexChoices(lastAssistant);
   } catch (e) {
     return null;
   }
@@ -78,15 +58,31 @@ try {
     choices = parseChoices(parsed.transcript_path);
   }
 
-  // Send to Bridge with parsed choices (or null)
   const payload = { ...parsed, _djChoices: choices };
-  await fetch(`${BRIDGE_URL}/api/hook/stop`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(5000),
-  });
+
+  if (choices && choices.length > 0) {
+    // BLOCKING: wait for user to press a deck button (like permission hook)
+    const res = await fetch(`${BRIDGE_URL}/api/hook/stop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(120_000),
+    });
+    const json = await res.json();
+    // Output the selection so Claude sees it
+    if (json.decision) {
+      process.stdout.write(JSON.stringify(json));
+    }
+  } else {
+    // No choices — fire and forget
+    await fetch(`${BRIDGE_URL}/api/hook/stop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(5000),
+    });
+  }
 } catch (e) {
-  // ignore
+  // ignore — bridge down or timeout
 }
 process.exit(0);
