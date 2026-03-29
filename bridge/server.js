@@ -14,7 +14,17 @@ const server = http.createServer(app);
 const sm = new SessionManager();
 const ws = new WsServer();
 
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
+
+// Input validation middleware for hook endpoints
+function validateHookInput(req, res, next) {
+  const { session_id } = req.body || {};
+  if (!session_id || typeof session_id !== 'string') {
+    return res.status(400).json({ error: 'missing or invalid session_id' });
+  }
+  next();
+}
+app.post('/api/hook/*', validateHookInput);
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Landing page served at /landing for local debugging (source: repo root index.html)
@@ -136,11 +146,18 @@ app.get('/api/events/:sessionId', (req, res) => {
     return res.status(400).json({ error: 'invalid session id' });
   }
   const file = path.join(config.eventsDir, `${sessionId}.jsonl`);
-  if (!fs.existsSync(file)) return res.json({ events: [] });
-  const lines = fs.readFileSync(file, 'utf8').trim().split('\n').filter(Boolean);
-  const events = lines.map((l) => JSON.parse(l));
-  fs.unlinkSync(file); // clear after read
-  res.json({ events });
+  // Atomic read-then-delete: rename first to prevent concurrent reads
+  const tmpFile = file + '.reading';
+  try { fs.renameSync(file, tmpFile); } catch { return res.json({ events: [] }); }
+  try {
+    const lines = fs.readFileSync(tmpFile, 'utf8').trim().split('\n').filter(Boolean);
+    const events = lines.map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+    fs.unlinkSync(tmpFile);
+    res.json({ events });
+  } catch {
+    try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+    res.json({ events: [] });
+  }
 });
 
 app.post('/api/hook/permission', (req, res) => {

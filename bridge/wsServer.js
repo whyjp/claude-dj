@@ -53,12 +53,18 @@ export class WsServer {
   }
 
   broadcast(msg) {
-    const data = JSON.stringify({ type: msg.type || 'LAYOUT', ...msg });
+    let data;
+    try { data = JSON.stringify({ type: msg.type || 'LAYOUT', ...msg }); }
+    catch (e) { console.error('[ws] broadcast serialize error:', e.message); return; }
+    const stale = [];
     for (const client of this.clients) {
       if (client.readyState === 1) {
         client.send(data);
+      } else {
+        stale.push(client);
       }
     }
+    for (const c of stale) this.clients.delete(c);
   }
 
   sendWelcome(ws, sessions) {

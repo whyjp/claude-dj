@@ -448,10 +448,10 @@ describe('E2E Edge Cases: Hook → Bridge → WebSocket', () => {
 
   // --- Input validation ---
 
-  it('POST /api/hook/notify with empty body does not crash', async () => {
+  it('POST /api/hook/notify with empty body returns 400', async () => {
     const resp = await postJSON('/api/hook/notify', {});
-    // Should not crash the server — may create a session with undefined ID
-    assert.equal(resp.status, 200);
+    assert.equal(resp.status, 400);
+    assert.equal(resp.body.error, 'missing or invalid session_id');
   });
 
   it('POST with malformed JSON returns 400', async () => {
@@ -505,6 +505,114 @@ describe('E2E Edge Cases: Hook → Bridge → WebSocket', () => {
     // Should not crash
     assert.equal(ws.readyState, WebSocket.OPEN);
     ws.close();
+  });
+
+  // --- userPrompt.js behavioral tests ---
+
+  it('userPrompt.js injects deck button selections as additionalContext', async () => {
+    const sessionId = 'edge-prompt-1';
+    // Write a fake event file
+    const eventsDir = (await import('../bridge/config.js')).config.eventsDir;
+    const fs = (await import('node:fs')).default;
+    const eventFile = `${eventsDir}/${sessionId}.jsonl`;
+    fs.mkdirSync(eventsDir, { recursive: true });
+    fs.writeFileSync(eventFile, JSON.stringify({ value: 'Docker' }) + '\n');
+
+    const result = await runHook('userPrompt.js', {
+      session_id: sessionId,
+      cwd: '/tmp/prompt-test',
+      hook_event_name: 'UserPromptSubmit',
+    });
+
+    assert.equal(result.exitCode, 0);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.hookSpecificOutput.hookEventName, 'UserPromptSubmit');
+    assert.ok(output.hookSpecificOutput.additionalContext.includes('Docker'));
+  });
+
+  it('userPrompt.js produces no output when no events exist', async () => {
+    const result = await runHook('userPrompt.js', {
+      session_id: 'edge-prompt-none',
+      cwd: '/tmp/prompt-test',
+      hook_event_name: 'UserPromptSubmit',
+    });
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.stdout, '');
+  });
+
+  // --- Subagent hooks spawned as real processes ---
+
+  it('subagentStart.js spawned as process sends correct data to bridge', async () => {
+    const result = await runHook('subagentStart.js', {
+      session_id: 'edge-subspawn-1',
+      agent_id: 'spawn-agent-1',
+      agent_type: 'executor',
+    });
+    assert.equal(result.exitCode, 0);
+
+    const status = await getJSON('/api/status');
+    const session = status.body.sessions.find((s) => s.id === 'edge-subspawn-1');
+    assert.ok(session, 'session should exist');
+    const agent = session.agents.find((a) => a.agentId === 'spawn-agent-1');
+    assert.ok(agent, 'agent should exist');
+    assert.equal(agent.type, 'executor');
+  });
+
+  it('subagentStop.js spawned as process removes agent from session', async () => {
+    // First ensure agent exists
+    await runHook('subagentStart.js', {
+      session_id: 'edge-subspawn-2',
+      agent_id: 'spawn-agent-2',
+      agent_type: 'reviewer',
+    });
+
+    const result = await runHook('subagentStop.js', {
+      session_id: 'edge-subspawn-2',
+      agent_id: 'spawn-agent-2',
+    });
+    assert.equal(result.exitCode, 0);
+
+    const status = await getJSON('/api/status');
+    const session = status.body.sessions.find((s) => s.id === 'edge-subspawn-2');
+    assert.ok(session);
+    const agent = session.agents.find((a) => a.agentId === 'spawn-agent-2');
+    assert.equal(agent, undefined, 'agent should be removed');
+  });
+
+  // --- Input validation ---
+
+  it('POST /api/hook/notify with null session_id returns 400', async () => {
+    const resp = await postJSON('/api/hook/notify', { session_id: null });
+    assert.equal(resp.status, 400);
+  });
+
+  it('POST /api/hook/notify with numeric session_id returns 400', async () => {
+    const resp = await postJSON('/api/hook/notify', { session_id: 12345 });
+    assert.equal(resp.status, 400);
+  });
+
+  it('POST /api/hook/permission with missing session_id returns 400', async () => {
+    const resp = await postJSON('/api/hook/permission', { tool_name: 'Bash' });
+    assert.equal(resp.status, 400);
+  });
+
+  // --- Oversized body ---
+
+  it('POST with oversized body returns 413', async () => {
+    return new Promise((resolve, reject) => {
+      const bigBody = JSON.stringify({ session_id: 'x', data: 'A'.repeat(200000) });
+      const req = http.request({
+        hostname: '127.0.0.1', port: PORT, path: '/api/hook/notify', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(bigBody) },
+      }, (res) => {
+        assert.equal(res.statusCode, 413);
+        res.resume();
+        res.on('end', resolve);
+      });
+      req.on('error', reject);
+      req.write(bigBody);
+      req.end();
+    });
   });
 
   it('duplicate CLIENT_READY sends welcome twice without crash', async () => {
