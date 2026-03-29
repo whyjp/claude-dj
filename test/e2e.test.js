@@ -619,6 +619,17 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
     assert.equal(resp.continue, true);
     assert.ok(resp.systemMessage.includes('Rewrite'));
 
+    // Dual delivery: events.jsonl should also have the selection (visual-companion pattern)
+    const eventsDir = process.env.CLAUDE_DJ_EVENTS_DIR || path.join(os.tmpdir(), 'claude-dj-events');
+    const eventsFile = path.join(eventsDir, 'e2e-display-1.jsonl');
+    assert.ok(fs.existsSync(eventsFile), 'events.jsonl should be written for UserPromptSubmit pickup');
+    const eventsContent = fs.readFileSync(eventsFile, 'utf8').trim();
+    const lastEvent = JSON.parse(eventsContent.split('\n').pop());
+    assert.equal(lastEvent.type, 'button');
+    assert.ok(lastEvent.value.includes('Rewrite'));
+    // Cleanup events file
+    fs.rmSync(eventsFile, { force: true });
+
     ws.close();
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });

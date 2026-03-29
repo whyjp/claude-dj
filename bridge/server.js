@@ -264,22 +264,22 @@ ws.onButtonPress = (slot, timestamp) => {
   if (!decision) return;
 
   if (focus.state === 'WAITING_RESPONSE') {
+    // Always write to events.jsonl — UserPromptSubmit picks this up on next turn
+    // (visual-companion pattern: events file as reliable delivery mechanism)
+    const file = path.join(config.eventsDir, `${focus.id}.jsonl`);
+    const event = JSON.stringify({ type: 'button', value: decision.value, timestamp: Date.now() });
+    fs.appendFileSync(file, event + '\n');
+    console.log(`[events] wrote ${decision.value} for session ${focus.id}`);
+
+    // Also resolve stop-wait if hook is long-polling (dual delivery)
     const waiter = _stopWaiters.get(focus.id);
     if (waiter && waiter.resolve) {
-      // Stop hook is waiting — deliver selection directly via stopResponse
       console.log(`[stop-wait] resolved ${decision.value} for session ${focus.id}`);
       waiter.resolve(decision.value);
     } else if (waiter && !waiter.resolve) {
-      // Waiter slot exists but stop-wait GET hasn't arrived yet — store early result
-      console.log(`[stop-wait] early result ${decision.value} for session ${focus.id}`);
       waiter.earlyResult = decision.value;
-    } else {
-      // No stop hook waiting — fallback to events file for userPrompt pickup
-      const file = path.join(config.eventsDir, `${focus.id}.jsonl`);
-      const event = JSON.stringify({ type: 'button', value: decision.value, timestamp: Date.now() });
-      fs.appendFileSync(file, event + '\n');
-      console.log(`[events] wrote ${decision.value} for session ${focus.id}`);
     }
+
     sm.dismissSession(focus.id);
     ws.broadcast({ type: 'ALL_DIM' });
     return;
