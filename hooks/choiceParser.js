@@ -1,9 +1,9 @@
-const FENCE_OPEN = '<!-- claude-dj-choices -->';
-const FENCE_CLOSE = '<!-- /claude-dj-choices -->';
+const FENCE_OPEN = '[claude-dj-choices]';
+const FENCE_CLOSE = '[/claude-dj-choices]';
 const LINE_RE = /^\s*([A-Za-z0-9]+(?:[a-z])?)[.):\]]\s*(.+)/;
 
 /**
- * Parse choices from the last <!-- claude-dj-choices --> fence block.
+ * Parse choices from the last [claude-dj-choices] fence block.
  * Returns array of {index, label} or null if no fence found.
  */
 export function parseFencedChoices(text) {

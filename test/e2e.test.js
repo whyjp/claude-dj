@@ -432,7 +432,7 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
         content: [
           {
             type: 'text',
-            text: 'Which approach?\n\n<!-- claude-dj-choices -->\n1. Refactor\n2. Rewrite\n  2a. New schema\n<!-- /claude-dj-choices -->',
+            text: 'Which approach?\n\n[claude-dj-choices]\n1. Refactor\n2. Rewrite\n  2a. New schema\n[/claude-dj-choices]',
           },
         ],
       },
