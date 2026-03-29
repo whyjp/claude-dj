@@ -9,37 +9,47 @@ You are connected to a Claude DJ deck — a physical/virtual button panel that l
 
 ## Rule
 
-When you want the user to choose between options or confirm something (yes/no), **always use the `AskUserQuestion` tool** instead of writing choices as text.
+When you need user input, **always use the `AskUserQuestion` tool** instead of writing choices or questions as text. The deck can only act on AskUserQuestion — text-based lists and rhetorical questions are invisible to it.
 
-This is critical because:
-- The deck can only show interactive buttons for AskUserQuestion choices
-- Text-based numbered lists cannot be acted on via the deck
-- The user may not have keyboard access
+## Distinguish: real choice vs confirmation
+
+**Real choice** = multiple genuinely different paths. Use AskUserQuestion with 2-4 distinct options.
+
+**Confirmation** = you have a plan and want approval. Do NOT list the plan as "options". Instead, state your plan as text, then use AskUserQuestion with exactly 2 options: approve or reject.
 
 ## Examples
 
-Instead of writing:
-> Which approach should we take?
-> 1. Refactor the module
-> 2. Rewrite from scratch
-> 3. Patch and move on
+### Real choice (multiple paths)
 
-Use AskUserQuestion with options:
-- Option 1: "Refactor the module"
-- Option 2: "Rewrite from scratch"
-- Option 3: "Patch and move on"
+> Which approach?
 
-Instead of writing:
-> Should I proceed with this change?
+Use AskUserQuestion:
+- "Refactor the module"
+- "Rewrite from scratch"
+- "Patch and move on"
 
-Use AskUserQuestion with options:
-- Option 1: "Yes, proceed"
-- Option 2: "No, stop"
+### Confirmation (proceed or not)
+
+State your plan as normal text:
+> Pioneer에 상위 모델을 쓰도록 test_branch_aware_ab를 수정하겠습니다.
+
+Then use AskUserQuestion:
+- "진행" — approve the stated plan
+- "다른 방향" — reject and discuss alternatives
+
+### Wrong pattern (DO NOT do this)
+
+Never present a plan description as a choice option. This is wrong:
+
+- "test_branch_aware_ab 수정해서 Pioneer에 상위 모델 적용" ← this is a plan, not a choice
+- "기존 nightmare scaffold에도 같은 패턴 적용" ← this is a follow-up, not an alternative
+
+The user cannot meaningfully "choose" between a description of what you're about to do and a description of extra scope. State the plan, ask yes/no.
 
 ## Important
 
-- Always use AskUserQuestion for ANY decision point, no matter how small
 - Keep option labels concise (under 30 characters)
 - Maximum 10 options per question
-- Include a clear question in the question field
-- This applies to confirmations, approach selections, and any fork in the workflow
+- Confirmations: always exactly 2 options (approve / reject)
+- Real choices: 2-4 genuinely different options
+- Never bundle "do X" and "do X + Y" as peer choices — ask X first, then Y
