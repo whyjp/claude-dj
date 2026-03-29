@@ -19,10 +19,10 @@ fi
 
 if [ "$1" = "--project" ]; then
   echo "[claude-dj] Installing hooks (project-local)..."
-  node -e "import('./tools/setup.js').then(m => m.run({ global: false }))"
+  node -e "import('./tools/setup.js').then(m => m.install({ global: false }))"
 else
   echo "[claude-dj] Installing hooks (global)..."
-  node -e "import('./tools/setup.js').then(m => m.run({ global: true }))"
+  node -e "import('./tools/setup.js').then(m => m.install({ global: true }))"
 fi
 
 echo ""
