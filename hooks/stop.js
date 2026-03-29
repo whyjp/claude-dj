@@ -77,12 +77,12 @@ async function main() {
         );
         const result = await waitRes.json();
         if (result.selected) {
-          // Return selection as stopResponse — Claude receives it as user input
+          // Resume Claude with the user's selection as a system message.
+          // Stop hooks support: continue, stopReason, systemMessage (top-level).
+          // hookSpecificOutput is NOT supported for Stop hooks.
           const output = {
-            hookSpecificOutput: {
-              hookEventName: 'Stop',
-              stopResponse: result.value,
-            },
+            continue: true,
+            systemMessage: `[Claude DJ] User selected via deck button: ${result.value}`,
           };
           process.stdout.write(JSON.stringify(output));
         }

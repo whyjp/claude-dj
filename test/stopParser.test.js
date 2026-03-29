@@ -90,4 +90,40 @@ describe('parseRegexChoices (fallback)', () => {
     const text = 'Just a single 1. item here.';
     assert.equal(parseRegexChoices(text), null);
   });
+
+  it('returns null for numbered section headers spread across long text', () => {
+    // This was a real false-positive: bold numbered headers in a long response
+    const longText = `현재 상태를 파악했습니다.
+
+**1. Docs 업데이트 (session4-final-status.md)**
+- 테스트 카운트 82→93
+- Subagent Tracking 완료
+- Stop-Wait Path 추가
+
+${'some filler text about the changes made.\n'.repeat(30)}
+
+**2. README.md 업데이트**
+- 테스트 카운트 88→93
+
+${'more filler about README changes.\n'.repeat(20)}
+
+**3. choice-format 스킬 강화 (SKILL.md)**
+- Rule 강화
+- Self-Check 섹션 추가
+
+커밋하시겠습니까?`;
+    assert.equal(parseRegexChoices(longText), null);
+  });
+
+  it('still detects choices in the tail of a long message', () => {
+    const longText = `${'This is a long explanation.\n'.repeat(50)}
+Which approach should we take?
+1. Refactor the module
+2. Rewrite from scratch
+3. Patch and move on`;
+    const result = parseRegexChoices(longText);
+    assert.notEqual(result, null);
+    assert.equal(result.length, 3);
+    assert.equal(result[0].label, 'Refactor the module');
+  });
 });

@@ -611,13 +611,13 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
     const ws = await connectWs(wsUrl);
     ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 1, timestamp: Date.now() }));
 
-    // Stop hook should return with stopResponse
+    // Stop hook should return with continue + systemMessage
     const result = await hookPromise;
     assert.equal(result.exitCode, 0);
-    assert.ok(result.stdout.length > 0, 'expected stdout to contain stopResponse JSON');
+    assert.ok(result.stdout.length > 0, 'expected stdout to contain stop response JSON');
     const resp = JSON.parse(result.stdout);
-    assert.equal(resp.hookSpecificOutput.hookEventName, 'Stop');
-    assert.ok(resp.hookSpecificOutput.stopResponse.includes('Rewrite'));
+    assert.equal(resp.continue, true);
+    assert.ok(resp.systemMessage.includes('Rewrite'));
 
     ws.close();
     fs.rmSync(tmpDir, { recursive: true, force: true });

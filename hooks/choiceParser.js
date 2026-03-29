@@ -34,10 +34,14 @@ export function parseFencedChoices(text) {
 
 /**
  * Fallback: regex-based choice detection (original logic).
- * Scans full text for numbered/lettered patterns.
+ * Only scans the TAIL of the text (last 800 chars) to avoid matching
+ * numbered section headers or task lists buried in longer responses.
  * Returns array of {index, label} or null.
  */
 export function parseRegexChoices(text) {
+  // Only scan the tail — real choices are always at the end of a message
+  const tail = text.length > 800 ? text.slice(-800) : text;
+
   const patterns = [
     /^(?:\*\*)?(\d+)[.):\]]\s*\*?\*?\s*(.+)/gm,
     /^\((\d+)\)\s*(.+)/gm,
@@ -46,13 +50,32 @@ export function parseRegexChoices(text) {
   ];
 
   for (const pattern of patterns) {
-    const matches = [...text.matchAll(pattern)];
-    if (matches.length >= 2) {
-      return matches.slice(0, 10).map((m) => ({
-        index: m[1],
-        label: m[2].trim().slice(0, 30),
-      }));
-    }
+    const matches = [...tail.matchAll(pattern)];
+    if (matches.length < 2) continue;
+
+    // Require matches to be on consecutive or near-consecutive lines
+    // (real choices are clustered, section headers are spread across paragraphs)
+    const lines = tail.split('\n');
+    const matchLineNums = matches.map((m) => {
+      const pos = m.index;
+      let lineNum = 0;
+      let charCount = 0;
+      for (const line of lines) {
+        if (charCount + line.length >= pos) break;
+        charCount += line.length + 1; // +1 for \n
+        lineNum++;
+      }
+      return lineNum;
+    });
+
+    // Check that all matches are within a 15-line window
+    const span = matchLineNums[matchLineNums.length - 1] - matchLineNums[0];
+    if (span > 15) continue;
+
+    return matches.slice(0, 10).map((m) => ({
+      index: m[1],
+      label: m[2].trim().slice(0, 30),
+    }));
   }
 
   return null;
