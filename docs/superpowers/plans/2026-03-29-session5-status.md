@@ -124,7 +124,9 @@ Claude Code Session
 - `git push` ✅ (완료)
 - `/install github:whyjp/claude-dj` 검증 (npm publish 불필요 — 플러그인 = GitHub 리포)
 
+### [VERIFIED]
+- **MultiSelect answer format** ✅: `"1,3"` (comma-separated 1-based indices) — `updatedInput.answer`로 tool input 대체, 표준 포맷
+- **Session ID stability** ✅: `/clear`, `/compact` 후 sessionId 유지 확인 (프로젝트 히스토리 4개 세션에서 검증). sessionId는 프로세스 수명에 바인딩
+
 ### [KNOWN LIMITATIONS]
 - **Stop hook delivery**: 텍스트 선택지 → 덱 버튼 인터랙션 불가 (Claude Code 아키텍처 한계)
-- **MultiSelect UX**: 토글+Done 작동하지만 Claude Code가 `answer: "1,3"` 포맷을 올바르게 처리하는지 추가 검증 필요
-- **Session ID stability**: `/clear`, `/compact` 후 sessionId 유지 여부 추가 확인 필요
