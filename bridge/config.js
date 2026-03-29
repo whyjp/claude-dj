@@ -3,7 +3,7 @@ import os from 'node:os';
 
 export const config = {
   port: parseInt(process.env.CLAUDE_DJ_PORT, 10) || 39200,
-  buttonTimeout: parseInt(process.env.CLAUDE_DJ_BUTTON_TIMEOUT, 10) || 30000,
+  buttonTimeout: parseInt(process.env.CLAUDE_DJ_BUTTON_TIMEOUT, 10) || 60000,
   hookTimeout: 110000,
   eventsDir: process.env.CLAUDE_DJ_EVENTS_DIR || path.join(os.tmpdir(), 'claude-dj-events'),
   wsPath: '/ws',

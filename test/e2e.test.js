@@ -421,6 +421,83 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
     ws2.close();
   });
 
+  it('cross-session: AskUserQuestion on B survives notify flood from A', async () => {
+    const ws = await connectWs(wsUrl);
+    const msgs = collectMessages(ws);
+    await new Promise((r) => setTimeout(r, 100));
+
+    // Session A: processing
+    await runHook('notify.js', {
+      session_id: 'e2e-cross-A',
+      cwd: '/tmp/projectA',
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Bash',
+      tool_input: { command: 'ls' },
+    });
+
+    // Session B: AskUserQuestion (blocking permission hook)
+    const hookPromise = runHook('permission.js', {
+      session_id: 'e2e-cross-B',
+      cwd: '/tmp/projectB',
+      hook_event_name: 'PermissionRequest',
+      tool_name: 'AskUserQuestion',
+      tool_input: {
+        questions: [{
+          question: 'Which approach?',
+          options: [
+            { label: 'Refactor', description: 'Clean up existing code' },
+            { label: 'Rewrite', description: 'Start from scratch' },
+          ],
+        }],
+      },
+    });
+
+    // Wait for choice layout from B
+    await new Promise((resolve) => {
+      const check = setInterval(() => {
+        if (msgs.some((m) => m.type === 'LAYOUT' && m.preset === 'choice')) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 50);
+    });
+
+    // Session A fires MORE notify events (should not override B's choice layout)
+    await runHook('notify.js', {
+      session_id: 'e2e-cross-A',
+      cwd: '/tmp/projectA',
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Read',
+      tool_input: { file_path: '/tmp/foo.js' },
+    });
+    await runHook('postToolUse.js', {
+      session_id: 'e2e-cross-A',
+      cwd: '/tmp/projectA',
+      hook_event_name: 'PostToolUse',
+      tool_name: 'Read',
+      tool_result: { output: 'ok', errored: false },
+    });
+
+    // Verify no processing layout was broadcast after the choice layout
+    const choiceIdx = msgs.findIndex((m) => m.type === 'LAYOUT' && m.preset === 'choice');
+    const laterProcessing = msgs.slice(choiceIdx + 1).find(
+      (m) => m.type === 'LAYOUT' && m.preset === 'processing' && m.session?.id === 'e2e-cross-A'
+    );
+    assert.equal(laterProcessing, undefined, 'A\'s processing should NOT override B\'s choice layout');
+
+    // Press choice button (slot 0 = option 1)
+    ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 0, timestamp: Date.now() }));
+
+    const result = await hookPromise;
+    assert.equal(result.exitCode, 0);
+
+    const response = JSON.parse(result.stdout);
+    assert.equal(response.hookSpecificOutput.decision.behavior, 'allow');
+    assert.equal(response.hookSpecificOutput.decision.updatedInput.answer, '1');
+
+    ws.close();
+  });
+
   it('stop.js: choices in transcript → deck shows response buttons (display-only)', async () => {
     // Create a fake transcript JSONL with choices
     const tmpDir = path.join(os.tmpdir(), 'claude-dj-test-' + Date.now());

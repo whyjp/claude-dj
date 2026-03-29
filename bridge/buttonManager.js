@@ -103,7 +103,7 @@ export class ButtonManager {
         hookEventName: 'PermissionRequest',
         decision: {
           behavior: 'deny',
-          message: 'Claude DJ: timeout (30s)',
+          message: 'Claude DJ: timeout (60s)',
         },
       },
     };

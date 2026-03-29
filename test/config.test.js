@@ -7,8 +7,8 @@ describe('config', () => {
     assert.equal(config.port, 39200);
   });
 
-  it('has default button timeout 30000ms', () => {
-    assert.equal(config.buttonTimeout, 30000);
+  it('has default button timeout 60000ms', () => {
+    assert.equal(config.buttonTimeout, 60000);
   });
 
   it('respects CLAUDE_DJ_PORT env var', () => {
