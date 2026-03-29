@@ -59,7 +59,8 @@ async function main() {
       choices = parseChoices(parsed.transcript_path);
     }
 
-    // Send stop event to bridge (shows buttons on deck)
+    // Send stop event to bridge — deck shows "awaiting input" notification
+    // No long-poll or button interaction; user responds in terminal
     const payload = { ...parsed, _djChoices: choices };
     await fetch(`${BRIDGE_URL}/api/hook/stop`, {
       method: 'POST',
@@ -67,29 +68,6 @@ async function main() {
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(5000),
     });
-
-    // If choices detected, wait for deck button press via long-poll
-    if (choices && choices.length > 0) {
-      try {
-        const waitRes = await fetch(
-          `${BRIDGE_URL}/api/stop-wait/${parsed.session_id}?timeout=60000`,
-          { signal: AbortSignal.timeout(65000) },
-        );
-        const result = await waitRes.json();
-        if (result.selected) {
-          // Resume Claude with the user's selection as a system message.
-          // Stop hooks support: continue, stopReason, systemMessage (top-level).
-          // hookSpecificOutput is NOT supported for Stop hooks.
-          const output = {
-            continue: true,
-            systemMessage: `[Claude DJ] User selected via deck button: ${result.value}`,
-          };
-          process.stdout.write(JSON.stringify(output));
-        }
-      } catch (e) {
-        // Timeout or bridge down — fall through, user can type manually
-      }
-    }
   } catch (e) {
     // ignore
   }

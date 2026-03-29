@@ -29,7 +29,7 @@ export class ButtonManager {
       case 'WAITING_CHOICE':
         return { ...base, preset: 'choice', choices: session.prompt.choices };
       case 'WAITING_RESPONSE':
-        return { ...base, preset: 'response', choices: session.prompt.choices || null };
+        return { ...base, preset: 'awaiting_input' };
       default:
         return { ...base, preset: 'idle' };
     }
@@ -53,17 +53,7 @@ export class ButtonManager {
       return null;
     }
 
-    if (state === 'WAITING_RESPONSE') {
-      const choices = prompt?.choices;
-      if (choices && slot >= 0 && slot < choices.length) {
-        const c = choices[slot];
-        return { type: 'response', value: `I choose option ${c.index}: ${c.label}` };
-      }
-      if (!choices && slot >= 0 && slot <= 9) {
-        return { type: 'response', value: String(slot + 1) };
-      }
-      return null;
-    }
+    // WAITING_RESPONSE is display-only — no button interaction
 
     return null;
   }
@@ -88,15 +78,6 @@ export class ButtonManager {
           behavior: decision.value,
           message: `Claude DJ: ${decision.value} via button`,
         },
-      },
-    };
-  }
-
-  static buildStopResponse(decision) {
-    return {
-      hookSpecificOutput: {
-        hookEventName: 'Stop',
-        systemMessage: `[Claude DJ] User selected: ${decision.value}`,
       },
     };
   }

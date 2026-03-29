@@ -133,14 +133,14 @@ describe('ButtonManager', () => {
     assert.equal(layout.agentCount, 5);
   });
 
-  it('resolves response button press with natural language value', () => {
-    const result = ButtonManager.resolvePress(1, 'WAITING_RESPONSE', {
-      choices: [
-        { index: '1', label: 'Refactor' },
-        { index: '2a', label: 'Rewrite with schema' },
-        { index: '2b', label: 'Keep existing schema' },
-      ],
-    });
-    assert.deepEqual(result, { type: 'response', value: 'I choose option 2a: Rewrite with schema' });
+  it('WAITING_RESPONSE returns awaiting_input layout (display-only)', () => {
+    const session = { id: 's1', name: 'test', state: 'WAITING_RESPONSE', prompt: {}, agents: new Map() };
+    const layout = ButtonManager.layoutFor(session);
+    assert.equal(layout.preset, 'awaiting_input');
+  });
+
+  it('WAITING_RESPONSE button press returns null (no interaction)', () => {
+    const result = ButtonManager.resolvePress(0, 'WAITING_RESPONSE', {});
+    assert.equal(result, null);
   });
 });
