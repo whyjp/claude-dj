@@ -5,7 +5,7 @@
   "author": {
     "name": "whyjp"
   },
-  "repository": "https://github.com/anthropics/claude-dj",
+  "repository": "https://github.com/whyjp/claude-dj",
   "license": "MIT",
   "keywords": ["claude-code", "ulanzi", "d200", "hooks", "dj", "deck"],
   "hooks": "./hooks/hooks.json"

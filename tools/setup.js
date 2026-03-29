@@ -5,7 +5,15 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pluginRoot = path.resolve(__dirname, '..');
-const pluginName = 'claude-dj@local';
+
+const PLUGIN_NAME = 'claude-dj';
+const MARKETPLACE_ID = 'claude-dj';
+const PLUGIN_KEY = `${PLUGIN_NAME}@${MARKETPLACE_ID}`;
+const GITHUB_REPO = 'whyjp/claude-dj';
+const VERSION = '0.1.0';
+
+// Also match legacy key from previous installs
+const LEGACY_KEY = 'claude-dj@local';
 
 function getClaudeDir() {
   return path.join(os.homedir(), '.claude');
@@ -23,67 +31,121 @@ function writeJSON(filePath, data) {
 
 /**
  * Install claude-dj as a Claude Code plugin.
- * Registers in installed_plugins.json and enables in settings.json.
- * This makes hooks + skills available to all new sessions.
+ * Registers marketplace, plugin, and enables — matching the pattern
+ * used by claude-hud, autoresearch, and other git-based plugins.
+ *
+ * After install, users can also install from any machine via:
+ *   /install github:whyjp/claude-dj
  */
 export async function install({ global = true } = {}) {
   const claudeDir = getClaudeDir();
-  const installedPath = path.join(claudeDir, 'plugins', 'installed_plugins.json');
+  const pluginsDir = path.join(claudeDir, 'plugins');
+  const installedPath = path.join(pluginsDir, 'installed_plugins.json');
+  const marketplacesPath = path.join(pluginsDir, 'known_marketplaces.json');
   const settingsPath = global
     ? path.join(claudeDir, 'settings.json')
     : path.join(process.cwd(), '.claude', 'settings.json');
 
-  // 1. Register in installed_plugins.json
+  // 1. Register marketplace (git repo mapping)
+  const marketplaces = readJSON(marketplacesPath) || {};
+  marketplaces[MARKETPLACE_ID] = {
+    source: { source: 'github', repo: GITHUB_REPO },
+    installLocation: path.join(pluginsDir, 'marketplaces', MARKETPLACE_ID),
+    lastUpdated: new Date().toISOString(),
+  };
+  writeJSON(marketplacesPath, marketplaces);
+
+  // 2. Symlink/copy marketplace directory (point to local repo)
+  const marketplaceDir = path.join(pluginsDir, 'marketplaces', MARKETPLACE_ID);
+  if (!fs.existsSync(marketplaceDir)) {
+    fs.mkdirSync(path.dirname(marketplaceDir), { recursive: true });
+    try {
+      fs.symlinkSync(pluginRoot, marketplaceDir, 'junction');
+    } catch (e) {
+      // Symlink may fail on some Windows configs — copy .claude-plugin instead
+      fs.mkdirSync(marketplaceDir, { recursive: true });
+      const srcPlugin = path.join(pluginRoot, '.claude-plugin');
+      const dstPlugin = path.join(marketplaceDir, '.claude-plugin');
+      fs.mkdirSync(dstPlugin, { recursive: true });
+      for (const f of fs.readdirSync(srcPlugin)) {
+        fs.copyFileSync(path.join(srcPlugin, f), path.join(dstPlugin, f));
+      }
+    }
+  }
+
+  // 3. Register plugin in installed_plugins.json
   const installed = readJSON(installedPath) || { version: 2, plugins: {} };
-  installed.plugins[pluginName] = [{
+  // Remove legacy key if present
+  delete installed.plugins[LEGACY_KEY];
+  installed.plugins[PLUGIN_KEY] = [{
     scope: global ? 'user' : 'project',
     installPath: pluginRoot,
-    version: '0.1.0',
+    version: VERSION,
     installedAt: new Date().toISOString(),
     lastUpdated: new Date().toISOString(),
   }];
   writeJSON(installedPath, installed);
 
-  // 2. Enable in settings.json
+  // 4. Enable in settings.json
   const settings = readJSON(settingsPath) || {};
   if (!settings.enabledPlugins) settings.enabledPlugins = {};
-  settings.enabledPlugins[pluginName] = true;
+  delete settings.enabledPlugins[LEGACY_KEY]; // clean legacy
+  settings.enabledPlugins[PLUGIN_KEY] = true;
   writeJSON(settingsPath, settings);
 
   const scope = global ? 'GLOBAL' : 'PROJECT';
   console.log(`[claude-dj] Plugin installed — ${scope}`);
-  console.log(`[claude-dj] Path: ${pluginRoot}`);
-  console.log(`[claude-dj] Hooks: 5 (permission, notify, postToolUse, stop, userPrompt)`);
-  console.log(`[claude-dj] Skills: choice-format`);
-  console.log(`[claude-dj] New Claude sessions will auto-load claude-dj.`);
+  console.log(`  Key:     ${PLUGIN_KEY}`);
+  console.log(`  Path:    ${pluginRoot}`);
+  console.log(`  Repo:    github:${GITHUB_REPO}`);
+  console.log(`  Hooks:   5 (permission, notify, postToolUse, stop, userPrompt)`);
+  console.log(`  Skills:  choice-format`);
+  console.log(``);
+  console.log(`  New Claude sessions will auto-load claude-dj.`);
+  console.log(`  Other machines: /install github:${GITHUB_REPO}`);
 }
 
 /**
- * Uninstall claude-dj plugin.
- * Removes from installed_plugins.json and settings.json.
+ * Uninstall claude-dj plugin completely.
  */
 export async function uninstall({ global = true } = {}) {
   const claudeDir = getClaudeDir();
-  const installedPath = path.join(claudeDir, 'plugins', 'installed_plugins.json');
+  const pluginsDir = path.join(claudeDir, 'plugins');
+  const installedPath = path.join(pluginsDir, 'installed_plugins.json');
+  const marketplacesPath = path.join(pluginsDir, 'known_marketplaces.json');
   const settingsPath = global
     ? path.join(claudeDir, 'settings.json')
     : path.join(process.cwd(), '.claude', 'settings.json');
 
   // 1. Remove from installed_plugins.json
   const installed = readJSON(installedPath);
-  if (installed?.plugins?.[pluginName]) {
-    delete installed.plugins[pluginName];
+  if (installed?.plugins) {
+    delete installed.plugins[PLUGIN_KEY];
+    delete installed.plugins[LEGACY_KEY];
     writeJSON(installedPath, installed);
   }
 
-  // 2. Remove from settings.json enabledPlugins
-  const settings = readJSON(settingsPath);
-  if (settings?.enabledPlugins?.[pluginName]) {
-    delete settings.enabledPlugins[pluginName];
-    writeJSON(settingsPath, settings);
+  // 2. Remove from known_marketplaces.json
+  const marketplaces = readJSON(marketplacesPath);
+  if (marketplaces?.[MARKETPLACE_ID]) {
+    delete marketplaces[MARKETPLACE_ID];
+    writeJSON(marketplacesPath, marketplaces);
   }
 
-  // 3. Also clean up legacy hooks from settings.json (from old setup.js)
+  // 3. Remove marketplace symlink/directory
+  const marketplaceDir = path.join(pluginsDir, 'marketplaces', MARKETPLACE_ID);
+  if (fs.existsSync(marketplaceDir)) {
+    fs.rmSync(marketplaceDir, { recursive: true, force: true });
+  }
+
+  // 4. Remove from settings.json
+  const settings = readJSON(settingsPath);
+  if (settings?.enabledPlugins) {
+    delete settings.enabledPlugins[PLUGIN_KEY];
+    delete settings.enabledPlugins[LEGACY_KEY];
+  }
+
+  // 5. Clean up legacy hooks
   if (settings?.hooks) {
     const isClaudeDjHook = (h) => h.hooks?.some((x) =>
       x.command?.includes('claude-dj') ||
@@ -98,12 +160,18 @@ export async function uninstall({ global = true } = {}) {
         settings.hooks[type] = settings.hooks[type].filter((h) => !isClaudeDjHook(h));
       }
     }
-    writeJSON(settingsPath, settings);
+  }
+  if (settings) writeJSON(settingsPath, settings);
+
+  // 6. Remove cache
+  const cacheDir = path.join(pluginsDir, 'cache', MARKETPLACE_ID);
+  if (fs.existsSync(cacheDir)) {
+    fs.rmSync(cacheDir, { recursive: true, force: true });
   }
 
   const scope = global ? 'GLOBAL' : 'PROJECT';
   console.log(`[claude-dj] Plugin uninstalled — ${scope}`);
-  console.log(`[claude-dj] Hooks and skills removed.`);
+  console.log(`  Removed: plugin, marketplace, hooks, cache`);
 }
 
 /**
@@ -111,20 +179,28 @@ export async function uninstall({ global = true } = {}) {
  */
 export async function status() {
   const claudeDir = getClaudeDir();
-  const installedPath = path.join(claudeDir, 'plugins', 'installed_plugins.json');
+  const pluginsDir = path.join(claudeDir, 'plugins');
+  const installedPath = path.join(pluginsDir, 'installed_plugins.json');
+  const marketplacesPath = path.join(pluginsDir, 'known_marketplaces.json');
   const settingsPath = path.join(claudeDir, 'settings.json');
 
   const installed = readJSON(installedPath);
   const settings = readJSON(settingsPath);
+  const marketplaces = readJSON(marketplacesPath);
 
-  const isInstalled = !!installed?.plugins?.[pluginName];
-  const isEnabled = !!settings?.enabledPlugins?.[pluginName];
+  const entry = installed?.plugins?.[PLUGIN_KEY]?.[0]
+    || installed?.plugins?.[LEGACY_KEY]?.[0];
+  const isEnabled = settings?.enabledPlugins?.[PLUGIN_KEY]
+    || settings?.enabledPlugins?.[LEGACY_KEY];
+  const hasMarketplace = !!marketplaces?.[MARKETPLACE_ID];
 
   console.log(`[claude-dj] Status:`);
-  console.log(`  Registered: ${isInstalled ? 'yes' : 'no'}`);
-  console.log(`  Enabled:    ${isEnabled ? 'yes' : 'no'}`);
-  if (isInstalled) {
-    console.log(`  Path:       ${installed.plugins[pluginName][0].installPath}`);
-    console.log(`  Version:    ${installed.plugins[pluginName][0].version}`);
+  console.log(`  Registered:   ${entry ? 'yes' : 'no'}`);
+  console.log(`  Enabled:      ${isEnabled ? 'yes' : 'no'}`);
+  console.log(`  Marketplace:  ${hasMarketplace ? 'yes' : 'no'}`);
+  if (entry) {
+    console.log(`  Key:          ${installed?.plugins?.[PLUGIN_KEY] ? PLUGIN_KEY : LEGACY_KEY}`);
+    console.log(`  Path:         ${entry.installPath}`);
+    console.log(`  Version:      ${entry.version}`);
   }
 }
