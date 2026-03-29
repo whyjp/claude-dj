@@ -10,6 +10,7 @@ const PLUGIN_NAME = 'claude-dj';
 const MARKETPLACE_ID = 'claude-dj';
 const PLUGIN_KEY = `${PLUGIN_NAME}@${MARKETPLACE_ID}`;
 const GITHUB_REPO = 'whyjp/claude-dj';
+const MARKETPLACE_DIR_NAME = 'whyjp-claude-dj'; // github user-repo format
 const VERSION = '0.1.0';
 
 // Also match legacy key from previous installs
@@ -50,13 +51,13 @@ export async function install({ global = true } = {}) {
   const marketplaces = readJSON(marketplacesPath) || {};
   marketplaces[MARKETPLACE_ID] = {
     source: { source: 'github', repo: GITHUB_REPO },
-    installLocation: path.join(pluginsDir, 'marketplaces', MARKETPLACE_ID),
+    installLocation: path.join(pluginsDir, 'marketplaces', MARKETPLACE_DIR_NAME),
     lastUpdated: new Date().toISOString(),
   };
   writeJSON(marketplacesPath, marketplaces);
 
   // 2. Symlink/copy marketplace directory (point to local repo)
-  const marketplaceDir = path.join(pluginsDir, 'marketplaces', MARKETPLACE_ID);
+  const marketplaceDir = path.join(pluginsDir, 'marketplaces', MARKETPLACE_DIR_NAME);
   if (!fs.existsSync(marketplaceDir)) {
     fs.mkdirSync(path.dirname(marketplaceDir), { recursive: true });
     try {
@@ -133,7 +134,7 @@ export async function uninstall({ global = true } = {}) {
   }
 
   // 3. Remove marketplace symlink/directory
-  const marketplaceDir = path.join(pluginsDir, 'marketplaces', MARKETPLACE_ID);
+  const marketplaceDir = path.join(pluginsDir, 'marketplaces', MARKETPLACE_DIR_NAME);
   if (fs.existsSync(marketplaceDir)) {
     fs.rmSync(marketplaceDir, { recursive: true, force: true });
   }

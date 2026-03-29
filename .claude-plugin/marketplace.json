@@ -1,17 +1,19 @@
 {
-  "schema_version": "1",
   "name": "claude-dj",
-  "description": "Control Claude Code with physical buttons or browser deck",
+  "owner": {
+    "name": "whyjp"
+  },
+  "metadata": {
+    "description": "Control Claude Code with physical buttons or browser deck",
+    "version": "0.1.0"
+  },
   "plugins": [
     {
       "name": "claude-dj",
+      "source": "./",
       "description": "Physical/virtual button deck for Claude Code — approve permissions, select choices, and switch sessions without terminal focus",
-      "version": "0.1.0",
-      "source": {
-        "type": "github",
-        "url": "https://github.com/whyjp/claude-dj",
-        "path": "."
-      }
+      "category": "productivity",
+      "tags": ["hooks", "deck", "buttons", "dj", "ulanzi", "d200"]
     }
   ]
 }
