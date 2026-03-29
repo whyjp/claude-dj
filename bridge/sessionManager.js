@@ -43,14 +43,20 @@ export class SessionManager {
     const isChoice = input.tool_name === 'AskUserQuestion';
 
     if (isChoice) {
-      const options = input.tool_input?.options || [];
+      // AskUserQuestion: options can be at tool_input.options or tool_input.questions[0].options
+      const options = input.tool_input?.options
+        || input.tool_input?.questions?.[0]?.options
+        || [];
+      const question = input.tool_input?.question
+        || input.tool_input?.questions?.[0]?.question
+        || '';
       session.state = 'WAITING_CHOICE';
       session.prompt = {
         type: 'CHOICE',
-        question: input.tool_input?.question || '',
-        choices: options.map((o) => ({
-          index: parseInt(o.label, 10),
-          label: o.description || o.label,
+        question,
+        choices: options.map((o, i) => ({
+          index: i + 1,
+          label: o.label || o.description || `Option ${i + 1}`,
         })),
       };
     } else {
