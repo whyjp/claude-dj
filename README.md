@@ -218,7 +218,7 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 
 ```bash
 npm install              # install dependencies
-npm test                 # 86 tests across 9 suites
+npm test                 # 88 tests across 9 suites
 node bridge/server.js    # start bridge
 ```
 
