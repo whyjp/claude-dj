@@ -271,4 +271,49 @@ describe('SessionManager', () => {
     sm.handlePostToolUse({ session_id: 's1', agent_id: 'ag1', tool_name: 'Bash', tool_result: { errored: false } });
     assert.equal(sm.get('s1').agents.get('ag1').state, 'PROCESSING');
   });
+
+  it('cycleAgent rotates through agents and null (root)', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    sm.handleSubagentStart({ session_id: 's1', agent_id: 'ag1', agent_type: 'Explore' });
+    sm.handleSubagentStart({ session_id: 's1', agent_id: 'ag2', agent_type: 'Plan' });
+    sm.setFocus('s1');
+    assert.equal(sm.focusAgentId, null);
+    const a1 = sm.cycleAgent();
+    assert.equal(a1.agentId, 'ag1');
+    assert.equal(sm.focusAgentId, 'ag1');
+    const a2 = sm.cycleAgent();
+    assert.equal(a2.agentId, 'ag2');
+    const root = sm.cycleAgent();
+    assert.equal(root, null);
+    assert.equal(sm.focusAgentId, null);
+  });
+
+  it('cycleAgent returns null when no agents', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    sm.setFocus('s1');
+    const result = sm.cycleAgent();
+    assert.equal(result, null);
+  });
+
+  it('cycleAgent returns null when no focus session', () => {
+    const result = sm.cycleAgent();
+    assert.equal(result, null);
+  });
+
+  it('cycleFocus resets focusAgentId to null', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    sm.getOrCreate({ session_id: 's2', cwd: '/b' });
+    sm.handleSubagentStart({ session_id: 's1', agent_id: 'ag1', agent_type: 'Explore' });
+    sm.setFocus('s1');
+    sm.focusAgentId = 'ag1';
+    sm.cycleFocus();
+    assert.equal(sm.focusAgentId, null);
+  });
+
+  it('getAgentCount returns agents.size', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    assert.equal(sm.getAgentCount('s1'), 0);
+    sm.handleSubagentStart({ session_id: 's1', agent_id: 'ag1', agent_type: 'Explore' });
+    assert.equal(sm.getAgentCount('s1'), 1);
+  });
 });

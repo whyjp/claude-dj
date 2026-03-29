@@ -4,6 +4,7 @@ export class SessionManager {
   constructor() {
     this.sessions = new Map();
     this.focusSessionId = null;
+    this.focusAgentId = null;
   }
 
   getOrCreate(input) {
@@ -222,15 +223,46 @@ export class SessionManager {
     if (all.length === 0) return null;
     if (all.length === 1) {
       this.focusSessionId = all[0].id;
+      this.focusAgentId = null;
       return all[0];
     }
     const currentIdx = all.findIndex((s) => s.id === this.focusSessionId);
     const nextIdx = (currentIdx + 1) % all.length;
     this.focusSessionId = all[nextIdx].id;
+    this.focusAgentId = null;
     return all[nextIdx];
   }
 
+  cycleAgent() {
+    const session = this.focusSessionId ? this.sessions.get(this.focusSessionId) : null;
+    if (!session) return null;
+    const agents = [...session.agents.values()];
+    if (agents.length === 0) return null;
+
+    if (this.focusAgentId === null) {
+      this.focusAgentId = agents[0].agentId;
+      return agents[0];
+    }
+
+    const currentIdx = agents.findIndex((a) => a.agentId === this.focusAgentId);
+    const nextIdx = currentIdx + 1;
+    if (nextIdx >= agents.length) {
+      this.focusAgentId = null;
+      return null;
+    }
+    this.focusAgentId = agents[nextIdx].agentId;
+    return agents[nextIdx];
+  }
+
+  getAgentCount(sessionId) {
+    const session = this.sessions.get(sessionId);
+    return session ? session.agents.size : 0;
+  }
+
   toJSON() {
-    return [...this.sessions.values()].map(({ respondFn, ...rest }) => rest);
+    return [...this.sessions.values()].map(({ respondFn, agents, ...rest }) => ({
+      ...rest,
+      agents: [...agents.values()],
+    }));
   }
 }
