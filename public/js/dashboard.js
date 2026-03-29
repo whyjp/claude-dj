@@ -154,26 +154,8 @@ export function updateSession(msg) {
     name: s.name || s.id.slice(0, 8),
     state: s.state,
     waitingSince: isWaiting ? (wasWaiting ? existing.waitingSince : Date.now()) : null,
-    agents: existing?.agents || [],
+    agents: msg.agents || existing?.agents || [],
   });
-
-  // Track agent info from LAYOUT
-  if (msg.agent) {
-    const sess = _sessions.get(s.id);
-    const idx = sess.agents.findIndex(a => a.agentId === msg.agent.agentId);
-    if (idx >= 0) {
-      sess.agents[idx] = { ...msg.agent };
-    } else {
-      sess.agents.push({ ...msg.agent });
-    }
-  }
-  // Remove agents that stopped (agentCount decreased)
-  if (msg.agentCount !== undefined) {
-    const sess = _sessions.get(s.id);
-    if (sess.agents.length > msg.agentCount && msg.agentCount === 0) {
-      sess.agents = [];
-    }
-  }
 
   _renderSessions();
   _ensureDurTimer();

@@ -1,6 +1,9 @@
 export class ButtonManager {
   static layoutFor(session, focusAgentId = null, agentCount = 0) {
     const focusedAgent = focusAgentId ? session.agents?.get(focusAgentId) : null;
+    const agents = session.agents ? [...session.agents.values()].map(a => ({
+      agentId: a.agentId, type: a.type, state: a.state,
+    })) : [];
     const base = {
       session: session.id ? {
         id: session.id,
@@ -12,6 +15,7 @@ export class ButtonManager {
         type: focusedAgent.type,
         state: focusedAgent.state,
       } : null,
+      agents,
       agentCount,
     };
 

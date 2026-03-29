@@ -170,6 +170,9 @@ app.post('/api/hook/permission', (req, res) => {
 ws.attach(server, config.wsPath);
 
 ws.onClientReady = (client) => {
+  // Send full session list on connect
+  ws.sendWelcome(client, sm.toJSON());
+  // Then send current focused layout
   const focus = sm.getFocusSession();
   if (focus) {
     const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
