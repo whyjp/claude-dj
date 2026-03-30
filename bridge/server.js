@@ -185,7 +185,7 @@ app.post('/api/hook/permission', (req, res) => {
   broadcastLayout(layout);
 
   const timeout = setTimeout(() => {
-    console.warn(`[hook/permission] timeout (${config.buttonTimeout}ms) for session=${session.id} tool=${input.tool_name}`);
+    console.warn(`[hook→claude] TIMEOUT (${config.buttonTimeout}ms) session=${session.id} tool=${input.tool_name} — auto-deny sent`);
     session.respondFn = null;
     session._permissionTimeout = null;
     sm.handleStop({ session_id: session.id, stop_hook_active: false });
@@ -204,7 +204,13 @@ app.post('/api/hook/permission', (req, res) => {
     const response = ButtonManager.buildHookResponse(decision, isChoice, question);
     const newLayout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
     broadcastLayout(newLayout);
-    res.json(response);
+    try {
+      res.json(response);
+      const behavior = response.hookSpecificOutput?.decision?.behavior;
+      console.log(`[hook→claude] session=${session.id} tool=${input.tool_name} behavior=${behavior} decision=${decision.type}:${decision.value}`);
+    } catch (e) {
+      console.error(`[hook→claude] FAILED res.json for session=${session.id}: ${e.message}`);
+    }
   };
 });
 
