@@ -180,15 +180,25 @@ export class SessionManager {
 
   resolveWaiting(sessionId, decision) {
     const session = this.sessions.get(sessionId);
-    if (!session) return false;
+    if (!session) {
+      console.warn(`[resolve] session not found: ${sessionId}`);
+      return false;
+    }
     // Transition state BEFORE calling respondFn so broadcast reflects new state
     session.state = 'PROCESSING';
     session.prompt = null;
     session.waitingSince = null;
     session._permissionAgentId = null;
     if (session.respondFn) {
-      session.respondFn(decision);
+      try {
+        console.log(`[resolve] ${session.name} → ${decision.type}=${decision.value}`);
+        session.respondFn(decision);
+      } catch (e) {
+        console.error(`[resolve] respondFn threw: ${e.message}`);
+      }
       session.respondFn = null;
+    } else {
+      console.warn(`[resolve] ${session.name} — no respondFn (already resolved or timed out)`);
     }
     return true;
   }

@@ -44,8 +44,11 @@ export class WsServer {
         if (this.onClientReady) this.onClientReady(ws);
         break;
       case 'BUTTON_PRESS':
+        console.log(`[ws] BUTTON_PRESS slot=${msg.slot}`);
         if (this.onButtonPress) {
           this.onButtonPress(msg.slot, msg.timestamp);
+        } else {
+          console.warn(`[ws] BUTTON_PRESS dropped — no handler registered`);
         }
         break;
       case 'AGENT_FOCUS':

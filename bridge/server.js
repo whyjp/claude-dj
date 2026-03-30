@@ -167,6 +167,7 @@ app.post('/api/hook/permission', (req, res) => {
   // Auto-deny previous pending permission to prevent orphaned HTTP responses
   const existing = sm.get(input.session_id);
   if (existing?.respondFn) {
+    console.warn(`[hook/permission] auto-denying previous pending permission for session=${input.session_id}`);
     existing.respondFn({ type: 'binary', value: 'deny' });
   }
   if (existing?._permissionTimeout) {
@@ -184,6 +185,7 @@ app.post('/api/hook/permission', (req, res) => {
   broadcastLayout(layout);
 
   const timeout = setTimeout(() => {
+    console.warn(`[hook/permission] timeout (${config.buttonTimeout}ms) for session=${session.id} tool=${input.tool_name}`);
     session.respondFn = null;
     session._permissionTimeout = null;
     sm.handleStop({ session_id: session.id, stop_hook_active: false });
@@ -227,8 +229,11 @@ ws.onButtonPress = (slot, timestamp) => {
   if (slot === 11) {
     const next = sm.cycleFocus();
     if (next) {
+      console.log(`[btn] slot=11 → cycled to session=${next.name}`);
       const layout = ButtonManager.layoutFor(next, sm.focusAgentId, sm.getAgentCount(next.id));
       broadcastLayout({ ...layout, focusSwitched: true });
+    } else {
+      console.log(`[btn] slot=11 → no sessions to cycle`);
     }
     return;
   }
@@ -237,6 +242,7 @@ ws.onButtonPress = (slot, timestamp) => {
   if (slot === 12) {
     const agent = sm.cycleAgent();
     const focus = sm.focusSessionId ? sm.get(sm.focusSessionId) : null;
+    console.log(`[btn] slot=12 → agent=${agent?.type || 'ROOT'} session=${focus?.name || 'none'}`);
     if (focus) {
       const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
       broadcastLayout({ ...layout, focusSwitched: true });
@@ -245,24 +251,31 @@ ws.onButtonPress = (slot, timestamp) => {
   }
 
   const focus = sm.getFocusSession();
-  if (!focus) return;
+  if (!focus) {
+    console.warn(`[btn] slot=${slot} dropped — no focused session`);
+    return;
+  }
 
   const decision = ButtonManager.resolvePress(slot, focus.state, focus.prompt);
-  if (!decision) return;
+  if (!decision) {
+    console.warn(`[btn] slot=${slot} dropped — resolvePress returned null (state=${focus.state}, hasPrompt=${!!focus.prompt})`);
+    return;
+  }
 
   if (focus.state === 'WAITING_RESPONSE') {
-    // WAITING_RESPONSE is display-only (notification that Claude awaits input)
-    // No button interaction — user responds in terminal
+    console.log(`[btn] slot=${slot} ignored — WAITING_RESPONSE is display-only`);
     return;
   }
 
   // multiSelect toggle — update layout without resolving
   if (decision.type === 'toggle') {
+    console.log(`[btn] slot=${slot} → multiSelect toggle index=${decision.index}`);
     const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
     broadcastLayout(layout);
     return;
   }
 
+  console.log(`[btn] slot=${slot} → resolving: ${decision.type}=${decision.value} session=${focus.name} (${focus.id})`);
   sm.resolveWaiting(focus.id, decision);
 };
 
