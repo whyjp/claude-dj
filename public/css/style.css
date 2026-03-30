@@ -477,3 +477,42 @@ main {
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--bd); }
+
+/* ── MINIVIEW ── */
+body.mini { grid-template-rows: 1fr; }
+body.mini header { display: none; }
+body.mini .ctl-panel { display: none; }
+body.mini main { grid-template-columns: 1fr; }
+body.mini .dev-panel { border-right: none; }
+body.mini .dev-hdr { display: none; }
+body.mini .state-info { display: none; }
+
+/* ── MINI AGENT TAB BAR ── */
+.mini-agent-bar { display: none; }
+body.mini .mini-agent-bar {
+  display: flex; align-items: center;
+  border-bottom: 1px solid var(--bd);
+  background: var(--bg2); padding: 0 8px; gap: 0; flex-shrink: 0;
+}
+.mini-agent-bar .ma-tab {
+  padding: 5px 10px; font-size: 9px; color: var(--muted);
+  letter-spacing: .04em; cursor: pointer; white-space: nowrap;
+  border-bottom: 2px solid transparent; transition: all .15s; flex-shrink: 0;
+}
+.mini-agent-bar .ma-tab:hover { color: var(--white); }
+.mini-agent-bar .ma-tab.on { color: var(--purple); border-bottom-color: var(--purple); }
+.mini-agent-bar .ma-tab.root.on { color: var(--blue); border-bottom-color: var(--blue); }
+.mini-agent-bar .ma-expand {
+  margin-left: auto; padding: 4px 8px; font-size: 14px; color: var(--muted);
+  cursor: pointer; transition: color .15s; flex-shrink: 0;
+}
+.mini-agent-bar .ma-expand:hover { color: var(--white); }
+
+/* ── HEADER MINI TOGGLE ── */
+.btn-mini {
+  font-family: var(--sans); font-size: 14px;
+  padding: 2px 8px; border: 1px solid var(--bd2);
+  background: var(--surf); color: var(--muted);
+  cursor: pointer; transition: all .15s;
+}
+.btn-mini:hover { color: var(--white); border-color: var(--white); }
