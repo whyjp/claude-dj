@@ -5,7 +5,7 @@
  * and handles button press events from the virtual grid.
  */
 
-import { initGrid, onPress, renderLayout, renderAllDim, setConnectionOverlay } from './d200-renderer.js';
+import { initGrid, onPress, renderLayout, renderAllDim, setConnectionOverlay, updateMiniAgentTabs } from './d200-renderer.js';
 import { initDashboard, log, updateWsStatus, clearLog, updateSession, dimAllSessions, disconnectSessions, setSessions, switchLogSession } from './dashboard.js';
 
 const VERSION = '0.1.0';
@@ -159,11 +159,16 @@ function _handleMessage(msg) {
     case 'WELCOME':
       log('sys', `Bridge v${msg.version || '?'} — ${(msg.sessions || []).length} session(s)`);
       if (msg.sessions) setSessions(msg.sessions);
+      if (msg.sessions && msg.sessions.length > 0) {
+        const first = msg.sessions[0];
+        updateMiniAgentTabs(first.agents || [], null, _sendAgentFocus);
+      }
       break;
 
     case 'LAYOUT':
       renderLayout(msg);
       updateSession(msg);
+      updateMiniAgentTabs(msg.agents || [], msg.agent?.agentId || null, _sendAgentFocus);
       if (msg.focusSwitched && sid) {
         switchLogSession(sid, msg.agent?.agentId || null);
       }
@@ -172,6 +177,7 @@ function _handleMessage(msg) {
     case 'ALL_DIM':
       renderAllDim();
       dimAllSessions();
+      updateMiniAgentTabs([], null, _sendAgentFocus);
       break;
 
     case 'SESSION_DISCONNECTED':
@@ -239,6 +245,10 @@ function _setMiniview(on) {
   if (on) params.set('view', 'mini'); else params.delete('view');
   const qs = params.toString();
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+}
+
+function _sendAgentFocus(agentId) {
+  _sendJson({ type: 'AGENT_FOCUS', agentId: agentId || null });
 }
 
 // ── Start ─────────────────────────────────────────────────────

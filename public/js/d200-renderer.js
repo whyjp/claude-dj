@@ -379,3 +379,36 @@ function _setInfoState(st) {
   else if (st === 'DONE')           el.className = 'si-v g';
   else                              el.className = 'si-v';
 }
+
+/** Update the miniview agent tab bar from LAYOUT data.
+ *  @param {Array} agents — [{agentId, type, state}, ...]
+ *  @param {string|null} focusAgentId — currently focused agent (null = root)
+ *  @param {function(string|null)} onTabClick — called with agentId or null
+ */
+export function updateMiniAgentTabs(agents, focusAgentId, onTabClick) {
+  const bar = document.getElementById('miniAgentBar');
+  if (!bar) return;
+  const expand = document.getElementById('btnMiniExpand');
+  bar.innerHTML = '';
+
+  // Root tab
+  const rootTab = document.createElement('div');
+  rootTab.className = `ma-tab root${focusAgentId === null ? ' on' : ''}`;
+  rootTab.dataset.agentId = '';
+  rootTab.textContent = 'root';
+  rootTab.addEventListener('click', () => onTabClick(null));
+  bar.appendChild(rootTab);
+
+  // Agent tabs
+  for (const a of agents) {
+    const tab = document.createElement('div');
+    tab.className = `ma-tab${a.agentId === focusAgentId ? ' on' : ''}`;
+    tab.dataset.agentId = a.agentId;
+    tab.textContent = a.type || a.agentId.slice(0, 6);
+    tab.addEventListener('click', () => onTabClick(a.agentId));
+    bar.appendChild(tab);
+  }
+
+  // Re-append expand button
+  if (expand) bar.appendChild(expand);
+}
