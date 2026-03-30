@@ -53,11 +53,13 @@ describe('ButtonManager', () => {
     assert.equal(decision.value, 'deny');
   });
 
-  it('resolves binary button press slot 1 to alwaysAllow (with alwaysAllow)', () => {
+  it('resolves binary button press slot 1 to allow with suggestion (with alwaysAllow)', () => {
+    const suggestion = { type: 'addRules', rules: [{ toolName: 'Bash', ruleContent: 'npm test' }], behavior: 'allow', destination: 'localSettings' };
     const decision = ButtonManager.resolvePress(1, 'WAITING_BINARY', {
-      type: 'BINARY', hasAlwaysAllow: true,
+      type: 'BINARY', hasAlwaysAllow: true, alwaysAllowSuggestion: suggestion,
     });
-    assert.equal(decision.value, 'alwaysAllow');
+    assert.equal(decision.value, 'allow');
+    assert.deepEqual(decision.suggestion, suggestion);
   });
 
   it('resolves binary button press slot 2 to deny (with alwaysAllow)', () => {
@@ -255,6 +257,19 @@ describe('ButtonManager', () => {
   it('buildHookResponse for binary sets behavior to decision value', () => {
     const resp = ButtonManager.buildHookResponse({ value: 'deny' }, false);
     assert.equal(resp.hookSpecificOutput.decision.behavior, 'deny');
+  });
+
+  it('buildHookResponse for alwaysAllow returns suggestion as decision', () => {
+    const suggestion = { type: 'addRules', rules: [{ toolName: 'Bash', ruleContent: 'npm test' }], behavior: 'allow', destination: 'localSettings' };
+    const resp = ButtonManager.buildHookResponse({ value: 'allow', suggestion }, false);
+    assert.deepEqual(resp.hookSpecificOutput.decision, suggestion);
+    assert.equal(resp.hookSpecificOutput.decision.behavior, 'allow');
+  });
+
+  it('buildHookResponse for allow without suggestion returns simple allow', () => {
+    const resp = ButtonManager.buildHookResponse({ value: 'allow' }, false);
+    assert.equal(resp.hookSpecificOutput.decision.behavior, 'allow');
+    assert.equal(resp.hookSpecificOutput.decision.type, undefined);
   });
 
   it('buildTimeoutResponse returns deny behavior', () => {

@@ -55,7 +55,7 @@ export class ButtonManager {
     // Match Claude Code's permission dialog order: 1=Allow, 2=Always, 3=Deny
     if (state === 'WAITING_BINARY') {
       if (slot === 0) return { type: 'binary', value: 'allow' };
-      if (slot === 1 && prompt.hasAlwaysAllow) return { type: 'binary', value: 'alwaysAllow' };
+      if (slot === 1 && prompt.hasAlwaysAllow) return { type: 'binary', value: 'allow', suggestion: prompt.alwaysAllowSuggestion };
       if (slot === 1 && !prompt.hasAlwaysAllow) return { type: 'binary', value: 'deny' };
       if (slot === 2) return { type: 'binary', value: 'deny' };
       return null;
@@ -109,12 +109,22 @@ export class ButtonManager {
       };
     }
 
+    // When "always allow" is pressed, return the permission_suggestion as the decision.
+    // Claude Code uses this to both allow the tool AND persist the rule.
+    if (decision.suggestion) {
+      return {
+        hookSpecificOutput: {
+          hookEventName: 'PermissionRequest',
+          decision: decision.suggestion,
+        },
+      };
+    }
+
     return {
       hookSpecificOutput: {
         hookEventName: 'PermissionRequest',
         decision: {
           behavior: decision.value,
-          message: `Claude DJ: ${decision.value} via button`,
         },
       },
     };

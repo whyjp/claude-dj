@@ -174,6 +174,37 @@ app.get('/api/events/:sessionId', (req, res) => {
   }
 });
 
+/**
+ * Persist always-allow rules to .claude/settings.local.json.
+ * Claude Code's hook path doesn't persist addRules — we do it directly.
+ */
+function _persistAlwaysAllowRules(cwd, suggestion) {
+  if (suggestion.destination !== 'localSettings') return;
+  const settingsPath = path.join(cwd, '.claude', 'settings.local.json');
+  try {
+    let settings = {};
+    try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch { /* new file */ }
+    if (!settings.permissions) settings.permissions = {};
+    if (!Array.isArray(settings.permissions.allow)) settings.permissions.allow = [];
+
+    const rules = suggestion.rules || [];
+    let added = 0;
+    for (const rule of rules) {
+      const entry = `${rule.toolName}(${rule.ruleContent})`;
+      if (!settings.permissions.allow.includes(entry)) {
+        settings.permissions.allow.push(entry);
+        added++;
+      }
+    }
+    if (added > 0) {
+      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+      log(`[rules] +${added} rule(s) → ${settingsPath}`);
+    }
+  } catch (e) {
+    warn(`[rules] failed to persist: ${e.message}`);
+  }
+}
+
 app.post('/api/hook/permission', (req, res) => {
   const input = req.body;
   log(`[hook/permission] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
@@ -195,6 +226,17 @@ app.post('/api/hook/permission', (req, res) => {
   if (input.agent_id) sm.focusAgentId = input.agent_id;
   const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
   const isChoice = session.state === 'WAITING_CHOICE';
+
+  // Log buttons sent to deck
+  if (isChoice) {
+    const labels = session.prompt.choices.map((c) => `${c.index}:${c.label}`).join(', ');
+    log(`[deck←] ${session.prompt.choices.length} buttons → [${labels}]${session.prompt.multiSelect ? ' (multiSelect)' : ''}`);
+  } else {
+    const buttons = session.prompt.hasAlwaysAllow
+      ? '[0:Allow, 1:AlwaysAllow, 2:Deny]'
+      : '[0:Allow, 1:Deny]';
+    log(`[deck←] tool=${input.tool_name} cmd="${session.prompt.command}" ${buttons}${session.prompt.hasAlwaysAllow ? ` rule="${session.prompt.alwaysAllowSuggestion?.rules?.[0]?.ruleContent || '?'}"` : ''}`);
+  }
 
   broadcastLayout(layout);
 
@@ -218,12 +260,24 @@ app.post('/api/hook/permission', (req, res) => {
     const response = ButtonManager.buildHookResponse(decision, isChoice, question);
     const newLayout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
     broadcastLayout(newLayout);
+
+    // Persist always-allow rules to settings.local.json (Claude Code hook can't do this)
+    if (decision.suggestion?.rules?.length && session.cwd) {
+      _persistAlwaysAllowRules(session.cwd, decision.suggestion);
+    }
+
     try {
       res.json(response);
-      const behavior = response.hookSpecificOutput?.decision?.behavior;
-      log(`[hook→claude] session=${session.id} tool=${input.tool_name} behavior=${behavior} decision=${decision.type}:${decision.value}`);
+      const d = response.hookSpecificOutput?.decision;
+      if (decision.suggestion) {
+        log(`[claude←] tool=${input.tool_name} behavior=allow+addRules dest=${d.destination} rules=${JSON.stringify(d.rules)}`);
+      } else if (isChoice) {
+        log(`[claude←] tool=${input.tool_name} behavior=allow answer=${d.updatedInput?.answer}`);
+      } else {
+        log(`[claude←] tool=${input.tool_name} behavior=${d.behavior}`);
+      }
     } catch (e) {
-      error(`[hook→claude] FAILED res.json for session=${session.id}: ${e.message}`);
+      error(`[claude←] FAILED res.json for session=${session.id}: ${e.message}`);
     }
   };
 });
@@ -295,7 +349,9 @@ ws.onButtonPress = (slot, timestamp) => {
     return;
   }
 
-  log(`[btn] slot=${slot} → resolving: ${decision.type}=${decision.value} session=${focus.name} (${focus.id})`);
+  // Log what the user actually pressed
+  const label = decision.suggestion ? 'AlwaysAllow' : decision.type === 'choice' ? `choice:${decision.value}` : decision.value;
+  log(`[deck→] slot=${slot} pressed="${label}" session=${focus.name}`);
   sm.resolveWaiting(focus.id, decision);
 };
 
@@ -304,6 +360,17 @@ ws.onAgentFocus = (agentId) => {
   if (!focus) return;
   sm.setAgentFocus(agentId);
   const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
+  broadcastLayout({ ...layout, focusSwitched: true });
+};
+
+ws.onSessionFocus = (sessionId) => {
+  if (!sessionId) return;
+  const session = sm.get(sessionId);
+  if (!session) return;
+  sm.setFocus(sessionId);
+  sm.setAgentFocus(null);
+  log(`[ws] SESSION_FOCUS → session=${session.name}`);
+  const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
   broadcastLayout({ ...layout, focusSwitched: true });
 };
 

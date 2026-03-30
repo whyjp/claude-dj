@@ -239,18 +239,19 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
     ws.close();
   });
 
-  it('permission.js: always-allow button (slot 1 with hasAlwaysAllow) returns alwaysAllow', async () => {
+  it('permission.js: always-allow button (slot 1 with hasAlwaysAllow) returns suggestion as decision', async () => {
     const ws = await connectWs(wsUrl);
     const msgs = collectMessages(ws);
     await new Promise((r) => setTimeout(r, 100));
 
+    const suggestion = { type: 'addRules', rules: [{ toolName: 'Bash', ruleContent: 'npm test' }], behavior: 'allow', destination: 'localSettings' };
     const hookPromise = runHook('permission.js', {
       session_id: 'e2e-perm-3',
       cwd: '/tmp/project3',
       hook_event_name: 'PermissionRequest',
       tool_name: 'Bash',
       tool_input: { command: 'npm test' },
-      permission_suggestions: [{ tool_name: 'Bash', command: 'npm test' }],
+      permission_suggestions: [suggestion],
     });
 
     await new Promise((resolve) => {
@@ -269,7 +270,11 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
     assert.equal(result.exitCode, 0);
 
     const response = JSON.parse(result.stdout);
-    assert.equal(response.hookSpecificOutput.decision.behavior, 'alwaysAllow');
+    // Decision should be the suggestion itself (with behavior: "allow" + addRules)
+    assert.equal(response.hookSpecificOutput.decision.behavior, 'allow');
+    assert.equal(response.hookSpecificOutput.decision.type, 'addRules');
+    assert.deepEqual(response.hookSpecificOutput.decision.rules, suggestion.rules);
+    assert.equal(response.hookSpecificOutput.decision.destination, 'localSettings');
 
     ws.close();
   });
