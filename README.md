@@ -158,28 +158,107 @@ Each subagent has independent state tracking. Permission requests from subagents
 
 ## Architecture
 
-```
-Claude Code Session
-    ├─ PreToolUse      → hooks/notify.js       → POST /api/hook/notify      (async)
-    ├─ PostToolUse     → hooks/postToolUse.js  → POST /api/hook/postToolUse (async)
-    ├─ PermissionReq   → hooks/permission.js   → POST /api/hook/permission  (blocking, 60s)
-    ├─ Stop            → hooks/stop.js         → POST /api/hook/stop        (async, display-only notification)
-    ├─ UserPromptSubmit→ hooks/userPrompt.js   → GET  /api/events/:id       (reads deck events)
-    ├─ SubagentStart   → hooks/subagentStart.js→ POST /api/hook/subagentStart (async)
-    └─ SubagentStop    → hooks/subagentStop.js → POST /api/hook/subagentStop  (async)
-         ↓
-    Bridge Server (localhost:39200)
-    ├─ SessionManager (state machine, focus, prune, agent tracking)
-    ├─ ButtonManager (state → layout mapping, choice resolution)
-    ├─ WsServer (broadcast, late-join sync)
-    └─ Static serve → Virtual DJ dashboard
-         ↓ WebSocket
-    Virtual DJ (browser) / Ulanzi D200 (Phase 3)
+### System Diagram
 
-    Plugin System:
-    ├─ .claude-plugin/plugin.json + marketplace.json
-    ├─ hooks/hooks.json (7 hooks, auto-discovered)
-    └─ skills/choice-format/SKILL.md (AskUserQuestion behavior injection)
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Claude Code Process                          │
+│                                                                     │
+│  Model ──→ Tool Call ──→ Hook System ──→ hooks/*.js (child process) │
+│    ▲                                         │                      │
+│    │                                         │ stdin: JSON event     │
+│    │                                         │ stdout: JSON response │
+│    │                                         ▼                      │
+│    │  ◀── stdout (blocking) ───────── permission.js ────────┐       │
+│    │  ◀── exit 0 (fire-and-forget) ── notify.js ────────┐   │       │
+│    │                                   stop.js ─────┐   │   │       │
+│    │                                   postToolUse ──┤   │   │       │
+│    │                                   subagent*.js ─┤   │   │       │
+│    │                                   userPrompt.js ┤   │   │       │
+│    │                                                 │   │   │       │
+└────│─────────────────────────────────────────────────│───│───│───────┘
+     │                                                 │   │   │
+     │    ┌────────── HTTP (localhost:39200) ───────────┘   │   │
+     │    │    POST /api/hook/notify (async) ◀─────────────┘   │
+     │    │    POST /api/hook/permission (BLOCKING) ◀──────────┘
+     │    │    POST /api/hook/stop (async)
+     │    │    POST /api/hook/subagent* (async)
+     │    │    GET  /api/events/:sid (poll)
+     │    ▼
+     │  ┌─────────────────────────────────────────────────────┐
+     │  │              Bridge Server (Express + WS)            │
+     │  │                                                      │
+     │  │  SessionManager ──→ state machine, focus, prune      │
+     │  │  ButtonManager  ──→ state → layout, resolvePress     │
+     │  │  WsServer       ──→ broadcast LAYOUT/ALL_DIM         │
+     │  │  Logger         ──→ stdout + logs/bridge.log         │
+     │  │                                                      │
+     │  │  HTTP response = hookSpecificOutput                  │
+     │  │  (permission.js blocks until response or 60s timeout)│
+     │  └──────────────────────┬───────────────────────────────┘
+     │                         │
+     │              WebSocket (ws://localhost:39200/ws)
+     │              ┌──────────┴──────────┐
+     │              ▼                     ▼
+     │  ┌───────────────────┐  ┌────────────────────┐
+     │  │  Virtual DJ        │  │  Ulanzi D200       │
+     │  │  (Browser)         │  │  (Phase 3)         │
+     │  │                    │  │                    │
+     │  │  ← LAYOUT (JSON)  │  │  ← LAYOUT (JSON)  │
+     │  │  ← ALL_DIM        │  │  ← ALL_DIM        │
+     │  │  ← WELCOME        │  │  ← WELCOME        │
+     │  │  → BUTTON_PRESS   │  │  → BUTTON_PRESS   │
+     │  │  → AGENT_FOCUS    │  │  → AGENT_FOCUS    │
+     │  │  → CLIENT_READY   │  │  → CLIENT_READY   │
+     │  │                    │  │                    │
+     │  │  Miniview (PiP)    │  │  13 LCD keys      │
+     │  └───────────────────┘  └────────────────────┘
+     │
+     └── HTTP response flows back through permission.js stdout to Claude
+```
+
+### Protocol by Segment
+
+| Segment | Protocol | Transport | Direction | Blocking? |
+|---------|----------|-----------|-----------|-----------|
+| Claude → Hook | stdin JSON | child process spawn | Claude → Hook script | depends on hook type |
+| Hook → Bridge | HTTP REST | `fetch()` to localhost | Hook script → Bridge | **PermissionRequest: YES** (blocks until button/timeout) |
+| Bridge → Deck | WebSocket JSON | `ws://localhost:39200/ws` | Bridge → VirtualDJ/D200 | no (broadcast) |
+| Deck → Bridge | WebSocket JSON | same connection | VirtualDJ/D200 → Bridge | no (fire-and-forget) |
+| Bridge → Claude | HTTP response | same connection as Hook→Bridge | Bridge → Hook script → stdout → Claude | resolves the blocking request |
+
+**The critical path:** `PermissionRequest` hook is the only **synchronous** segment. The hook script (`permission.js`) makes an HTTP POST and **blocks** until the bridge responds (button pressed) or 60s timeout. All other hooks are fire-and-forget.
+
+### Why a Separate Bridge Process?
+
+Claude Code hooks are **short-lived child processes** — each hook invocation spawns `node hooks/permission.js`, which runs, writes stdout, and exits. There is no persistent process to hold WebSocket connections or session state. The bridge fills this gap:
+
+| Need | Hook alone | Bridge |
+|------|-----------|--------|
+| Persistent WebSocket to deck | cannot (exits after each event) | holds connections |
+| Session state across events | cannot (no shared memory) | SessionManager |
+| Multi-session focus management | cannot (isolated processes) | getFocusSession() |
+| Button press → HTTP response mapping | cannot (no listener) | respondFn callback |
+
+**Could this be an MCP server?** MCP provides tools FROM a server TO Claude. The bridge receives events FROM Claude via hooks — the data flow is reversed. However, wrapping the bridge as an MCP server (with a no-op tool) could enable **auto-start** via Claude plugin system. This is a potential Phase 2 improvement.
+
+### Plugin System
+
+```
+.claude-plugin/
+├─ plugin.json              Plugin metadata
+├─ marketplace.json         Distribution metadata
+hooks/
+├─ hooks.json               7 hook definitions (auto-discovered by Claude Code)
+├─ permission.js            PermissionRequest → HTTP POST (blocking)
+├─ notify.js                PreToolUse → HTTP POST (async)
+├─ postToolUse.js           PostToolUse → HTTP POST (async)
+├─ stop.js                  Stop → HTTP POST (async, choice parsing)
+├─ subagentStart.js         SubagentStart → HTTP POST (async)
+├─ subagentStop.js          SubagentStop → HTTP POST (async)
+└─ userPrompt.js            UserPromptSubmit → GET events (poll)
+skills/
+└─ choice-format/SKILL.md   Injected into Claude: "use AskUserQuestion for all choices"
 ```
 
 ## Deck Layout
