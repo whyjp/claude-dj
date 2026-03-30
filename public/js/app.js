@@ -21,6 +21,7 @@ let _manualDisconnect = false;
 function init() {
   initGrid();
   initDashboard();
+  _initMiniview();
 
   // Populate WS URL input with default
   const wsInput = document.getElementById('wsUrlInput');
@@ -212,6 +213,32 @@ function _simulatePress(slot) {
   if (el && !el.classList.contains('dim')) {
     el.click();
   }
+}
+
+// ── Miniview ─────────────────────────────────────────────────
+
+function _initMiniview() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('view') === 'mini') document.body.classList.add('mini');
+
+  const btnToggle = document.getElementById('btnMiniToggle');
+  if (btnToggle) btnToggle.addEventListener('click', () => _setMiniview(true));
+
+  // Event delegation for expand button (survives dynamic tab rebuilds)
+  const agentBar = document.getElementById('miniAgentBar');
+  if (agentBar) {
+    agentBar.addEventListener('click', (e) => {
+      if (e.target.closest('.ma-expand')) _setMiniview(false);
+    });
+  }
+}
+
+function _setMiniview(on) {
+  document.body.classList.toggle('mini', on);
+  const params = new URLSearchParams(location.search);
+  if (on) params.set('view', 'mini'); else params.delete('view');
+  const qs = params.toString();
+  history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
 }
 
 // ── Start ─────────────────────────────────────────────────────
