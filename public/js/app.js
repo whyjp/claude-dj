@@ -223,28 +223,45 @@ function _simulatePress(slot) {
 
 // ── Miniview ─────────────────────────────────────────────────
 
+const MINI_WIDTH = 840;
+const MINI_HEIGHT = 580;
+
 function _initMiniview() {
   const params = new URLSearchParams(location.search);
-  if (params.get('view') === 'mini') document.body.classList.add('mini');
+  const isMini = params.get('view') === 'mini';
 
+  if (isMini) {
+    document.body.classList.add('mini');
+  }
+
+  // Header button → open miniview in a minimal popup window
   const btnToggle = document.getElementById('btnMiniToggle');
-  if (btnToggle) btnToggle.addEventListener('click', () => _setMiniview(true));
+  if (btnToggle) {
+    btnToggle.addEventListener('click', () => {
+      const url = `${location.origin}${location.pathname}?view=mini`;
+      const left = (screen.width - MINI_WIDTH) / 2;
+      const top = (screen.height - MINI_HEIGHT) / 2;
+      window.open(url, 'claude-dj-mini',
+        `popup,width=${MINI_WIDTH},height=${MINI_HEIGHT},left=${left},top=${top}`);
+    });
+  }
 
-  // Event delegation for expand button (survives dynamic tab rebuilds)
+  // Expand button → close popup OR switch to full view
   const agentBar = document.getElementById('miniAgentBar');
   if (agentBar) {
     agentBar.addEventListener('click', (e) => {
-      if (e.target.closest('.ma-expand')) _setMiniview(false);
+      if (!e.target.closest('.ma-expand')) return;
+      if (window.opener) {
+        window.close();
+      } else {
+        document.body.classList.remove('mini');
+        const p = new URLSearchParams(location.search);
+        p.delete('view');
+        const qs = p.toString();
+        history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+      }
     });
   }
-}
-
-function _setMiniview(on) {
-  document.body.classList.toggle('mini', on);
-  const params = new URLSearchParams(location.search);
-  if (on) params.set('view', 'mini'); else params.delete('view');
-  const qs = params.toString();
-  history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
 }
 
 function _sendAgentFocus(agentId) {
