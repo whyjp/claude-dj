@@ -234,24 +234,18 @@ function _initMiniview() {
     document.body.classList.add('mini');
   }
 
-  // Header button → open miniview in a minimal popup window
+  // Header button → open miniview as always-on-top PiP (fallback: popup)
   const btnToggle = document.getElementById('btnMiniToggle');
   if (btnToggle) {
-    btnToggle.addEventListener('click', () => {
-      const url = `${location.origin}${location.pathname}?view=mini`;
-      const left = (screen.width - MINI_WIDTH) / 2;
-      const top = (screen.height - MINI_HEIGHT) / 2;
-      window.open(url, 'claude-dj-mini',
-        `popup,width=${MINI_WIDTH},height=${MINI_HEIGHT},left=${left},top=${top}`);
-    });
+    btnToggle.addEventListener('click', () => _openMiniPopup());
   }
 
-  // Expand button → close popup OR switch to full view
+  // Expand button → close popup/PiP OR switch to full view inline
   const agentBar = document.getElementById('miniAgentBar');
   if (agentBar) {
     agentBar.addEventListener('click', (e) => {
       if (!e.target.closest('.ma-expand')) return;
-      if (window.opener) {
+      if (window.opener || documentPictureInPicture?.window === window) {
         window.close();
       } else {
         document.body.classList.remove('mini');
@@ -262,6 +256,32 @@ function _initMiniview() {
       }
     });
   }
+}
+
+async function _openMiniPopup() {
+  const miniUrl = `${location.origin}${location.pathname}?view=mini`;
+
+  // Try Document Picture-in-Picture (always-on-top)
+  if ('documentPictureInPicture' in window) {
+    try {
+      const pip = await documentPictureInPicture.requestWindow({
+        width: MINI_WIDTH,
+        height: MINI_HEIGHT,
+      });
+      pip.document.head.innerHTML = '<style>body{margin:0;overflow:hidden;}</style>';
+      const iframe = pip.document.createElement('iframe');
+      iframe.src = miniUrl;
+      iframe.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:none;';
+      pip.document.body.appendChild(iframe);
+      return;
+    } catch { /* user dismissed or API error — fall through */ }
+  }
+
+  // Fallback: regular popup (no always-on-top)
+  const left = (screen.width - MINI_WIDTH) / 2;
+  const top = (screen.height - MINI_HEIGHT) / 2;
+  window.open(miniUrl, 'claude-dj-mini',
+    `popup,width=${MINI_WIDTH},height=${MINI_HEIGHT},left=${left},top=${top}`);
 }
 
 function _sendAgentFocus(agentId) {
