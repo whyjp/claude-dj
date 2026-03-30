@@ -119,6 +119,11 @@
               <div class="pd out">→ CLIENT_READY: sent on connect</div>
               <div class="pc">{ "type": "CLIENT_READY", "clientType": "virtual", "version": "0.1.0" }</div>
             </div>
+            <div class="pb">
+              <div class="pd out">→ AGENT_FOCUS: switch to specific agent</div>
+              <div class="pc">{ "type": "AGENT_FOCUS", "agentId": "ag1" | null }</div>
+              <div class="pn">agentId=null switches to root. Used by miniview agent tabs.</div>
+            </div>
           </div>
           <div class="ps">
             <h4>Hook Endpoints</h4>
