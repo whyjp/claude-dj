@@ -1,4 +1,5 @@
 import { WebSocketServer } from 'ws';
+import { log, warn, error } from './logger.js';
 
 export class WsServer {
   constructor() {
@@ -14,25 +15,25 @@ export class WsServer {
 
     this.wss.on('connection', (ws) => {
       this.clients.add(ws);
-      console.log(`[ws] client connected (total: ${this.clients.size})`);
+      log(`[ws] client connected (total: ${this.clients.size})`);
 
       ws.on('message', (data) => {
         try {
           const msg = JSON.parse(data.toString());
           this._handleMessage(ws, msg);
         } catch (e) {
-          console.error('[ws] invalid message:', e.message);
+          error('[ws] invalid message:', e.message);
         }
       });
 
       ws.on('error', (err) => {
-        console.error('[ws] client error:', err.message);
+        error('[ws] client error:', err.message);
         this.clients.delete(ws);
       });
 
       ws.on('close', () => {
         this.clients.delete(ws);
-        console.log(`[ws] client disconnected (total: ${this.clients.size})`);
+        log(`[ws] client disconnected (total: ${this.clients.size})`);
       });
     });
   }
@@ -40,29 +41,29 @@ export class WsServer {
   _handleMessage(ws, msg) {
     switch (msg.type) {
       case 'CLIENT_READY':
-        console.log(`[ws] client ready: ${msg.clientType} v${msg.version}`);
+        log(`[ws] client ready: ${msg.clientType} v${msg.version}`);
         if (this.onClientReady) this.onClientReady(ws);
         break;
       case 'BUTTON_PRESS':
-        console.log(`[ws] BUTTON_PRESS slot=${msg.slot}`);
+        log(`[ws] BUTTON_PRESS slot=${msg.slot}`);
         if (this.onButtonPress) {
           this.onButtonPress(msg.slot, msg.timestamp);
         } else {
-          console.warn(`[ws] BUTTON_PRESS dropped — no handler registered`);
+          warn(`[ws] BUTTON_PRESS dropped — no handler registered`);
         }
         break;
       case 'AGENT_FOCUS':
         if (this.onAgentFocus) this.onAgentFocus(msg.agentId || null);
         break;
       default:
-        console.log(`[ws] unknown message type: ${msg.type}`);
+        log(`[ws] unknown message type: ${msg.type}`);
     }
   }
 
   broadcast(msg) {
     let data;
     try { data = JSON.stringify({ type: msg.type || 'LAYOUT', ...msg }); }
-    catch (e) { console.error('[ws] broadcast serialize error:', e.message); return; }
+    catch (e) { error('[ws] broadcast serialize error:', e.message); return; }
     const stale = [];
     for (const client of this.clients) {
       if (client.readyState === 1) {

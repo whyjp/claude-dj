@@ -4,6 +4,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
+import { log, warn, error } from './logger.js';
 import { SessionManager } from './sessionManager.js';
 import { ButtonManager } from './buttonManager.js';
 import { WsServer } from './wsServer.js';
@@ -59,7 +60,7 @@ const _stopTimers = new Map();
 
 app.post('/api/hook/notify', (req, res) => {
   const input = req.body;
-  console.log(`[hook/notify] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
+  log(`[hook/notify] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
   // Cancel pending response timer — Claude is still working
   if (_stopTimers.has(input.session_id)) {
     clearTimeout(_stopTimers.get(input.session_id));
@@ -77,7 +78,7 @@ app.post('/api/hook/notify', (req, res) => {
 
 app.post('/api/hook/postToolUse', (req, res) => {
   const input = req.body;
-  console.log(`[hook/postToolUse] session=${input.session_id} tool=${input.tool_name} errored=${input.tool_result?.errored}`);
+  log(`[hook/postToolUse] session=${input.session_id} tool=${input.tool_name} errored=${input.tool_result?.errored}`);
   const session = sm.handlePostToolUse(input);
   // Only broadcast if this is the focused session
   const focus = sm.getFocusSession();
@@ -90,7 +91,7 @@ app.post('/api/hook/postToolUse', (req, res) => {
 
 app.post('/api/hook/subagentStart', (req, res) => {
   const input = req.body;
-  console.log(`[hook/subagentStart] session=${input.session_id} agent=${input.agent_id} type=${input.agent_type}`);
+  log(`[hook/subagentStart] session=${input.session_id} agent=${input.agent_id} type=${input.agent_type}`);
   const session = sm.handleSubagentStart(input);
   const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
   broadcastLayout(layout);
@@ -99,7 +100,7 @@ app.post('/api/hook/subagentStart', (req, res) => {
 
 app.post('/api/hook/subagentStop', (req, res) => {
   const input = req.body;
-  console.log(`[hook/subagentStop] session=${input.session_id} agent=${input.agent_id}`);
+  log(`[hook/subagentStop] session=${input.session_id} agent=${input.agent_id}`);
   const session = sm.handleSubagentStop(input);
   const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
   broadcastLayout(layout);
@@ -109,7 +110,7 @@ app.post('/api/hook/subagentStop', (req, res) => {
 app.post('/api/hook/stop', (req, res) => {
   const input = req.body;
   const choices = input._djChoices || null;
-  console.log(`[hook/stop] session=${input.session_id} active=${input.stop_hook_active} choices=${choices?.length || 0}`);
+  log(`[hook/stop] session=${input.session_id} active=${input.stop_hook_active} choices=${choices?.length || 0}`);
   if (input.stop_hook_active) {
     return res.json({ ok: true });
   }
@@ -162,12 +163,12 @@ app.get('/api/events/:sessionId', (req, res) => {
 
 app.post('/api/hook/permission', (req, res) => {
   const input = req.body;
-  console.log(`[hook/permission] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
+  log(`[hook/permission] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
 
   // Auto-deny previous pending permission to prevent orphaned HTTP responses
   const existing = sm.get(input.session_id);
   if (existing?.respondFn) {
-    console.warn(`[hook/permission] auto-denying previous pending permission for session=${input.session_id}`);
+    warn(`[hook/permission] auto-denying previous pending permission for session=${input.session_id}`);
     existing.respondFn({ type: 'binary', value: 'deny' });
   }
   if (existing?._permissionTimeout) {
@@ -185,7 +186,7 @@ app.post('/api/hook/permission', (req, res) => {
   broadcastLayout(layout);
 
   const timeout = setTimeout(() => {
-    console.warn(`[hook→claude] TIMEOUT (${config.buttonTimeout}ms) session=${session.id} tool=${input.tool_name} — auto-deny sent`);
+    warn(`[hook→claude] TIMEOUT (${config.buttonTimeout}ms) session=${session.id} tool=${input.tool_name} — auto-deny sent`);
     session.respondFn = null;
     session._permissionTimeout = null;
     sm.handleStop({ session_id: session.id, stop_hook_active: false });
@@ -207,9 +208,9 @@ app.post('/api/hook/permission', (req, res) => {
     try {
       res.json(response);
       const behavior = response.hookSpecificOutput?.decision?.behavior;
-      console.log(`[hook→claude] session=${session.id} tool=${input.tool_name} behavior=${behavior} decision=${decision.type}:${decision.value}`);
+      log(`[hook→claude] session=${session.id} tool=${input.tool_name} behavior=${behavior} decision=${decision.type}:${decision.value}`);
     } catch (e) {
-      console.error(`[hook→claude] FAILED res.json for session=${session.id}: ${e.message}`);
+      error(`[hook→claude] FAILED res.json for session=${session.id}: ${e.message}`);
     }
   };
 });
@@ -235,11 +236,11 @@ ws.onButtonPress = (slot, timestamp) => {
   if (slot === 11) {
     const next = sm.cycleFocus();
     if (next) {
-      console.log(`[btn] slot=11 → cycled to session=${next.name}`);
+      log(`[btn] slot=11 → cycled to session=${next.name}`);
       const layout = ButtonManager.layoutFor(next, sm.focusAgentId, sm.getAgentCount(next.id));
       broadcastLayout({ ...layout, focusSwitched: true });
     } else {
-      console.log(`[btn] slot=11 → no sessions to cycle`);
+      log(`[btn] slot=11 → no sessions to cycle`);
     }
     return;
   }
@@ -248,7 +249,7 @@ ws.onButtonPress = (slot, timestamp) => {
   if (slot === 12) {
     const agent = sm.cycleAgent();
     const focus = sm.focusSessionId ? sm.get(sm.focusSessionId) : null;
-    console.log(`[btn] slot=12 → agent=${agent?.type || 'ROOT'} session=${focus?.name || 'none'}`);
+    log(`[btn] slot=12 → agent=${agent?.type || 'ROOT'} session=${focus?.name || 'none'}`);
     if (focus) {
       const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
       broadcastLayout({ ...layout, focusSwitched: true });
@@ -258,30 +259,30 @@ ws.onButtonPress = (slot, timestamp) => {
 
   const focus = sm.getFocusSession();
   if (!focus) {
-    console.warn(`[btn] slot=${slot} dropped — no focused session`);
+    warn(`[btn] slot=${slot} dropped — no focused session`);
     return;
   }
 
   const decision = ButtonManager.resolvePress(slot, focus.state, focus.prompt);
   if (!decision) {
-    console.warn(`[btn] slot=${slot} dropped — resolvePress returned null (state=${focus.state}, hasPrompt=${!!focus.prompt})`);
+    warn(`[btn] slot=${slot} dropped — resolvePress returned null (state=${focus.state}, hasPrompt=${!!focus.prompt})`);
     return;
   }
 
   if (focus.state === 'WAITING_RESPONSE') {
-    console.log(`[btn] slot=${slot} ignored — WAITING_RESPONSE is display-only`);
+    log(`[btn] slot=${slot} ignored — WAITING_RESPONSE is display-only`);
     return;
   }
 
   // multiSelect toggle — update layout without resolving
   if (decision.type === 'toggle') {
-    console.log(`[btn] slot=${slot} → multiSelect toggle index=${decision.index}`);
+    log(`[btn] slot=${slot} → multiSelect toggle index=${decision.index}`);
     const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
     broadcastLayout(layout);
     return;
   }
 
-  console.log(`[btn] slot=${slot} → resolving: ${decision.type}=${decision.value} session=${focus.name} (${focus.id})`);
+  log(`[btn] slot=${slot} → resolving: ${decision.type}=${decision.value} session=${focus.name} (${focus.id})`);
   sm.resolveWaiting(focus.id, decision);
 };
 
@@ -304,7 +305,7 @@ const pruneInterval = setInterval(() => {
         _stopTimers.delete(id);
       }
     }
-    console.log(`[claude-dj] Pruned ${pruned.length} idle session(s): ${pruned.join(', ')}`);
+    log(`[claude-dj] Pruned ${pruned.length} idle session(s): ${pruned.join(', ')}`);
     ws.broadcast({ type: 'SESSION_DISCONNECTED', sessionIds: pruned, reason: 'idle_timeout' });
   }
 }, 60000); // check every minute
@@ -320,7 +321,7 @@ const syncInterval = setInterval(() => {
         _stopTimers.delete(id);
       }
     }
-    console.log(`[claude-dj] Synced: removed ${pruned.length} dead session(s): ${pruned.join(', ')}`);
+    log(`[claude-dj] Synced: removed ${pruned.length} dead session(s): ${pruned.join(', ')}`);
     ws.broadcast({ type: 'SESSION_DISCONNECTED', sessionIds: pruned, reason: 'process_exit' });
   }
 }, 30000); // check every 30s
@@ -329,9 +330,9 @@ const syncInterval = setInterval(() => {
 
 const port = config.port;
 server.listen(port, () => {
-  console.log(`[claude-dj] Bridge running at http://localhost:${port}`);
-  console.log(`[claude-dj] Virtual DJ at http://localhost:${port}`);
-  console.log(`[claude-dj] WebSocket at ws://localhost:${port}${config.wsPath}`);
+  log(`[claude-dj] Bridge running at http://localhost:${port}`);
+  log(`[claude-dj] Virtual DJ at http://localhost:${port}`);
+  log(`[claude-dj] WebSocket at ws://localhost:${port}${config.wsPath}`);
 });
 
 export { server, app, pruneInterval, syncInterval };

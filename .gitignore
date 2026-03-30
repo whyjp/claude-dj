@@ -2,6 +2,7 @@
 .claude/
 .omc/
 node_modules/
+logs/
 ulanzi/sdk/
 ulanzi/software/
 test/live/scratch.txt

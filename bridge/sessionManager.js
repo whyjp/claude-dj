@@ -1,6 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import os from 'node:os';
+import { log, warn, error } from './logger.js';
 
 export class SessionManager {
   constructor() {
@@ -181,7 +182,7 @@ export class SessionManager {
   resolveWaiting(sessionId, decision) {
     const session = this.sessions.get(sessionId);
     if (!session) {
-      console.warn(`[resolve] session not found: ${sessionId}`);
+      warn(`[resolve] session not found: ${sessionId}`);
       return false;
     }
     // Transition state BEFORE calling respondFn so broadcast reflects new state
@@ -191,14 +192,14 @@ export class SessionManager {
     session._permissionAgentId = null;
     if (session.respondFn) {
       try {
-        console.log(`[resolve] ${session.name} → ${decision.type}=${decision.value}`);
+        log(`[resolve] ${session.name} → ${decision.type}=${decision.value}`);
         session.respondFn(decision);
       } catch (e) {
-        console.error(`[resolve] respondFn threw: ${e.message}`);
+        error(`[resolve] respondFn threw: ${e.message}`);
       }
       session.respondFn = null;
     } else {
-      console.warn(`[resolve] ${session.name} — no respondFn (already resolved or timed out)`);
+      warn(`[resolve] ${session.name} — no respondFn (already resolved or timed out)`);
     }
     return true;
   }
