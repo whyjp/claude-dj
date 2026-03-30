@@ -16,10 +16,14 @@ claude-dj status           # verify installation
 ### 2. Start the Bridge
 
 ```bash
-node bridge/server.js      # http://localhost:39200
+node bridge/server.js                  # http://localhost:39200
+./scripts/start-bridge.sh              # same, with auto-install
+./scripts/start-bridge.sh --debug      # + file logging to logs/bridge.log
 ```
 
 Open **http://localhost:39200** to see the Virtual DJ dashboard.
+
+**Miniview:** Click `▣` in the header to pop out the deck as an always-on-top mini window. Or open `http://localhost:39200?view=mini` directly.
 
 ### 3. Use Claude Code
 
@@ -205,8 +209,10 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 - **Awaiting input notification** — When Claude stops with text choices, deck shows ⏳ indicator
 - **Multi-session management** — Slot 11 cycles root sessions, focus auto-switches on permission
 - **Late-join sync** — New clients receive current deck state immediately
+- **Miniview mode** — Pop-out deck as always-on-top PiP window (`▣` button or `?view=mini`), with agent tab bar for root/subagent switching
 - **Plugin packaging** — `.claude-plugin/plugin.json` with portable `${CLAUDE_PLUGIN_ROOT}` paths
 - **Session auto-cleanup** — Idle sessions pruned after 5 minutes
+- **Debug logging** — `--debug` flag enables file logging to `logs/bridge.log` with structured levels (INFO/WARN/ERROR)
 
 ## Configuration
 
@@ -216,13 +222,40 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 | `CLAUDE_DJ_URL` | `http://localhost:39200` | Hook → Bridge URL |
 | `CLAUDE_DJ_BUTTON_TIMEOUT` | `60000` (60s) | Permission button timeout (ms) |
 | `CLAUDE_DJ_IDLE_TIMEOUT` | `300000` (5min) | Session prune timeout (ms) |
+| `CLAUDE_DJ_DEBUG` | off | Set `1` to enable file logging |
+
+## Debugging
+
+```bash
+# Start with file logging
+./scripts/start-bridge.sh --debug       # Linux/macOS
+scripts\start-bridge.bat --debug        # Windows
+npm run debug                           # via npm
+
+# Log file location printed on startup:
+#   [claude-dj] Log file: D:\github\claude-dj\logs\bridge.log
+
+# Filter problems only (WARN = dropped/ignored, ERROR = failures)
+grep -E "WARN|ERROR" logs/bridge.log
+
+# Trace a button press end-to-end
+grep "slot=0" logs/bridge.log
+```
+
+Log levels:
+| Level | Meaning | Example |
+|-------|---------|---------|
+| `INFO` | Normal flow | `[ws] BUTTON_PRESS slot=0`, `[hook→claude] behavior=allow` |
+| `WARN` | Button dropped/ignored | `[btn] dropped — no focused session`, `TIMEOUT` |
+| `ERROR` | Something broke | `[hook→claude] FAILED res.json`, `respondFn threw` |
 
 ## Development
 
 ```bash
 npm install              # install dependencies
-npm test                 # 100 tests across 9 suites
+npm test                 # run all tests
 node bridge/server.js    # start bridge
+npm run debug            # start bridge with file logging
 ```
 
 ## License
