@@ -26,6 +26,7 @@ if (DEBUG) {
   _stream = fs.createWriteStream(LOG_FILE, { flags: 'a' });
   const ts = new Date().toISOString();
   _stream.write(`\n${'='.repeat(60)}\n[${ts}] Bridge started (debug mode)\n${'='.repeat(60)}\n`);
+  console.log(`[claude-dj] Log file: ${LOG_FILE}`);
 }
 
 function _fmt(level, args) {
