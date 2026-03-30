@@ -180,9 +180,11 @@ export function renderLayout(msg) {
       const command = msg.prompt?.command || '';
       const cmdPreview = _truncCmd(command, 18);
 
-      _setKeyState(0, 'approve', { toolName, cmdPreview });
+      _setKeyState(0, 'approve', { cmdPreview });
       if (msg.prompt?.hasAlwaysAllow) {
-        _setKeyState(1, 'always', { toolName });
+        const ruleContent = msg.prompt?.alwaysAllowSuggestion?.rules?.[0]?.ruleContent || '';
+        const rulePreview = _truncCmd(ruleContent, 18);
+        _setKeyState(1, 'always', { rulePreview });
         _setKeyState(2, 'deny');
       } else {
         _setKeyState(1, 'deny');
@@ -244,9 +246,8 @@ function _setKeyState(slot, state, meta) {
   switch (state) {
     case 'approve': {
       k.className = 'k approve';
-      const tool = meta?.toolName ? ` ${meta.toolName}` : '';
       const cmd = meta?.cmdPreview ? `<span class="kc">${esc(meta.cmdPreview)}</span>` : '';
-      k.innerHTML = `<span class="ki">✅</span><span class="kl">OK${esc(tool)}</span>${cmd}`;
+      k.innerHTML = `<span class="ki">✅</span><span class="kl">Allow</span>${cmd}`;
       break;
     }
     case 'deny':
@@ -255,8 +256,8 @@ function _setKeyState(slot, state, meta) {
       break;
     case 'always': {
       k.className = 'k always';
-      const tool = meta?.toolName ? ` ${meta.toolName}` : '';
-      k.innerHTML = `<span class="ki">🔒</span><span class="kl">Always${esc(tool)}</span>`;
+      const rule = meta?.rulePreview ? `<span class="kc">${esc(meta.rulePreview)}</span>` : '';
+      k.innerHTML = `<span class="ki">🔒</span><span class="kl">AddRule</span>${rule}`;
       break;
     }
     case 'processing':
@@ -380,35 +381,60 @@ function _setInfoState(st) {
   else                              el.className = 'si-v';
 }
 
-/** Update the miniview agent tab bar from LAYOUT data.
- *  @param {Array} agents — [{agentId, type, state}, ...]
+/** Update the miniview 2-tier agent tab bar.
+ *  Row 1 (miniAgentBar):  all root sessions — click switches session focus
+ *  Row 2 (miniAgentChildBar): root + subagents of focused session — click switches agent focus
+ *
+ *  @param {Map|Array} sessions — session map or array [{id, name, agents:[…]}, ...]
+ *  @param {string|null} focusSessionId — currently focused root session
  *  @param {string|null} focusAgentId — currently focused agent (null = root)
- *  @param {function(string|null)} onTabClick — called with agentId or null
+ *  @param {Array} agents — [{agentId, type, state}, ...] agents of focused session
+ *  @param {function(string)} onSessionClick — called with sessionId
+ *  @param {function(string|null)} onAgentClick — called with agentId or null
  */
-export function updateMiniAgentTabs(agents, focusAgentId, onTabClick) {
+export function updateMiniAgentTabs(sessions, focusSessionId, focusAgentId, agents, onSessionClick, onAgentClick) {
   const bar = document.getElementById('miniAgentBar');
+  const childBar = document.getElementById('miniAgentChildBar');
   if (!bar) return;
   const expand = document.getElementById('btnMiniExpand');
   bar.innerHTML = '';
 
-  // Root tab
-  const rootTab = document.createElement('div');
-  rootTab.className = `ma-tab root${focusAgentId === null ? ' on' : ''}`;
-  rootTab.dataset.agentId = '';
-  rootTab.textContent = 'root';
-  rootTab.addEventListener('click', () => onTabClick(null));
-  bar.appendChild(rootTab);
-
-  // Agent tabs
-  for (const a of agents) {
+  // Row 1: root session tabs
+  const list = sessions instanceof Map ? [...sessions.values()] : (sessions || []);
+  for (const s of list) {
     const tab = document.createElement('div');
-    tab.className = `ma-tab${a.agentId === focusAgentId ? ' on' : ''}`;
-    tab.dataset.agentId = a.agentId;
-    tab.textContent = a.type || a.agentId.slice(0, 6);
-    tab.addEventListener('click', () => onTabClick(a.agentId));
+    const isActive = s.id === focusSessionId;
+    const agentCount = Array.isArray(s.agents) ? s.agents.length : 0;
+    tab.className = `ma-tab session${isActive ? ' on' : ''}`;
+    tab.dataset.sessionId = s.id;
+    const label = (s.name || s.id.slice(0, 8)).split(' ')[0];
+    tab.innerHTML = label + (agentCount > 0 ? `<span class="ma-badge">(${agentCount})</span>` : '');
+    tab.addEventListener('click', () => onSessionClick(s.id));
     bar.appendChild(tab);
   }
 
   // Re-append expand button
   if (expand) bar.appendChild(expand);
+
+  // Row 2: subagents of focused session
+  if (childBar) {
+    childBar.innerHTML = '';
+    if (agents && agents.length > 0) {
+      // "root" tab
+      const rootTab = document.createElement('div');
+      rootTab.className = `ma-tab root${focusAgentId === null ? ' on' : ''}`;
+      rootTab.textContent = 'root';
+      rootTab.addEventListener('click', () => onAgentClick(null));
+      childBar.appendChild(rootTab);
+
+      for (const a of agents) {
+        const tab = document.createElement('div');
+        tab.className = `ma-tab${a.agentId === focusAgentId ? ' on' : ''}`;
+        tab.dataset.agentId = a.agentId;
+        tab.textContent = a.type || a.agentId.slice(0, 6);
+        tab.addEventListener('click', () => onAgentClick(a.agentId));
+        childBar.appendChild(tab);
+      }
+    }
+  }
 }

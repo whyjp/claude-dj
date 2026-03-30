@@ -217,9 +217,10 @@ describe('ButtonManager: edge cases', () => {
     assert.equal(ButtonManager.resolvePress(5, 'WAITING_CHOICE', prompt), null);
   });
 
-  it('buildHookResponse for alwaysAllow sets behavior correctly', () => {
-    const resp = ButtonManager.buildHookResponse({ type: 'binary', value: 'alwaysAllow' }, false);
-    assert.equal(resp.hookSpecificOutput.decision.behavior, 'alwaysAllow');
+  it('buildHookResponse for alwaysAllow with suggestion returns suggestion as decision', () => {
+    const suggestion = { type: 'addRules', rules: [{ toolName: 'Bash', ruleContent: 'npm test' }], behavior: 'allow', destination: 'localSettings' };
+    const resp = ButtonManager.buildHookResponse({ type: 'binary', value: 'allow', suggestion }, false);
+    assert.deepEqual(resp.hookSpecificOutput.decision, suggestion);
   });
 
   it('buildTimeoutResponse returns deny with timeout message', () => {
