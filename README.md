@@ -200,19 +200,29 @@ Each subagent has independent state tracking. Permission requests from subagents
      │              WebSocket (ws://localhost:39200/ws)
      │              ┌──────────┴──────────┐
      │              ▼                     ▼
-     │  ┌───────────────────┐  ┌────────────────────┐
-     │  │  Virtual DJ        │  │  Ulanzi D200       │
-     │  │  (Browser)         │  │  (Phase 3)         │
-     │  │                    │  │                    │
-     │  │  ← LAYOUT (JSON)  │  │  ← LAYOUT (JSON)  │
-     │  │  ← ALL_DIM        │  │  ← ALL_DIM        │
-     │  │  ← WELCOME        │  │  ← WELCOME        │
-     │  │  → BUTTON_PRESS   │  │  → BUTTON_PRESS   │
-     │  │  → AGENT_FOCUS    │  │  → AGENT_FOCUS    │
-     │  │  → CLIENT_READY   │  │  → CLIENT_READY   │
-     │  │                    │  │                    │
-     │  │  Miniview (PiP)    │  │  13 LCD keys      │
-     │  └───────────────────┘  └────────────────────┘
+     │  ┌───────────────────┐  ┌─────────────────────────┐
+     │  │  Virtual DJ        │  │  Ulanzi Translator      │
+     │  │  (Browser)         │  │  Plugin (Phase 3)       │
+     │  │                    │  │                         │
+     │  │  ← LAYOUT (JSON)  │  │  ← LAYOUT → render PNG  │
+     │  │  ← ALL_DIM        │  │  ← ALL_DIM              │
+     │  │  ← WELCOME        │  │  → BUTTON_PRESS         │
+     │  │  → BUTTON_PRESS   │  │                         │
+     │  │  → AGENT_FOCUS    │  │  Bridge WS ↔ Ulanzi WS  │
+     │  │  → CLIENT_READY   │  └────────────┬────────────┘
+     │  │                    │               │
+     │  │  Miniview (PiP)    │    WebSocket (ws://127.0.0.1:3906)
+     │  └───────────────────┘    Ulanzi SDK JSON protocol
+     │                                       │
+     │                           ┌───────────▼───────────┐
+     │                           │  UlanziStudio App      │
+     │                           │  (host, manages D200)  │
+     │                           └───────────┬───────────┘
+     │                                       │ USB HID
+     │                           ┌───────────▼───────────┐
+     │                           │  Ulanzi D200 Hardware  │
+     │                           │  13 LCD keys + encoder │
+     │                           └───────────────────────┘
      │
      └── HTTP response flows back through permission.js stdout to Claude
 ```
@@ -223,11 +233,17 @@ Each subagent has independent state tracking. Permission requests from subagents
 |---------|----------|-----------|-----------|-----------|
 | Claude → Hook | stdin JSON | child process spawn | Claude → Hook script | depends on hook type |
 | Hook → Bridge | HTTP REST | `fetch()` to localhost | Hook script → Bridge | **PermissionRequest: YES** (blocks until button/timeout) |
-| Bridge → Deck | WebSocket JSON | `ws://localhost:39200/ws` | Bridge → VirtualDJ/D200 | no (broadcast) |
-| Deck → Bridge | WebSocket JSON | same connection | VirtualDJ/D200 → Bridge | no (fire-and-forget) |
+| Bridge → Virtual DJ | WebSocket JSON | `ws://localhost:39200/ws` | Bridge → Browser | no (broadcast) |
+| Virtual DJ → Bridge | WebSocket JSON | same connection | Browser → Bridge | no (fire-and-forget) |
+| Bridge → Ulanzi Plugin | WebSocket JSON | `ws://localhost:39200/ws` | Bridge → Plugin | no (broadcast) |
+| Ulanzi Plugin → Bridge | WebSocket JSON | same connection | Plugin → Bridge | no (fire-and-forget) |
+| Plugin ↔ UlanziStudio | WebSocket JSON | `ws://127.0.0.1:3906` (Ulanzi SDK) | bidirectional | no |
+| UlanziStudio ↔ D200 | USB HID | proprietary | bidirectional | — |
 | Bridge → Claude | HTTP response | same connection as Hook→Bridge | Bridge → Hook script → stdout → Claude | resolves the blocking request |
 
 **The critical path:** `PermissionRequest` hook is the only **synchronous** segment. The hook script (`permission.js`) makes an HTTP POST and **blocks** until the bridge responds (button pressed) or 60s timeout. All other hooks are fire-and-forget.
+
+**D200 hardware note:** The D200 connects via USB to the UlanziStudio desktop app, not directly to the bridge. A translator plugin (Phase 3) bridges the two WebSocket protocols. See `docs/todo/d200-integration-architecture.md` for details.
 
 ### Why a Separate Bridge Process?
 
