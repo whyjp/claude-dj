@@ -17,12 +17,17 @@
     <span class="ws-lbl" id="wsLbl">disconnected</span>
     <button class="btn-s" id="btnConn">connect</button>
     <button class="btn-s" id="btnClearLog">clear log</button>
+    <button class="btn-mini" id="btnMiniToggle" title="Miniview">&#x25A3;</button>
   </div>
 </header>
 
 <main>
   <!-- LEFT: DEVICE -->
   <div class="dev-panel">
+    <div class="mini-agent-bar" id="miniAgentBar">
+      <div class="ma-tab root on" data-agent-id="">root</div>
+      <div class="ma-expand" id="btnMiniExpand" title="Exit miniview">&#x26F6;</div>
+    </div>
     <div class="dev-hdr">
       <span class="dev-title">D200 Simulator</span>
       <span class="dev-model">13 LCD Keys + Info Display</span>
