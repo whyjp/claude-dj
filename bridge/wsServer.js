@@ -5,6 +5,7 @@ export class WsServer {
     this.wss = null;
     this.clients = new Set();
     this.onButtonPress = null;
+    this.onAgentFocus = null;
     this.onClientReady = null;
   }
 
@@ -46,6 +47,9 @@ export class WsServer {
         if (this.onButtonPress) {
           this.onButtonPress(msg.slot, msg.timestamp);
         }
+        break;
+      case 'AGENT_FOCUS':
+        if (this.onAgentFocus) this.onAgentFocus(msg.agentId || null);
         break;
       default:
         console.log(`[ws] unknown message type: ${msg.type}`);

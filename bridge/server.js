@@ -266,6 +266,14 @@ ws.onButtonPress = (slot, timestamp) => {
   sm.resolveWaiting(focus.id, decision);
 };
 
+ws.onAgentFocus = (agentId) => {
+  const focus = sm.focusSessionId ? sm.get(sm.focusSessionId) : null;
+  if (!focus) return;
+  sm.setAgentFocus(agentId);
+  const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
+  broadcastLayout({ ...layout, focusSwitched: true });
+};
+
 // --- Session Cleanup ---
 
 const pruneInterval = setInterval(() => {

@@ -486,6 +486,27 @@ describe('SessionManager', () => {
     assert.equal(sm.getAgentCount('nope'), 0);
   });
 
+  it('setAgentFocus sets focusAgentId to a specific agent', () => {
+    const sm = new SessionManager();
+    sm.getOrCreate({ session_id: 'sa1', cwd: '/test' });
+    sm.setFocus('sa1');
+    sm.handleSubagentStart({ session_id: 'sa1', agent_id: 'ag1', agent_type: 'Explore' });
+    sm.handleSubagentStart({ session_id: 'sa1', agent_id: 'ag2', agent_type: 'Plan' });
+    sm.setAgentFocus('ag2');
+    assert.equal(sm.focusAgentId, 'ag2');
+  });
+
+  it('setAgentFocus with null resets to root', () => {
+    const sm = new SessionManager();
+    sm.getOrCreate({ session_id: 'sa2', cwd: '/test' });
+    sm.setFocus('sa2');
+    sm.handleSubagentStart({ session_id: 'sa2', agent_id: 'ag1', agent_type: 'Explore' });
+    sm.setAgentFocus('ag1');
+    assert.equal(sm.focusAgentId, 'ag1');
+    sm.setAgentFocus(null);
+    assert.equal(sm.focusAgentId, null);
+  });
+
   it('syncFromDisk clears _permissionTimeout on dead session', () => {
     const tmpDir = path.join(os.tmpdir(), 'claude-dj-sync-timeout-' + Date.now());
     const sessDir = path.join(tmpDir, '.claude', 'sessions');

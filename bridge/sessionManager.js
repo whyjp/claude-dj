@@ -277,6 +277,10 @@ export class SessionManager {
     return agents[nextIdx];
   }
 
+  setAgentFocus(agentId) {
+    this.focusAgentId = agentId || null;
+  }
+
   getAgentCount(sessionId) {
     const session = this.sessions.get(sessionId);
     return session ? session.agents.size : 0;
