@@ -518,7 +518,7 @@ footer {
     <div class="fc hi">
       <div class="fc-n" style="color:var(--green);">A</div>
       <h4>물리 덱</h4>
-      <p>Ulanzi D200 같은 USB 스트림 덱. 물리 버튼의 촉각 피드백으로 시선 없이도 조작할 수 있다. UlanziDeck SDK를 통해 Bridge와 통신.</p>
+      <p>Ulanzi D200 같은 USB 스트림 덱. 물리 버튼의 촉각 피드백으로 시선 없이도 조작할 수 있다. Translator Plugin이 Bridge와 UlanziStudio 사이를 연결.</p>
     </div>
     <div class="fc hi">
       <div class="fc-n" style="color:var(--green);">B</div>
@@ -538,13 +538,18 @@ footer {
   </div>
 
   <div class="arch" style="margin-top:1.5rem;line-height:1.9;font-size:10px;">                        <span class="w">Claude Code Session</span>
-                              │
+                              │ Hooks (HTTP)
                         <span class="w">Bridge Server</span> (localhost:39200)
                               │ WebSocket /ws
               ┌───────────┬───┴───────┬──────────────┐
         <span class="g">[A] 물리 덱</span>    <span class="g">[B] 브라우저</span>   <span class="a">[C] 터치 모니터</span>   <span class="a">[D] 리모트 디바이스</span>
-         USB 연결       localhost       로컬 네트워크      LAN / Wi-Fi
-       Ulanzi D200    Virtual DJ       풀스크린 웹앱    Android · 미니 PC</div>
+      Translator Plugin  localhost       로컬 네트워크      LAN / Wi-Fi
+              │         Virtual DJ       풀스크린 웹앱    Android · 미니 PC
+     WS (port 3906)
+              │
+      <span class="a">UlanziStudio App</span>
+              │ USB HID
+       <span class="a">Ulanzi D200</span></div>
 </section>
 
 <!-- HOW IT WORKS -->
@@ -762,9 +767,10 @@ footer {
                                      ├─ WsServer        (broadcast, late-join sync)
                                      └─ Static serve    → Virtual DJ
                                             │ WebSocket /ws
-                                     ┌──────┴──────┐
-                              <span class="w">Virtual DJ</span>       <span class="a">Ulanzi D200</span>
-                              (browser)        (Phase 3)
+                                     ┌──────┴──────────────────┐
+                              <span class="w">Virtual DJ</span>       <span class="a">Translator Plugin</span> (Phase 3)
+                              (browser)        ↓ WS (port 3906)
+                                          <span class="a">UlanziStudio</span> → USB → <span class="a">D200</span>
                                  │
                           [0][1][2][3][4]  ← dynamic (choices / approve-deny)
                           [5][6][7][8][9]  ← dynamic (choices, 최대 10개)
@@ -974,10 +980,12 @@ footer {
         <h4>Physical D200 + 배포</h4>
       </div>
       <div class="ml-items">
-        <span class="ml-item">Ulanzi D200 Plugin (UlanziDeck SDK)</span>
-        <span class="ml-item">npm publish (npx claude-dj)</span>
-        <span class="ml-item">GitHub 배포 + /install 검증</span>
+        <span class="ml-item">Translator Plugin (Bridge WS ↔ UlanziStudio WS)</span>
+        <span class="ml-item">키 상태 PNG 렌더링 (Canvas/SVG → base64)</span>
+        <span class="ml-item">UlanziStudio 플러그인 패키징 (manifest.json)</span>
+        <span class="ml-item">MCP wrapper — Bridge 자동구동 (POC)</span>
         <span class="ml-item">D200 물리 버튼 E2E 테스트</span>
+        <span class="ml-item">npm publish + GitHub 배포</span>
       </div>
     </div>
   </div>
