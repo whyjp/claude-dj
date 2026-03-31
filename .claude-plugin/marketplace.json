@@ -10,11 +10,7 @@
       "name": "claude-dj",
       "description": "Physical/virtual button deck for Claude Code — approve permissions, select choices, and switch sessions without terminal focus",
       "version": "0.1.0",
-      "source": {
-        "source": "git-subdir",
-        "url": "https://github.com/whyjp/claude-dj.git",
-        "path": "."
-      }
+      "source": "./"
     }
   ]
 }
