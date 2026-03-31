@@ -1,11 +1,13 @@
 {
   "name": "claude-dj-plugin",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Claude DJ plugin — hooks, skills, and bridge server",
   "type": "module",
   "dependencies": {
     "express": "^4.21.0",
     "ws": "^8.18.0"
   },
-  "engines": { "node": ">=20.0.0" }
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }

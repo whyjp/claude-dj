@@ -1,6 +1,6 @@
 {
   "name": "claude-dj",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Control Claude Code with physical buttons or browser — no terminal focus needed",
   "type": "module",
   "main": "claude-plugin/bridge/server.js",
@@ -12,11 +12,23 @@
     "stop": "node cli/index.js stop",
     "debug": "CLAUDE_DJ_DEBUG=1 node claude-plugin/bridge/server.js",
     "test": "node --test test/*.test.js",
+    "bump": "node scripts/bump-version.js",
+    "bump:patch": "node scripts/bump-version.js patch",
+    "bump:minor": "node scripts/bump-version.js minor",
+    "bump:major": "node scripts/bump-version.js major",
     "setup": "node tools/setup.js"
   },
-  "keywords": ["claude-code", "ulanzi", "d200", "hooks", "dj"],
+  "keywords": [
+    "claude-code",
+    "ulanzi",
+    "d200",
+    "hooks",
+    "dj"
+  ],
   "license": "MIT",
-  "engines": { "node": ">=20.0.0" },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "express": "^4.21.0",
     "ws": "^8.18.0"

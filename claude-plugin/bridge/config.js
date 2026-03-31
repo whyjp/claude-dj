@@ -1,5 +1,10 @@
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
 
 export const config = {
   port: parseInt(process.env.CLAUDE_DJ_PORT, 10) || 39200,
@@ -9,5 +14,5 @@ export const config = {
   wsPath: '/ws',
   apiPrefix: '/api',
   sessionIdleTimeout: parseInt(process.env.CLAUDE_DJ_IDLE_TIMEOUT, 10) || 300000, // 5 min
-  version: '0.2.0',
+  version: pkg.version,
 };

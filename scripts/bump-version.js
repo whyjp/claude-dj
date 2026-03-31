@@ -1,0 +1,49 @@
+#!/usr/bin/env node
+// Bump version across all files from claude-plugin/package.json (source of truth)
+// Usage: node scripts/bump-version.js [major|minor|patch]
+//   Without args: syncs current version to all files
+
+import { readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const root = path.join(__dirname, '..');
+
+const pkgPath = path.join(root, 'claude-plugin', 'package.json');
+const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+
+const bump = process.argv[2]; // major, minor, patch
+if (bump) {
+  const [major, minor, patch] = pkg.version.split('.').map(Number);
+  if (bump === 'major') pkg.version = `${major + 1}.0.0`;
+  else if (bump === 'minor') pkg.version = `${major}.${minor + 1}.0`;
+  else if (bump === 'patch') pkg.version = `${major}.${minor}.${patch + 1}`;
+  else { console.error('Usage: bump-version.js [major|minor|patch]'); process.exit(1); }
+  writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+}
+
+const version = pkg.version;
+console.log(`[claude-dj] Syncing version: ${version}`);
+
+// Files to update (JSON files with "version" field)
+const jsonFiles = [
+  'package.json',
+  'claude-plugin/plugin.json',
+  '.claude-plugin/plugin.json',
+  '.claude-plugin/marketplace.json',
+];
+
+for (const rel of jsonFiles) {
+  const fp = path.join(root, rel);
+  try {
+    const data = JSON.parse(readFileSync(fp, 'utf8'));
+    if (data.version) data.version = version;
+    // marketplace.json has nested plugin version
+    if (data.plugins?.[0]?.version) data.plugins[0].version = version;
+    writeFileSync(fp, JSON.stringify(data, null, 2) + '\n');
+    console.log(`  ✓ ${rel}`);
+  } catch { console.log(`  ✗ ${rel} (skipped)`); }
+}
+
+console.log(`[claude-dj] Done — version ${version}`);

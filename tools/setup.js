@@ -11,7 +11,7 @@ const MARKETPLACE_ID = 'claude-dj-marketplace';
 const PLUGIN_KEY = `${PLUGIN_NAME}@${MARKETPLACE_ID}`;
 const GITHUB_REPO = 'whyjp/claude-dj';
 const MARKETPLACE_DIR_NAME = 'whyjp-claude-dj'; // github user-repo format
-const VERSION = '0.2.0';
+const VERSION = JSON.parse(fs.readFileSync(path.join(pluginRoot, 'claude-plugin', 'package.json'), 'utf8')).version;
 
 // Also match legacy key from previous installs
 const LEGACY_KEY = 'claude-dj@local';

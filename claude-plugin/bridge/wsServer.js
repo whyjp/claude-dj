@@ -1,5 +1,6 @@
 import { WebSocketServer } from 'ws';
 import { log, warn, error } from './logger.js';
+import { config } from './config.js';
 
 export class WsServer {
   constructor() {
@@ -78,7 +79,7 @@ export class WsServer {
   sendWelcome(ws, sessions) {
     const msg = JSON.stringify({
       type: 'WELCOME',
-      version: '0.2.0',
+      version: config.version,
       sessions,
     });
     if (ws.readyState === 1) {
