@@ -11,7 +11,7 @@ Control Claude Code with physical buttons or browser — no terminal focus neede
 In a Claude Code session:
 
 ```
-/plugin marketplace add whyjp/claude-dj
+/plugin marketplace add https://github.com/whyjp/claude-dj
 /plugin install claude-dj-plugin
 ```
 
