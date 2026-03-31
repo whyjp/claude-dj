@@ -78,7 +78,7 @@ export class WsServer {
   sendWelcome(ws, sessions) {
     const msg = JSON.stringify({
       type: 'WELCOME',
-      version: '0.1.0',
+      version: '0.2.0',
       sessions,
     });
     if (ws.readyState === 1) {

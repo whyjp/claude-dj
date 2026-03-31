@@ -60,7 +60,7 @@ function connectWs(wsUrl) {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(wsUrl);
     ws.on('open', () => {
-      ws.send(JSON.stringify({ type: 'CLIENT_READY', clientType: 'test', version: '0.1.0' }));
+      ws.send(JSON.stringify({ type: 'CLIENT_READY', clientType: 'test', version: '0.2.0' }));
       resolve(ws);
     });
     ws.on('error', reject);

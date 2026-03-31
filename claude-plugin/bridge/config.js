@@ -9,5 +9,5 @@ export const config = {
   wsPath: '/ws',
   apiPrefix: '/api',
   sessionIdleTimeout: parseInt(process.env.CLAUDE_DJ_IDLE_TIMEOUT, 10) || 300000, // 5 min
-  version: '0.1.0',
+  version: '0.2.0',
 };

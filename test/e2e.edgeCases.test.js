@@ -33,7 +33,7 @@ function connectWs(wsUrl) {
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(wsUrl);
     ws.on('open', () => {
-      ws.send(JSON.stringify({ type: 'CLIENT_READY', clientType: 'test', version: '0.1.0' }));
+      ws.send(JSON.stringify({ type: 'CLIENT_READY', clientType: 'test', version: '0.2.0' }));
       resolve(ws);
     });
     ws.on('error', reject);
@@ -620,7 +620,7 @@ describe('E2E Edge Cases: Hook → Bridge → WebSocket', () => {
     const msgs = collectMessages(ws);
     await waitMs(100);
     // Send CLIENT_READY again
-    ws.send(JSON.stringify({ type: 'CLIENT_READY', clientType: 'test', version: '0.1.0' }));
+    ws.send(JSON.stringify({ type: 'CLIENT_READY', clientType: 'test', version: '0.2.0' }));
     await waitMs(200);
     const welcomes = msgs.filter((m) => m.type === 'WELCOME');
     assert.ok(welcomes.length >= 1, 'should receive at least one welcome');
