@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-import { readFileSync } from 'node:fs';
 import { spawn, execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Consume stdin (Claude Code pipes JSON to all hooks)
-try { readFileSync(0, 'utf8'); } catch {}
+// Close stdin immediately — SessionStart may or may not receive data
+process.stdin.resume();
+process.stdin.on('data', () => {});
+process.stdin.on('end', () => {});
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BRIDGE_URL = process.env.CLAUDE_DJ_URL || 'http://localhost:39200';
