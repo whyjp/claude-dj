@@ -14,9 +14,11 @@ export class SessionManager {
     const id = input.session_id;
     if (!id) throw new Error('session_id is required');
     if (!this.sessions.has(id)) {
+      const diskName = _readDiskSessionName(id);
+      const baseName = input.cwd ? path.basename(input.cwd) : 'unknown';
       this.sessions.set(id, {
         id,
-        name: `${input.cwd ? path.basename(input.cwd) : 'unknown'} (${id})`,
+        name: diskName || `${baseName} (${id.slice(0, 6)})`,
         cwd: input.cwd || '',
         state: 'IDLE',
         waitingSince: null,
@@ -309,12 +311,12 @@ export class SessionManager {
    * - Returns { pruned: [...sessionIds], alive: [...sessionIds] }
    */
   syncFromDisk() {
-    const result = { pruned: [], alive: [] };
+    const result = { pruned: [], alive: [], renamed: [] };
     let sessionsDir;
     try { sessionsDir = path.join(os.homedir(), '.claude', 'sessions'); }
     catch { return result; }
 
-    // Read all on-disk session files → Map<sessionId, pid>
+    // Read all on-disk session files → Map<sessionId, {pid, name}>
     const diskSessions = new Map();
     try {
       const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
@@ -322,7 +324,7 @@ export class SessionManager {
         try {
           const data = JSON.parse(fs.readFileSync(path.join(sessionsDir, file), 'utf8'));
           if (data.sessionId && data.pid) {
-            diskSessions.set(data.sessionId, data.pid);
+            diskSessions.set(data.sessionId, { pid: data.pid, name: data.name || null });
           }
         } catch { /* skip malformed */ }
       }
@@ -330,13 +332,18 @@ export class SessionManager {
 
     // Check each bridge session against disk state
     for (const [id, session] of this.sessions) {
-      const pid = diskSessions.get(id);
-      if (pid === undefined) {
+      const disk = diskSessions.get(id);
+      if (disk === undefined) {
         // Session not on disk at all — might be stale, let idle prune handle it
         continue;
       }
-      if (_isPidAlive(pid)) {
+      if (_isPidAlive(disk.pid)) {
         result.alive.push(id);
+        // Sync name from disk if changed
+        if (disk.name && disk.name !== session.name) {
+          session.name = disk.name;
+          result.renamed.push(id);
+        }
       } else {
         // PID dead → clean up
         if (session._permissionTimeout) {
@@ -370,6 +377,20 @@ export class SessionManager {
       return { ...rest, prompt, agents: [...agents.values()] };
     });
   }
+}
+
+function _readDiskSessionName(sessionId) {
+  try {
+    const sessionsDir = path.join(os.homedir(), '.claude', 'sessions');
+    const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
+    for (const file of files) {
+      try {
+        const data = JSON.parse(fs.readFileSync(path.join(sessionsDir, file), 'utf8'));
+        if (data.sessionId === sessionId && data.name) return data.name;
+      } catch { /* skip */ }
+    }
+  } catch { /* no sessions dir */ }
+  return null;
 }
 
 function _isPidAlive(pid) {

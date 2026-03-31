@@ -428,10 +428,14 @@ const _shutdownEnv = parseInt(process.env.CLAUDE_DJ_SHUTDOWN_TICKS, 10);
 const AUTO_SHUTDOWN_TICKS = Number.isNaN(_shutdownEnv) ? 10 : _shutdownEnv; // 10 × 30s = 5 min
 
 const syncInterval = setInterval(() => {
-  const { pruned, alive } = sm.syncFromDisk();
+  const { pruned, alive, renamed } = sm.syncFromDisk();
   if (pruned.length > 0) {
     log(`[claude-dj] Synced: removed ${pruned.length} dead session(s): ${pruned.join(', ')}`);
     ws.broadcast({ type: 'SESSION_DISCONNECTED', sessionIds: pruned, reason: 'process_exit' });
+  }
+  if (renamed.length > 0) {
+    log(`[claude-dj] Synced: renamed ${renamed.length} session(s)`);
+    ws.broadcast({ type: 'SESSIONS_UPDATE', sessions: sm.toJSON() });
   }
 
   // Auto-shutdown: no sessions + no WS clients for AUTO_SHUTDOWN_TICKS consecutive checks

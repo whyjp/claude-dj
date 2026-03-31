@@ -192,6 +192,10 @@ function _handleMessage(msg) {
       disconnectSessions(msg.sessionIds || [], msg.reason || 'process_exit');
       break;
 
+    case 'SESSIONS_UPDATE':
+      if (msg.sessions) setSessions(msg.sessions);
+      break;
+
     default:
       // Unknown message — already logged by onmessage handler
       break;
