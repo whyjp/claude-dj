@@ -13,10 +13,20 @@ try {
   const parsed = JSON.parse(input);
   const sessionId = parsed.session_id;
 
-  const res = await fetch(`${BRIDGE_URL}/api/events/${sessionId}`, {
+  // 1) Notify bridge of user prompt → transition to PROCESSING immediately
+  const notifyPromise = fetch(`${BRIDGE_URL}/api/hook/userPromptSubmit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: input,
     signal: AbortSignal.timeout(3000),
-  });
-  const { events } = await res.json();
+  }).catch(() => {});
+
+  // 2) Poll for pending deck button events (existing behavior)
+  const eventsPromise = fetch(`${BRIDGE_URL}/api/events/${sessionId}`, {
+    signal: AbortSignal.timeout(3000),
+  }).then(r => r.json()).catch(() => ({ events: [] }));
+
+  const [, { events }] = await Promise.all([notifyPromise, eventsPromise]);
 
   if (events && events.length > 0) {
     const selections = events.map((e) => e.value).join(', ');

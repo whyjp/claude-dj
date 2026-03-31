@@ -25,6 +25,16 @@ export class ButtonManager {
       ? focusedAgent.state
       : (session._permissionAgentId ? 'PROCESSING' : session.state);
 
+    // Include recent tool error for info display (auto-clears after 5s)
+    if (session.lastToolError) {
+      const age = Date.now() - session.lastToolError.timestamp;
+      if (age < 5000) {
+        base.toolError = { toolName: session.lastToolError.toolName, error: session.lastToolError.error };
+      } else {
+        session.lastToolError = null;
+      }
+    }
+
     switch (effectiveState) {
       case 'IDLE':
         return { ...base, preset: 'idle' };
@@ -33,15 +43,21 @@ export class ButtonManager {
       case 'WAITING_BINARY':
         return { ...base, preset: 'binary', prompt: session.prompt };
       case 'WAITING_CHOICE': {
-        const { choices, multiSelect, selected } = session.prompt;
+        const { choices, multiSelect, selected, questionIndex, questionCount } = session.prompt;
+        const extra = {};
+        if (questionCount > 1) {
+          extra.questionIndex = questionIndex;
+          extra.questionCount = questionCount;
+        }
         if (multiSelect) {
           return {
             ...base,
+            ...extra,
             preset: 'multiSelect',
             choices: choices.map((c) => ({ ...c, selected: selected?.has(c.index) || false })),
           };
         }
-        return { ...base, preset: 'choice', choices };
+        return { ...base, ...extra, preset: 'choice', choices };
       }
       case 'WAITING_RESPONSE':
         return { ...base, preset: 'awaiting_input' };
@@ -96,8 +112,9 @@ export class ButtonManager {
 
   static buildHookResponse(decision, isChoice, question = '') {
     if (isChoice) {
-      const answers = {};
-      if (question) answers[question] = decision.value;
+      // Multi-question: decision.answers contains all {question: answer} pairs
+      const answers = decision.answers || {};
+      if (!decision.answers && question) answers[question] = decision.value;
       return {
         hookSpecificOutput: {
           hookEventName: 'PermissionRequest',

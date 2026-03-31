@@ -199,12 +199,14 @@ export function renderLayout(msg) {
 
     case 'choice':
       if (msg.choices) {
-        // Slots 0-9 only (max 10 choices). Slot 12 is agent-switch, never used for choices.
         msg.choices.forEach((c, i) => {
           if (i < 10) _setKeyChoice(i, i, c.index, c.label);
         });
       }
       _setInfoState('WAITING_CHOICE');
+      if (msg.questionCount > 1) {
+        _setInfoQuestion(msg.questionIndex, msg.questionCount);
+      }
       break;
 
     case 'multiSelect':
@@ -222,6 +224,11 @@ export function renderLayout(msg) {
       _setKeyAwaitingInput();
       _setInfoState('WAITING_RESPONSE');
       break;
+  }
+
+  // Show tool error on info display if present
+  if (msg.toolError) {
+    _setInfoError(msg.toolError.toolName, msg.toolError.error);
   }
 
   // Update session count key (slot 10) and session name key (slot 11)
@@ -367,6 +374,31 @@ export function setConnectionOverlay(state) {
     ov.className = 'conn-overlay';
     ov.innerHTML = '<span class="conn-ico">&#x25cb;</span><span class="conn-msg">disconnected</span>';
   }
+}
+
+/** Show multi-question progress on info display */
+function _setInfoQuestion(index, count) {
+  const info = document.getElementById('infoDisplay');
+  if (!info) return;
+  info.className = 'k-info wait';
+  info.innerHTML = `
+    <span class="info-ico">📋</span>
+    <span class="info-nam">Q${(index || 0) + 1}/${count}</span>
+    <span class="info-sts">multi-question</span>
+  `;
+}
+
+/** Show tool error on info display */
+function _setInfoError(toolName, errorMsg) {
+  const info = document.getElementById('infoDisplay');
+  if (!info) return;
+  info.className = 'k-info error';
+  const shortErr = (errorMsg || 'error').slice(0, 40);
+  info.innerHTML = `
+    <span class="info-ico">⚠</span>
+    <span class="info-nam">${esc(toolName || 'Tool')}</span>
+    <span class="info-sts">${esc(shortErr)}</span>
+  `;
 }
 
 /** Update the state info bar */

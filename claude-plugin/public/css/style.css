@@ -245,6 +245,7 @@ main {
 .k-info.proc { border-color: var(--blue);  background: var(--bdim); animation: gb 2s ease-in-out infinite; }
 .k-info.wait { border-color: var(--amber); background: var(--adim); animation: ga2 1.5s ease-in-out infinite; }
 .k-info.done { border-color: var(--green); background: var(--gdim); }
+.k-info.error { border-color: var(--red); background: var(--rdim); animation: gr 1.5s ease-in-out infinite; }
 .k-info .info-ico { font-size: 28px; }
 .k-info .info-nam { font-size: 14px; font-weight: 600; color: var(--white); }
 .k-info .info-sts { font-size: 10px; color: var(--muted); letter-spacing: .06em; }

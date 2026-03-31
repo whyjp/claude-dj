@@ -108,6 +108,48 @@ function broadcastSessionLayout(session, extras) {
 
 // --- Hook Endpoints ---
 
+app.post('/api/hook/sessionStart', (req, res, next) => {
+  try {
+    const input = req.body;
+    log(`[hook/sessionStart] session=${input.session_id} source=${input.source || 'startup'}`);
+    const session = sm.handleSessionStart(input);
+    ws.broadcast({ type: 'SESSIONS_UPDATE', sessions: sm.toJSON() });
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+app.post('/api/hook/sessionEnd', (req, res, next) => {
+  try {
+    const input = req.body;
+    log(`[hook/sessionEnd] session=${input.session_id} reason=${input.reason || 'unknown'}`);
+    const session = sm.handleSessionEnd(input);
+    if (session) {
+      ws.broadcast({ type: 'SESSION_DISCONNECTED', sessionIds: [input.session_id], reason: input.reason || 'session_end' });
+    }
+    // Refresh layout for remaining sessions
+    const focus = sm.getFocusSession();
+    if (focus) {
+      broadcastSessionLayout(focus);
+    } else {
+      ws.broadcast({ type: 'ALL_DIM' });
+    }
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+app.post('/api/hook/userPromptSubmit', (req, res, next) => {
+  try {
+    const input = req.body;
+    log(`[hook/userPromptSubmit] session=${input.session_id}`);
+    const session = sm.handleUserPromptSubmit(input);
+    const focus = sm.getFocusSession();
+    if (!focus || focus.id === session.id) {
+      broadcastSessionLayout(session);
+    }
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
 app.post('/api/hook/notify', (req, res, next) => {
   try {
     const input = req.body;
@@ -128,6 +170,19 @@ app.post('/api/hook/postToolUse', (req, res, next) => {
     log(`[hook/postToolUse] session=${input.session_id} tool=${input.tool_name} errored=${input.tool_result?.errored}`);
     const session = sm.handlePostToolUse(input);
     // Only broadcast if this is the focused session
+    const focus = sm.getFocusSession();
+    if (!focus || focus.id === session.id) {
+      broadcastSessionLayout(session);
+    }
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+app.post('/api/hook/postToolUseFailure', (req, res, next) => {
+  try {
+    const input = req.body;
+    log(`[hook/postToolUseFailure] session=${input.session_id} tool=${input.tool_name} error=${(input.error || '').slice(0, 80)}`);
+    const session = sm.handlePostToolUseFailure(input);
     const focus = sm.getFocusSession();
     if (!focus || focus.id === session.id) {
       broadcastSessionLayout(session);
@@ -178,6 +233,17 @@ app.post('/api/hook/stop', (req, res, next) => { try {
 
   res.json({ ok: true });
 } catch (e) { next(e); }
+});
+
+app.post('/api/hook/stopFailure', (req, res, next) => {
+  try {
+    const input = req.body;
+    const errMsg = input.error_details || input.error?.message || 'unknown';
+    log(`[hook/stopFailure] session=${input.session_id} error=${errMsg.slice(0, 80)}`);
+    const session = sm.handleStopFailure(input);
+    broadcastSessionLayout(session);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
 });
 
 // --- Events File API ---
@@ -386,7 +452,13 @@ ws.onButtonPress = (slot, timestamp) => {
   // Log what the user actually pressed
   const label = decision.suggestion ? 'AlwaysAllow' : decision.type === 'choice' ? `choice:${decision.value}` : decision.value;
   log(`[deck→] slot=${slot} pressed="${label}" session=${focus.name}`);
-  sm.resolveWaiting(focus.id, decision);
+  const result = sm.resolveWaiting(focus.id, decision);
+
+  // Multi-question: re-broadcast layout for next question without resolving HTTP
+  if (result === 'next_question') {
+    broadcastSessionLayout(focus);
+    return;
+  }
 };
 
 ws.onAgentFocus = (agentId) => {

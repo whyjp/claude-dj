@@ -1,0 +1,307 @@
+# Protocol Accuracy Improvements — Claude Code Hook Research
+
+> Generated from Claude Code source analysis (2026-03-31, claude-code2/src)
+> Compared 27 available hooks vs 6 currently used by claude-dj.
+
+## Status Legend
+- [ ] TODO
+- [x] DONE
+- [-] WONTFIX
+
+---
+
+## Research Summary
+
+### Current Hook Coverage (6 / 27)
+
+| Hook | Usage | Type |
+|------|-------|------|
+| PreToolUse | notify (async) | fire-and-forget |
+| PostToolUse | tool result capture | fire-and-forget |
+| PermissionRequest | approve/deny + AskUserQuestion | blocking |
+| Stop | turn end, transcript choice parse | async |
+| SubagentStart | agent tracking | fire-and-forget |
+| SubagentStop | agent removal | fire-and-forget |
+
+### Key Findings from Source
+
+1. **27 hooks total** — SessionStart, SessionEnd, PostToolUseFailure, PermissionDenied, UserPromptSubmit, PreCompact, PostCompact, TeammateIdle, TaskCreated, TaskCompleted, StopFailure, Notification, Setup, Elicitation, ElicitationResult, ConfigChange, InstructionsLoaded, CwdChanged, FileChanged, WorktreeCreate, WorktreeRemove are all unused.
+
+2. **AskUserQuestion supports 1-4 questions** with `questions[]` array, each having `header`, `options[]`, `multiSelect`, `preview`. Current bridge only reads `questions[0]`.
+
+3. **PreToolUse can return permission decisions** (`permissionDecision: 'allow'|'deny'|'ask'`) — currently unused, only used as async notify.
+
+4. **Hook responses support `additionalContext`** — injected as system message to model. Currently unused.
+
+5. **SessionState is `'idle'|'running'|'requires_action'`** — Claude Code emits `session_state_changed` events. Bridge currently guesses session end via 5-min idle timeout.
+
+6. **`updatedPermissions: PermissionUpdate[]`** can be returned in PermissionRequest response — Claude Code handles persistence natively. Bridge currently writes `settings.local.json` directly.
+
+7. **Exit code 2 = blocking error** in hooks — stderr shown to model. Other exit codes are non-blocking. Currently not leveraged.
+
+8. **`asyncRewake` mode** — hook runs in background but can wake model on exit code 2 via task-notification.
+
+---
+
+## HIGH Priority — Immediate Improvements
+
+### 1. Add SessionStart hook
+- **Impact:** Session detected at creation, not at first tool call
+- **Current gap:** Bridge misses ~1-5s between session start and first PreToolUse
+- **Payload fields:** `{session_id, cwd, hook_event_name: 'SessionStart', source: 'startup'|'resume'|'clear'|'compact', agent_type?, model?}`
+- **Response fields:** `{additionalContext?, initialUserMessage?, watchPaths?}`
+- **Implementation:**
+  - [ ] Create `hooks/sessionStart.js` — POST to `/api/hook/sessionStart`
+  - [ ] Add `POST /api/hook/sessionStart` endpoint in `server.js`
+  - [ ] `sm.handleSessionStart(input)` — create session immediately with name from `cwd`
+  - [ ] Register in plugin `hooks.json` under `SessionStart`
+  - [ ] Broadcast LAYOUT with state=IDLE on session creation
+
+### 2. Add SessionEnd hook
+- **Impact:** Exact session termination — no more 5-min idle guessing
+- **Current gap:** Dead sessions linger until idle timeout or PID check (30s interval)
+- **Payload fields:** `{session_id, hook_event_name: 'SessionEnd', reason: 'clear'|'resume'|'logout'|'prompt_input_exit'|'other'}`
+- **Implementation:**
+  - [ ] Create `hooks/sessionEnd.js` — POST to `/api/hook/sessionEnd`
+  - [ ] Add `POST /api/hook/sessionEnd` endpoint in `server.js`
+  - [ ] `sm.handleSessionEnd(input)` — auto-deny pending permission, remove session, broadcast SESSION_DISCONNECTED
+  - [ ] Register in plugin `hooks.json` under `SessionEnd`
+  - [ ] Keep disk-sync as fallback for crashes (no SessionEnd fired)
+
+### 3. Add PostToolUseFailure hook
+- **Impact:** Show tool errors on D200 display immediately
+- **Current gap:** Failed tools show no visual feedback — bridge stays in PROCESSING
+- **Payload fields:** `{session_id, tool_name, tool_input, tool_use_id, error, is_interrupt?}`
+- **Implementation:**
+  - [ ] Create `hooks/postToolUseFailure.js` — POST to `/api/hook/postToolUseFailure`
+  - [ ] Add endpoint in `server.js`
+  - [ ] Show error state on info display: red border + error icon + tool name
+  - [ ] Add `.k-info.error` CSS class (red theme, similar to `.k-info.wait`)
+  - [ ] Auto-clear after 3s back to PROCESSING
+  - [ ] Register in plugin `hooks.json` under `PostToolUseFailure`
+
+### 4. Support multi-question AskUserQuestion
+- **Impact:** Handle all 1-4 questions instead of only the first
+- **Current gap:** `questions[1..3]` silently dropped, answers incomplete
+- **Payload:** `tool_input.questions[]` — each has `{question, header, options[], multiSelect, preview}`
+- **Implementation:**
+  - [ ] Update `server.js handlePermission()` — detect `questions.length > 1`
+  - [ ] Store full `questions[]` array in `session.prompt`
+  - [ ] Add `currentQuestionIndex` to prompt state
+  - [ ] On button press: record answer for current question, advance index
+  - [ ] On last question submit: build complete `answers` object, respond
+  - [ ] Update LAYOUT protocol: add `questionIndex`, `questionCount` fields
+  - [ ] Update `d200-renderer.js` — show question header + progress (e.g., "Q1/3")
+  - [ ] Update response format: `updatedInput.answers = {q1: ans1, q2: ans2, ...}`
+
+### 5. Add UserPromptSubmit hook
+- **Impact:** Instant PROCESSING transition when user types, not when first tool fires
+- **Current gap:** ~0.5-2s delay between user input and visual PROCESSING state
+- **Payload fields:** `{session_id, hook_event_name: 'UserPromptSubmit', prompt}`
+- **Response fields:** `{additionalContext?}` — can inject context before model runs
+- **Implementation:**
+  - [ ] Create `hooks/userPromptSubmit.js` — POST to `/api/hook/userPromptSubmit`
+  - [ ] Add endpoint in `server.js`
+  - [ ] Transition session from IDLE → PROCESSING immediately
+  - [ ] Clear any stale WAITING_RESPONSE state
+  - [ ] Register in plugin `hooks.json` under `UserPromptSubmit`
+
+### 6. Add StopFailure hook
+- **Impact:** Show API errors (rate limit, auth, network) on D200 immediately
+- **Current gap:** API failures invisible — session stays in PROCESSING until timeout
+- **Payload fields:** `{session_id, hook_event_name: 'StopFailure', error, error_details?, last_assistant_message?}`
+- **Implementation:**
+  - [ ] Create `hooks/stopFailure.js` — POST to `/api/hook/stopFailure`
+  - [ ] Add endpoint in `server.js`
+  - [ ] Show error on D200: red info display with error type
+  - [ ] Transition to IDLE after display (session turn ended with error)
+  - [ ] Register in plugin `hooks.json` under `StopFailure`
+
+---
+
+## MEDIUM Priority — Protocol Enhancements
+
+### 7. Use `updatedPermissions` instead of direct settings.local.json write
+- **Current:** Bridge writes always-allow rules directly to `~/.claude/settings.local.json`
+- **Better:** Return `updatedPermissions` in hook response — Claude Code persists natively
+- **Risk:** Requires testing — confirm Claude Code applies rules from PermissionRequest response
+- **Implementation:**
+  - [ ] Update `resolvePress()` in `server.js` — return `decision.updatedPermissions` array
+  - [ ] Remove `_persistAlwaysAllowRules()` function
+  - [ ] Test: verify rules applied by Claude Code on next tool call
+
+### 8. Leverage PreToolUse permission decisions
+- **Current:** PreToolUse is async notify-only
+- **Potential:** Return `permissionDecision: 'allow'` for trusted tools → skip permission dialog
+- **Use case:** Auto-approve Read/Glob/Grep in specific directories
+- **Implementation:**
+  - [ ] Make PreToolUse hook blocking (not async) with fast timeout (2s)
+  - [ ] Add configurable auto-approve rules in bridge settings
+  - [ ] Return `{hookSpecificOutput: {hookEventName: 'PreToolUse', permissionDecision: 'allow'}}` for matching rules
+  - [ ] Fallback: `permissionDecision: 'ask'` for unknown tools
+
+### 9. Inject `additionalContext` from D200 actions
+- **Current:** Button presses only resolve permission — no context to model
+- **Potential:** User notes/feedback sent as `additionalContext` in hook response
+- **Use case:** "approved with caution" or custom notes on choices
+- **Implementation:**
+  - [ ] Add optional text input on D200 permission view (long-press on approve?)
+  - [ ] Include as `additionalContext` in hook response
+  - [ ] Model receives as system-reminder in conversation
+
+### 10. Add Notification hook for D200 display
+- **Current:** Notifications (build done, test results) not shown on deck
+- **Payload:** `{session_id, message, title?, notification_type}`
+- **Implementation:**
+  - [ ] Create `hooks/notification.js`
+  - [ ] Show notification as temporary toast on info display
+  - [ ] Auto-dismiss after 5s, return to current state
+
+---
+
+## LOW Priority — Future Considerations
+
+### 11. Task progress monitoring (TaskCreated/TaskCompleted)
+- Track subagent task lists on dashboard
+- Show completion percentage per session
+- Requires new dashboard panel
+
+### 12. PreCompact/PostCompact awareness
+- Show "compacting..." animation when context is being compressed
+- Display compact summary on info display briefly
+
+### 13. TeammateIdle tracking
+- Team workflow visualization on dashboard
+- Show which teammates are active/idle
+
+### 14. Bridge control_request protocol (SDK-level)
+- Direct WebSocket integration with Claude Code SDK
+- Bypass hook HTTP overhead
+- Requires Claude Code SDK to expose control protocol publicly
+
+---
+
+## Reference: Full Hook Payload Schemas
+
+<details>
+<summary>SessionStart input</summary>
+
+```json
+{
+  "session_id": "string",
+  "transcript_path": "string",
+  "cwd": "string",
+  "hook_event_name": "SessionStart",
+  "source": "startup | resume | clear | compact",
+  "agent_type": "string?",
+  "model": "string?"
+}
+```
+</details>
+
+<details>
+<summary>SessionEnd input</summary>
+
+```json
+{
+  "session_id": "string",
+  "hook_event_name": "SessionEnd",
+  "reason": "clear | resume | logout | prompt_input_exit | other"
+}
+```
+</details>
+
+<details>
+<summary>PostToolUseFailure input</summary>
+
+```json
+{
+  "session_id": "string",
+  "tool_name": "string",
+  "tool_input": {},
+  "tool_use_id": "string",
+  "error": "string",
+  "is_interrupt": "boolean?"
+}
+```
+</details>
+
+<details>
+<summary>UserPromptSubmit input</summary>
+
+```json
+{
+  "session_id": "string",
+  "hook_event_name": "UserPromptSubmit",
+  "prompt": "string"
+}
+```
+</details>
+
+<details>
+<summary>StopFailure input</summary>
+
+```json
+{
+  "session_id": "string",
+  "hook_event_name": "StopFailure",
+  "error": {},
+  "error_details": "string?",
+  "last_assistant_message": "string?"
+}
+```
+</details>
+
+<details>
+<summary>Notification input</summary>
+
+```json
+{
+  "session_id": "string",
+  "hook_event_name": "Notification",
+  "message": "string",
+  "title": "string?",
+  "notification_type": "string"
+}
+```
+</details>
+
+<details>
+<summary>PreToolUse permission response</summary>
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "allow | deny | ask",
+    "permissionDecisionReason": "string?",
+    "updatedInput": {},
+    "additionalContext": "string?"
+  }
+}
+```
+</details>
+
+<details>
+<summary>PermissionRequest response (full)</summary>
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PermissionRequest",
+    "decision": {
+      "behavior": "allow | deny",
+      "updatedInput": {},
+      "updatedPermissions": [
+        {
+          "rule": "Bash(npm test)",
+          "type": "tool_regex",
+          "scope": "session | project"
+        }
+      ],
+      "message": "string?"
+    }
+  }
+}
+```
+</details>

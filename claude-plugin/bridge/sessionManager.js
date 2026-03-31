@@ -40,6 +40,42 @@ export class SessionManager {
     return this.sessions.size;
   }
 
+  handleSessionStart(input) {
+    const session = this.getOrCreate(input);
+    session.state = 'IDLE';
+    session.idleSince = Date.now();
+    session.startedAt = session.startedAt || Date.now();
+    return session;
+  }
+
+  handleSessionEnd(input) {
+    const session = this.sessions.get(input.session_id);
+    if (!session) return null;
+    if (session._permissionTimeout) {
+      clearTimeout(session._permissionTimeout);
+      session._permissionTimeout = null;
+    }
+    if (session.respondFn) {
+      try { session.respondFn({ type: 'binary', value: 'deny' }); } catch { /* already sent */ }
+      session.respondFn = null;
+    }
+    this.sessions.delete(input.session_id);
+    if (this.focusSessionId === input.session_id) {
+      this.focusSessionId = null;
+      this.focusAgentId = null;
+    }
+    return session;
+  }
+
+  handleUserPromptSubmit(input) {
+    const session = this.getOrCreate(input);
+    session.state = 'PROCESSING';
+    session.prompt = null;
+    session.waitingSince = null;
+    session.idleSince = null;
+    return session;
+  }
+
   handleSubagentStart(input) {
     const session = this.getOrCreate(input);
     session.agents.set(input.agent_id, {
@@ -76,26 +112,62 @@ export class SessionManager {
     const isChoice = input.tool_name === 'AskUserQuestion';
 
     if (isChoice) {
-      // AskUserQuestion: options can be at tool_input.options or tool_input.questions[0].options
-      const options = input.tool_input?.options
-        || input.tool_input?.questions?.[0]?.options
-        || [];
-      const question = input.tool_input?.question
-        || input.tool_input?.questions?.[0]?.question
-        || '';
-      const multiSelect = !!(input.tool_input?.multiSelect
-        || input.tool_input?.questions?.[0]?.multiSelect);
-      session.state = 'WAITING_CHOICE';
-      session.prompt = {
-        type: 'CHOICE',
-        question,
-        multiSelect,
-        selected: new Set(), // tracks toggled indices for multiSelect
-        choices: options.map((o, i) => ({
-          index: i + 1,
-          label: o.label || o.description || `Option ${i + 1}`,
-        })),
-      };
+      // AskUserQuestion: supports 1-4 questions via questions[] array
+      const questions = input.tool_input?.questions || [];
+      if (questions.length > 1) {
+        // Multi-question mode: store all questions, start at index 0
+        session.state = 'WAITING_CHOICE';
+        session.prompt = {
+          type: 'CHOICE',
+          questionIndex: 0,
+          questionCount: questions.length,
+          questions: questions.map((q) => ({
+            question: q.question || '',
+            header: q.header || '',
+            multiSelect: !!q.multiSelect,
+            options: (q.options || []).map((o, i) => ({
+              index: i + 1,
+              label: o.label || o.description || `Option ${i + 1}`,
+            })),
+          })),
+          answers: {}, // accumulates {question: answer} per question
+          // Current question view fields (for layout compatibility)
+          ...(() => {
+            const q = questions[0];
+            const options = q.options || [];
+            return {
+              question: q.question || '',
+              multiSelect: !!q.multiSelect,
+              selected: new Set(),
+              choices: options.map((o, i) => ({
+                index: i + 1,
+                label: o.label || o.description || `Option ${i + 1}`,
+              })),
+            };
+          })(),
+        };
+      } else {
+        // Single question (original behavior)
+        const options = input.tool_input?.options
+          || questions[0]?.options
+          || [];
+        const question = input.tool_input?.question
+          || questions[0]?.question
+          || '';
+        const multiSelect = !!(input.tool_input?.multiSelect
+          || questions[0]?.multiSelect);
+        session.state = 'WAITING_CHOICE';
+        session.prompt = {
+          type: 'CHOICE',
+          question,
+          multiSelect,
+          selected: new Set(),
+          choices: options.map((o, i) => ({
+            index: i + 1,
+            label: o.label || o.description || `Option ${i + 1}`,
+          })),
+        };
+      }
     } else {
       session.state = 'WAITING_BINARY';
       const suggestions = Array.isArray(input.permission_suggestions) ? input.permission_suggestions : [];
@@ -115,6 +187,21 @@ export class SessionManager {
       session.agents.get(input.agent_id).state = isChoice ? 'WAITING_CHOICE' : 'WAITING_BINARY';
     }
 
+    return session;
+  }
+
+  handlePostToolUseFailure(input) {
+    const session = this.getOrCreate(input);
+    if (input.agent_id && session.agents.has(input.agent_id)) {
+      session.agents.get(input.agent_id).state = 'PROCESSING';
+      return session;
+    }
+    session.state = 'PROCESSING';
+    session.lastToolError = {
+      toolName: input.tool_name,
+      error: input.error || 'unknown error',
+      timestamp: Date.now(),
+    };
     return session;
   }
 
@@ -142,6 +229,20 @@ export class SessionManager {
     session.state = 'WAITING_RESPONSE';
     session.prompt = { type: 'RESPONSE' };
     session.waitingSince = Date.now();
+    return session;
+  }
+
+  handleStopFailure(input) {
+    const session = this.getOrCreate(input);
+    session.state = 'IDLE';
+    session.prompt = null;
+    session.waitingSince = null;
+    session.idleSince = Date.now();
+    session.lastToolError = {
+      toolName: 'API',
+      error: input.error_details || input.error?.message || 'API error',
+      timestamp: Date.now(),
+    };
     return session;
   }
 
@@ -194,6 +295,30 @@ export class SessionManager {
       warn(`[resolve] session not found: ${sessionId}`);
       return false;
     }
+
+    // Multi-question: record answer and advance to next question
+    if (session.prompt?.questionCount > 1 && decision.type === 'choice') {
+      const p = session.prompt;
+      const qi = p.questionIndex;
+      const currentQ = p.questions[qi];
+      p.answers[currentQ.question] = decision.value;
+      log(`[resolve] ${session.name} → Q${qi + 1}/${p.questionCount} answer=${decision.value}`);
+
+      const nextQi = qi + 1;
+      if (nextQi < p.questionCount) {
+        // Advance to next question — keep state as WAITING_CHOICE
+        const nextQ = p.questions[nextQi];
+        p.questionIndex = nextQi;
+        p.question = nextQ.question;
+        p.multiSelect = nextQ.multiSelect;
+        p.selected = new Set();
+        p.choices = nextQ.options;
+        return 'next_question';
+      }
+      // Last question — build combined answer and resolve
+      decision = { type: 'choice', value: Object.values(p.answers).join(','), answers: p.answers };
+    }
+
     // Transition state BEFORE calling respondFn so broadcast reflects new state
     session.state = 'PROCESSING';
     session.prompt = null;
