@@ -1,3 +1,5 @@
+🌐 [English](README.md) | [한국어](README.ko.md) | [中文](README.zh.md)
+
 # Claude DJ
 
 Control Claude Code with physical buttons or browser — no terminal focus needed.
