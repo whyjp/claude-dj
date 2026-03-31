@@ -110,6 +110,7 @@ main {
   padding: 20px 18px 14px; width: 100%; max-width: 760px;
   box-shadow: 0 0 0 1px #0d0d1e, 0 14px 50px rgba(0,0,0,.8);
   position: relative;
+  container-type: inline-size; container-name: d200;
 }
 .d200::before {
   content: 'ULANZI D200';
@@ -486,6 +487,7 @@ body.mini main { grid-template-columns: 1fr; }
 body.mini .dev-panel { border-right: none; }
 body.mini .dev-hdr { display: none; }
 body.mini .state-info { display: none; }
+body.mini .d200-wrap { padding: 10px 12px; gap: 8px; }
 
 /* ── MINI AGENT TAB BAR ── */
 .mini-agent-bar { display: none; }
@@ -516,3 +518,12 @@ body.mini .mini-agent-bar {
   cursor: pointer; transition: all .15s;
 }
 .btn-mini:hover { color: var(--white); border-color: var(--white); }
+
+/* ── K-INFO COMPACT (small container) ── */
+@container d200 (max-width: 480px) {
+  .k-info .info-ico { display: none; }
+  .k-info .info-nam { font-size: 11px; }
+  .k-info .info-sts { font-size: 8px; }
+  .k-info { gap: 1px; padding: 3px; }
+  .k-info::before { display: none; }
+}
