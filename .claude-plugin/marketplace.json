@@ -1,13 +1,13 @@
 {
   "schema_version": "1",
-  "name": "claude-dj",
+  "name": "claude-dj-marketplace",
   "description": "Control Claude Code with physical buttons or browser deck",
   "owner": {
     "name": "whyjp"
   },
   "plugins": [
     {
-      "name": "claude-dj",
+      "name": "claude-dj-plugin",
       "description": "Physical/virtual button deck for Claude Code — approve permissions, select choices, and switch sessions without terminal focus",
       "version": "0.1.0",
       "source": {
