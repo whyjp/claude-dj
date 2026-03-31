@@ -1,8 +1,8 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { SessionManager } from '../bridge/sessionManager.js';
-import { ButtonManager } from '../bridge/buttonManager.js';
-import { parseFencedChoices, parseRegexChoices } from '../hooks/choiceParser.js';
+import { SessionManager } from '../claude-plugin/bridge/sessionManager.js';
+import { ButtonManager } from '../claude-plugin/bridge/buttonManager.js';
+import { parseFencedChoices, parseRegexChoices } from '../claude-plugin/hooks/choiceParser.js';
 
 // ---------------------------------------------------------------------------
 // SessionManager edge cases

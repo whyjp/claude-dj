@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { config } from '../bridge/config.js';
+import { config } from '../claude-plugin/bridge/config.js';
 
 describe('config', () => {
   it('has default port 39200', () => {

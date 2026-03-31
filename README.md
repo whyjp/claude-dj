@@ -283,20 +283,21 @@ Claude Code hooks are **short-lived child processes** — each hook invocation s
 
 ```
 .claude-plugin/
-├─ plugin.json              Plugin metadata
-├─ marketplace.json         Distribution metadata
-hooks/
-├─ hooks.json               8 hook definitions (auto-discovered by Claude Code)
-├─ sessionStart.js          SessionStart → auto-start bridge + display dashboard URL
-├─ permission.js            PermissionRequest → HTTP POST (blocking)
-├─ notify.js                PreToolUse → HTTP POST (async)
-├─ postToolUse.js           PostToolUse → HTTP POST (async)
-├─ stop.js                  Stop → HTTP POST (async, choice parsing)
-├─ subagentStart.js         SubagentStart → HTTP POST (async)
-├─ subagentStop.js          SubagentStop → HTTP POST (async)
-└─ userPrompt.js            UserPromptSubmit → GET events (poll)
-skills/
-└─ choice-format/SKILL.md   Injected into Claude: "use AskUserQuestion for all choices"
+├─ marketplace.json              Distribution metadata (git-subdir → claude-plugin/)
+claude-plugin/
+├─ plugin.json                   Plugin metadata
+├─ hooks/
+│  ├─ hooks.json                 8 hook definitions (auto-discovered by Claude Code)
+│  ├─ sessionStart.js            SessionStart → auto-start bridge + display dashboard URL
+│  ├─ permission.js              PermissionRequest → HTTP POST (blocking)
+│  ├─ notify.js                  PreToolUse → HTTP POST (async)
+│  ├─ postToolUse.js             PostToolUse → HTTP POST (async)
+│  ├─ stop.js                    Stop → HTTP POST (async, choice parsing)
+│  ├─ subagentStart.js           SubagentStart → HTTP POST (async)
+│  ├─ subagentStop.js            SubagentStop → HTTP POST (async)
+│  └─ userPrompt.js              UserPromptSubmit → GET events (poll)
+└─ skills/
+   └─ choice-format/SKILL.md     Injected into Claude: "use AskUserQuestion for all choices"
 ```
 
 ## Deck Layout

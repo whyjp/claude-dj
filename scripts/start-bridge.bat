@@ -32,7 +32,7 @@ if defined CLAUDE_DJ_DEBUG (
 echo [claude-dj] Press Ctrl+C to stop
 echo.
 
-node bridge\server.js
+node claude-plugin\bridge\server.js
 
 popd
 endlocal

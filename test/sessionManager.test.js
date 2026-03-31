@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { SessionManager } from '../bridge/sessionManager.js';
+import { SessionManager } from '../claude-plugin/bridge/sessionManager.js';
 
 describe('SessionManager', () => {
   let sm;

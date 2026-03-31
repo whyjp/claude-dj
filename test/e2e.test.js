@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const hooksDir = path.resolve(__dirname, '..', 'hooks');
+const hooksDir = path.resolve(__dirname, '..', 'claude-plugin', 'hooks');
 const PORT = 39298;
 
 /**
@@ -82,7 +82,7 @@ describe('E2E: Hook → Bridge → WebSocket', () => {
 
   before(async () => {
     process.env.CLAUDE_DJ_PORT = String(PORT);
-    const mod = await import('../bridge/server.js');
+    const mod = await import('../claude-plugin/bridge/server.js');
     server = mod.server;
     pruneInterval = mod.pruneInterval;
     syncInterval = mod.syncInterval;

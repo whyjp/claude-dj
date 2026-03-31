@@ -35,4 +35,4 @@ fi
 echo "[claude-dj] Press Ctrl+C to stop"
 echo ""
 
-exec node bridge/server.js
+exec node claude-plugin/bridge/server.js

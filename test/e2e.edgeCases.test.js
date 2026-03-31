@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const hooksDir = path.resolve(__dirname, '..', 'hooks');
+const hooksDir = path.resolve(__dirname, '..', 'claude-plugin', 'hooks');
 const PORT = 39296;
 
 // --- Helpers (same pattern as e2e.test.js) ---
@@ -84,7 +84,7 @@ describe('E2E Edge Cases: Hook → Bridge → WebSocket', () => {
   before(async () => {
     process.env.CLAUDE_DJ_PORT = String(PORT);
     process.env.CLAUDE_DJ_BUTTON_TIMEOUT = '800'; // fast timeout for tests
-    const mod = await import('../bridge/server.js');
+    const mod = await import('../claude-plugin/bridge/server.js');
     server = mod.server;
     pruneInterval = mod.pruneInterval;
     syncInterval = mod.syncInterval;
@@ -512,7 +512,7 @@ describe('E2E Edge Cases: Hook → Bridge → WebSocket', () => {
   it('userPrompt.js injects deck button selections as additionalContext', async () => {
     const sessionId = 'edge-prompt-1';
     // Write a fake event file
-    const eventsDir = (await import('../bridge/config.js')).config.eventsDir;
+    const eventsDir = (await import('../claude-plugin/bridge/config.js')).config.eventsDir;
     const fs = (await import('node:fs')).default;
     const eventFile = `${eventsDir}/${sessionId}.jsonl`;
     fs.mkdirSync(eventsDir, { recursive: true });

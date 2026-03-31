@@ -9,7 +9,7 @@ describe('E2E: Subagent hooks', () => {
 
   before(async () => {
     process.env.CLAUDE_DJ_PORT = String(PORT);
-    const mod = await import('../bridge/server.js');
+    const mod = await import('../claude-plugin/bridge/server.js');
     server = mod.server;
     pruneInterval = mod.pruneInterval;
     syncInterval = mod.syncInterval;

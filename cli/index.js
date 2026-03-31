@@ -48,7 +48,7 @@ switch (command) {
   }
   default: {
     // Default: start bridge
-    const server = path.join(__dirname, '..', 'bridge', 'server.js');
+    const server = path.join(__dirname, '..', 'claude-plugin', 'bridge', 'server.js');
     const child = spawn(process.execPath, [server], { stdio: 'inherit' });
     child.on('exit', (code) => process.exit(code || 0));
   }

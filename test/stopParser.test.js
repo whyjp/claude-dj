@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseFencedChoices, parseRegexChoices } from '../hooks/choiceParser.js';
+import { parseFencedChoices, parseRegexChoices } from '../claude-plugin/hooks/choiceParser.js';
 
 describe('parseFencedChoices', () => {
   it('parses numeric choices from fence', () => {

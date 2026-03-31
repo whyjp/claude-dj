@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "description": "Control Claude Code with physical buttons or browser — no terminal focus needed",
   "type": "module",
-  "main": "bridge/server.js",
+  "main": "claude-plugin/bridge/server.js",
   "bin": {
     "claude-dj": "./cli/index.js"
   },
   "scripts": {
-    "start": "node bridge/server.js",
+    "start": "node claude-plugin/bridge/server.js",
     "stop": "node cli/index.js stop",
-    "debug": "CLAUDE_DJ_DEBUG=1 node bridge/server.js",
+    "debug": "CLAUDE_DJ_DEBUG=1 node claude-plugin/bridge/server.js",
     "test": "node --test test/*.test.js",
     "setup": "node tools/setup.js"
   },
