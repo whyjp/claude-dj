@@ -15,11 +15,12 @@ export class SessionManager {
     if (!id) throw new Error('session_id is required');
     if (!this.sessions.has(id)) {
       const disk = _findDiskSession(id, input.cwd);
-      const baseName = input.cwd ? path.basename(input.cwd) : 'unknown';
+      const baseName = input.cwd ? path.basename(input.cwd) : 'session';
+      const defaultName = disk?.name || this._nextIndexedName(baseName);
       this.sessions.set(id, {
         id,
         _diskPid: disk?.pid || null,
-        name: disk?.name || `${baseName} (${id.slice(0, 6)})`,
+        name: defaultName,
         cwd: input.cwd || '',
         state: 'IDLE',
         waitingSince: null,
@@ -46,6 +47,17 @@ export class SessionManager {
 
   get(id) {
     return this.sessions.get(id);
+  }
+
+  /** Generate indexed default name: baseName[0], baseName[1], ... */
+  _nextIndexedName(baseName) {
+    let maxIdx = -1;
+    for (const s of this.sessions.values()) {
+      const m = s.name.match(new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\[(\\d+)\\]$`));
+      if (m) maxIdx = Math.max(maxIdx, parseInt(m[1], 10));
+      else if (s.name === baseName) maxIdx = Math.max(maxIdx, 0);
+    }
+    return maxIdx < 0 ? baseName : `${baseName}[${maxIdx + 1}]`;
   }
 
   get sessionCount() {
