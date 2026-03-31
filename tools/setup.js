@@ -94,6 +94,16 @@ export async function install({ global = true } = {}) {
   settings.enabledPlugins[PLUGIN_KEY] = true;
   writeJSON(settingsPath, settings);
 
+  // 5. Install global slash commands (/bridge-start, /bridge-stop)
+  const commandsDir = path.join(claudeDir, 'commands');
+  fs.mkdirSync(commandsDir, { recursive: true });
+  const srcCommandsDir = path.join(pluginRoot, 'claude-plugin', 'commands');
+  if (fs.existsSync(srcCommandsDir)) {
+    for (const f of fs.readdirSync(srcCommandsDir).filter(f => f.endsWith('.md'))) {
+      fs.copyFileSync(path.join(srcCommandsDir, f), path.join(commandsDir, f));
+    }
+  }
+
   const scope = global ? 'GLOBAL' : 'PROJECT';
   console.log(`[claude-dj] Plugin installed — ${scope}`);
   console.log(`  Key:     ${PLUGIN_KEY}`);
@@ -101,6 +111,7 @@ export async function install({ global = true } = {}) {
   console.log(`  Repo:    github:${GITHUB_REPO}`);
   console.log(`  Hooks:   8 (sessionStart, permission, notify, postToolUse, stop, userPrompt, subagentStart, subagentStop)`);
   console.log(`  Skills:  choice-format`);
+  console.log(`  Commands: /cdj:bridge-start, /cdj:bridge-stop`);
   console.log(``);
   console.log(`  New Claude sessions will auto-load claude-dj.`);
   console.log(`  Other machines: /install github:${GITHUB_REPO}`);
@@ -179,9 +190,16 @@ export async function uninstall({ global = true } = {}) {
     }
   }
 
+  // 7. Remove global slash commands
+  const commandsDir = path.join(claudeDir, 'commands');
+  for (const f of ['cdj:bridge-start.md', 'cdj:bridge-stop.md']) {
+    const cmdPath = path.join(commandsDir, f);
+    if (fs.existsSync(cmdPath)) fs.unlinkSync(cmdPath);
+  }
+
   const scope = global ? 'GLOBAL' : 'PROJECT';
   console.log(`[claude-dj] Plugin uninstalled — ${scope}`);
-  console.log(`  Removed: plugin, marketplace, hooks, cache, bridge stopped`);
+  console.log(`  Removed: plugin, marketplace, hooks, commands, cache, bridge stopped`);
 }
 
 /**
