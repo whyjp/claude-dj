@@ -6,12 +6,12 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pluginRoot = path.resolve(__dirname, '..');
 
-const PLUGIN_NAME = 'claude-dj';
-const MARKETPLACE_ID = 'claude-dj';
+const PLUGIN_NAME = 'claude-dj-plugin';
+const MARKETPLACE_ID = 'claude-dj-marketplace';
 const PLUGIN_KEY = `${PLUGIN_NAME}@${MARKETPLACE_ID}`;
 const GITHUB_REPO = 'whyjp/claude-dj';
 const MARKETPLACE_DIR_NAME = 'whyjp-claude-dj'; // github user-repo format
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 
 // Also match legacy key from previous installs
 const LEGACY_KEY = 'claude-dj@local';
@@ -110,6 +110,13 @@ export async function install({ global = true } = {}) {
  * Uninstall claude-dj plugin completely.
  */
 export async function uninstall({ global = true } = {}) {
+  // Stop running bridge first
+  const port = process.env.CLAUDE_DJ_PORT || 39200;
+  try {
+    const res = await fetch(`http://localhost:${port}/api/shutdown`, { method: 'POST', signal: AbortSignal.timeout(3000) });
+    if (res.ok) console.log(`[claude-dj] Bridge stopped (port ${port})`);
+  } catch { /* bridge not running — fine */ }
+
   const claudeDir = getClaudeDir();
   const pluginsDir = path.join(claudeDir, 'plugins');
   const installedPath = path.join(pluginsDir, 'installed_plugins.json');
@@ -164,15 +171,17 @@ export async function uninstall({ global = true } = {}) {
   }
   if (settings) writeJSON(settingsPath, settings);
 
-  // 6. Remove cache
-  const cacheDir = path.join(pluginsDir, 'cache', MARKETPLACE_ID);
-  if (fs.existsSync(cacheDir)) {
-    fs.rmSync(cacheDir, { recursive: true, force: true });
+  // 6. Remove cache (current + legacy names)
+  for (const name of [MARKETPLACE_ID, 'claude-dj']) {
+    const cacheDir = path.join(pluginsDir, 'cache', name);
+    if (fs.existsSync(cacheDir)) {
+      fs.rmSync(cacheDir, { recursive: true, force: true });
+    }
   }
 
   const scope = global ? 'GLOBAL' : 'PROJECT';
   console.log(`[claude-dj] Plugin uninstalled — ${scope}`);
-  console.log(`  Removed: plugin, marketplace, hooks, cache`);
+  console.log(`  Removed: plugin, marketplace, hooks, cache, bridge stopped`);
 }
 
 /**
