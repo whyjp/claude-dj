@@ -235,6 +235,32 @@ app.post('/api/hook/stop', (req, res, next) => { try {
 } catch (e) { next(e); }
 });
 
+app.post('/api/hook/taskEvent', (req, res, next) => {
+  try {
+    const input = req.body;
+    const event = input.hook_event_name || '?';
+    log(`[hook/task] session=${input.session_id} event=${event} task="${input.task_subject || '?'}" id=${input.task_id || '?'}`);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+app.post('/api/hook/compact', (req, res, next) => {
+  try {
+    const input = req.body;
+    const event = input.hook_event_name || '?';
+    log(`[hook/compact] session=${input.session_id} event=${event} trigger=${input.trigger || '?'}`);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+app.post('/api/hook/teammateIdle', (req, res, next) => {
+  try {
+    const input = req.body;
+    log(`[hook/teammateIdle] session=${input.session_id} teammate=${input.teammate_name || '?'} team=${input.team_name || '?'}`);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
 app.post('/api/hook/notification', (req, res, next) => {
   try {
     const input = req.body;

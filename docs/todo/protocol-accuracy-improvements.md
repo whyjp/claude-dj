@@ -165,18 +165,17 @@
 
 ## LOW Priority — Future Considerations
 
-### 11. Task progress monitoring (TaskCreated/TaskCompleted)
-- Track subagent task lists on dashboard
-- Show completion percentage per session
-- Requires new dashboard panel
+### 11. Task progress monitoring (TaskCreated/TaskCompleted) — DONE (log only)
+- [x] Hook scripts + bridge endpoint — log task events
+- [ ] Future: dashboard panel with task list and completion tracking
 
-### 12. PreCompact/PostCompact awareness
-- Show "compacting..." animation when context is being compressed
-- Display compact summary on info display briefly
+### 12. PreCompact/PostCompact awareness — DONE (log only)
+- [x] Hook scripts + bridge endpoint — log compaction events
+- [ ] Future: show "compacting..." animation on D200
 
-### 13. TeammateIdle tracking
-- Team workflow visualization on dashboard
-- Show which teammates are active/idle
+### 13. TeammateIdle tracking — DONE (log only)
+- [x] Hook script + bridge endpoint — log teammate idle events
+- [ ] Future: team workflow visualization on dashboard
 
 ### 14. Bridge control_request protocol (SDK-level)
 - Direct WebSocket integration with Claude Code SDK
