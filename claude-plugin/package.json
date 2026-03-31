@@ -1,6 +1,6 @@
 {
   "name": "claude-dj-plugin",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Claude DJ plugin — hooks, skills, and bridge server",
   "type": "module",
   "dependencies": {

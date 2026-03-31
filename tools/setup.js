@@ -111,7 +111,7 @@ export async function install({ global = true } = {}) {
   console.log(`  Repo:    github:${GITHUB_REPO}`);
   console.log(`  Hooks:   8 (sessionStart, permission, notify, postToolUse, stop, userPrompt, subagentStart, subagentStop)`);
   console.log(`  Skills:  choice-format`);
-  console.log(`  Commands: /cdj-bridge-start, /cdj-bridge-stop`);
+  console.log(`  Commands: /bridge-start, /bridge-stop`);
   console.log(``);
   console.log(`  New Claude sessions will auto-load claude-dj.`);
   console.log(`  Other machines: /install github:${GITHUB_REPO}`);
@@ -192,7 +192,7 @@ export async function uninstall({ global = true } = {}) {
 
   // 7. Remove global slash commands
   const commandsDir = path.join(claudeDir, 'commands');
-  for (const f of ['cdj-bridge-start.md', 'cdj-bridge-stop.md']) {
+  for (const f of ['bridge-start.md', 'bridge-stop.md']) {
     const cmdPath = path.join(commandsDir, f);
     if (fs.existsSync(cmdPath)) fs.unlinkSync(cmdPath);
   }
