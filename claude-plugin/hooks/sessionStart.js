@@ -13,7 +13,21 @@ async function isRunning() {
   } catch { return false; }
 }
 
+async function ensureDeps() {
+  const pluginRoot = path.join(__dirname, '..');
+  const nmPath = path.join(pluginRoot, 'node_modules', 'express');
+  try { await import('node:fs').then(fs => fs.default.statSync(nmPath)); return; } catch {}
+  // npm install in plugin root
+  const npm = spawn('npm', ['install', '--omit=dev'], {
+    cwd: pluginRoot,
+    stdio: 'ignore',
+    shell: true,
+  });
+  await new Promise((resolve) => npm.on('close', resolve));
+}
+
 async function startBridge() {
+  await ensureDeps();
   const serverPath = path.join(__dirname, '..', 'bridge', 'server.js');
   const child = spawn(process.execPath, [serverPath], {
     detached: true,
