@@ -20,21 +20,21 @@
 
 ### 8. No authentication on `/api/shutdown`
 - **Location:** `server.js:47`
-- **Problem:** Any local process can POST to `/api/shutdown` and kill the bridge. Localhost-only mitigates risk, but a simple shared token would prevent accidental kills.
-- **Fix:** Generate a random token at startup, require it as `Authorization` header on `/api/shutdown`.
-- **Status:** [ ]
+- **Problem:** Any local process can POST to `/api/shutdown` and kill the bridge. Localhost-only mitigates risk.
+- **Fix:** N/A — localhost-only API, auth token adds friction without meaningful security benefit.
+- **Status:** [-] WONTFIX
 
 ### 9. Duplicate `package.json`
 - **Location:** root `package.json` + `claude-plugin/package.json`
 - **Problem:** Both declare identical dependencies (express, ws). Version drift risk when updating only one.
-- **Fix:** Single source of truth — root package.json owns deps, claude-plugin references via relative path or workspace.
-- **Status:** [ ]
+- **Fix:** N/A — dual package.json is by design (plugin distribution requires standalone package.json). `bump-version.js` syncs versions. Only 2 deps that rarely change.
+- **Status:** [-] WONTFIX — accepted design
 
 ### 10. No structured logging
 - **Location:** `logger.js`
 - **Problem:** Human-readable text only. No JSON logging for automated analysis (error rates, latency percentiles).
-- **Fix:** Add optional JSON mode via `CLAUDE_DJ_LOG_FORMAT=json` env var.
-- **Status:** [ ]
+- **Fix:** Added `CLAUDE_DJ_LOG_FORMAT=json` env var — outputs `{"ts","level","msg"}` to both console and file.
+- **Status:** [x] DONE
 
 ---
 
@@ -49,8 +49,8 @@
 ### 12. No rate limiting
 - **Location:** `server.js`
 - **Problem:** No hook flood protection. Runaway hook could saturate the bridge.
-- **Fix:** Simple in-memory rate limiter (e.g., 100 req/s per session).
-- **Status:** [ ]
+- **Fix:** Added per-session sliding window rate limiter (100 req/s, 1s window). Returns 429 on excess.
+- **Status:** [x] DONE
 
 ### 13. `cycleFocus` Map iteration order
 - **Location:** `sessionManager.js:262-274`
@@ -67,8 +67,8 @@
 ### 15. No ESLint/Biome config
 - **Location:** repo root
 - **Problem:** Style consistency maintained by convention only. No automated enforcement.
-- **Fix:** Add minimal ESLint or Biome config.
-- **Status:** [ ]
+- **Fix:** N/A — small codebase (~2,200 LOC) with consistent conventions. Tooling overhead not justified.
+- **Status:** [-] WONTFIX
 
 ### 16. `CLAUDE_DJ_SHUTDOWN_TICKS` still uses `parseInt || default`
 - **Location:** `server.js:383`

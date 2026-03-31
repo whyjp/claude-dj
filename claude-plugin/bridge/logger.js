@@ -18,6 +18,7 @@ const LOG_DIR = path.join(__dirname, '..', 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'bridge.log');
 
 const DEBUG = !!(process.env.CLAUDE_DJ_DEBUG || process.env.DEBUG);
+const JSON_FORMAT = process.env.CLAUDE_DJ_LOG_FORMAT === 'json';
 
 const MAX_LOG_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -48,6 +49,9 @@ if (DEBUG) {
 function _fmt(level, args) {
   const ts = new Date().toISOString().slice(11, 23); // HH:mm:ss.SSS
   const msg = args.map(a => typeof a === 'string' ? a : JSON.stringify(a)).join(' ');
+  if (JSON_FORMAT) {
+    return JSON.stringify({ ts: new Date().toISOString(), level: level.trim(), msg });
+  }
   return `${ts} ${level} ${msg}`;
 }
 
@@ -56,16 +60,19 @@ function _write(line) {
 }
 
 export function log(...args) {
-  console.log(...args);
-  _write(_fmt('INFO ', args));
+  const line = _fmt('INFO ', args);
+  JSON_FORMAT ? console.log(line) : console.log(...args);
+  _write(line);
 }
 
 export function warn(...args) {
-  console.warn(...args);
-  _write(_fmt('WARN ', args));
+  const line = _fmt('WARN ', args);
+  JSON_FORMAT ? console.warn(line) : console.warn(...args);
+  _write(line);
 }
 
 export function error(...args) {
-  console.error(...args);
-  _write(_fmt('ERROR', args));
+  const line = _fmt('ERROR', args);
+  JSON_FORMAT ? console.error(line) : console.error(...args);
+  _write(line);
 }

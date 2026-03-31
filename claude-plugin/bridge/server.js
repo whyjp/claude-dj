@@ -40,7 +40,26 @@ function validateHookInput(req, res, next) {
   }
   next();
 }
+// Simple per-session rate limiter (100 req/s sliding window)
+const _rateBuckets = new Map();
+const RATE_LIMIT = 100;
+const RATE_WINDOW = 1000;
+function rateLimitHook(req, res, next) {
+  const sid = req.body?.session_id;
+  if (!sid) return next();
+  const now = Date.now();
+  let bucket = _rateBuckets.get(sid);
+  if (!bucket) { bucket = { count: 0, resetAt: now + RATE_WINDOW }; _rateBuckets.set(sid, bucket); }
+  if (now > bucket.resetAt) { bucket.count = 0; bucket.resetAt = now + RATE_WINDOW; }
+  if (++bucket.count > RATE_LIMIT) {
+    warn(`[ratelimit] session=${sid} exceeded ${RATE_LIMIT} req/s`);
+    return res.status(429).json({ error: 'rate limit exceeded' });
+  }
+  next();
+}
+
 app.post('/api/hook/*', validateHookInput);
+app.post('/api/hook/*', rateLimitHook);
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Landing page served at /landing for local debugging (source: repo root index.html)
