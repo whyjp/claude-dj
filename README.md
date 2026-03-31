@@ -6,12 +6,15 @@ Control Claude Code with physical buttons or browser — no terminal focus neede
 
 ## Quick Start
 
-### 1. Install as Plugin
+### 1. Install Plugin
 
-```bash
-claude-dj install          # registers hooks + skills globally
-claude-dj status           # verify installation
+In Claude Code, run:
+
 ```
+/install-plugin https://github.com/whyjp/claude-dj
+```
+
+This registers hooks + skills automatically.
 
 ### 2. Start the Bridge
 
@@ -32,6 +35,16 @@ claude                     # hooks + skills auto-loaded
 ```
 
 Claude now uses the deck for all permission dialogs and choice selections. No terminal focus needed.
+
+## Manual Installation
+
+```bash
+git clone https://github.com/whyjp/claude-dj.git
+cd claude-dj
+npm install
+npx claude-dj install      # registers hooks + skills globally
+npx claude-dj status       # verify installation
+```
 
 ## How Choice Processing Works
 
