@@ -226,9 +226,9 @@ export function renderLayout(msg) {
       break;
   }
 
-  // Show tool error on info display if present
+  // Show tool error as red pulse on slots 0-9
   if (msg.toolError) {
-    _setInfoError(msg.toolError.toolName, msg.toolError.error);
+    _setErrorPulse(msg.toolError.toolName);
   }
 
   // Update session count key (slot 10) and session name key (slot 11)
@@ -388,17 +388,20 @@ function _setInfoQuestion(index, count) {
   `;
 }
 
-/** Show tool error on info display */
-function _setInfoError(toolName, errorMsg) {
-  const info = document.getElementById('infoDisplay');
-  if (!info) return;
-  info.className = 'k-info error';
-  const shortErr = (errorMsg || 'error').slice(0, 40);
-  info.innerHTML = `
-    <span class="info-ico">⚠</span>
-    <span class="info-nam">${esc(toolName || 'Tool')}</span>
-    <span class="info-sts">${esc(shortErr)}</span>
-  `;
+/** Show tool error as red pulse on all dynamic keys (slots 0-9) */
+function _setErrorPulse(toolName) {
+  [0,1,2,3,4,5,6,7,8,9].forEach((s, idx) => {
+    const k = _getK(s);
+    if (!k) return;
+    k.className = 'k error-pulse';
+    k.style.setProperty('--off', (idx * 0.08) + 's');
+    k.innerHTML = '';
+  });
+  // Show tool name on slot 4
+  const k4 = _getK(4);
+  if (k4) {
+    k4.innerHTML = `<span class="ki">⚠</span><span class="kl">${esc(toolName || 'Error')}</span>`;
+  }
 }
 
 /** Update the state info bar */
