@@ -373,10 +373,11 @@ Log levels:
 ## Development
 
 ```bash
-npm install              # install dependencies
-npm test                 # run all tests
-node bridge/server.js    # start bridge
-npm run debug            # start bridge with file logging
+npm install                            # install dependencies
+npm test                               # run all tests (220+)
+node claude-plugin/bridge/server.js    # start bridge
+npm run debug                          # start bridge with file logging
+npm run stop                           # stop running bridge
 ```
 
 ## License
