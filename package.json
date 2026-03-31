@@ -1,6 +1,6 @@
 {
   "name": "claude-dj",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Control Claude Code with physical buttons or browser — no terminal focus needed",
   "type": "module",
   "main": "claude-plugin/bridge/server.js",

@@ -44,15 +44,33 @@ claude                     # hooks + skills auto-loaded
 
 Claude now uses the deck for all permission dialogs and choice selections. No terminal focus needed.
 
-## Manual Installation
+## Local Development
+
+For developing on claude-dj itself, use `--plugin-dir` to load the plugin from your local clone with live code changes:
 
 ```bash
 git clone https://github.com/whyjp/claude-dj.git
 cd claude-dj
 npm install
-npx claude-dj install      # registers hooks + skills globally
-npx claude-dj status       # verify installation
+
+# Start bridge manually
+node claude-plugin/bridge/server.js          # foreground
+./scripts/start-bridge.sh                    # with auto-install
+npm run stop                                 # stop running bridge
+
+# Run Claude Code with local plugin (no marketplace install needed)
+claude --plugin-dir claude-plugin
 ```
+
+### Bridge Control
+
+| Command | Description |
+|---------|-------------|
+| `npm start` | Start bridge (foreground) |
+| `npm run stop` | Stop running bridge |
+| `npm run debug` | Start with file logging |
+| `./scripts/start-bridge.sh` | Start with auto npm install |
+| `./scripts/stop-bridge.sh` | Find and kill bridge process |
 
 ## How Choice Processing Works
 

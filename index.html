@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Claude DJ — 코드는 터미널에, 결정은 덱에서</title>
+<title>Claude DJ — Code in terminal, decisions on deck</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&display=swap');
 
@@ -386,6 +386,17 @@ footer {
 .footer-links { display: flex; gap: 1.5rem; }
 .footer-links a:hover { color: var(--white); }
 
+/* ── LANG TOGGLE ── */
+.lang-toggle {
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  padding: 2px 8px; cursor: pointer;
+  border: 1px solid var(--bd2); background: transparent;
+  color: var(--muted); letter-spacing: .1em;
+  transition: color .15s, border-color .15s;
+  margin-left: 1.5rem;
+}
+.lang-toggle:hover { color: var(--white); border-color: var(--white); }
+
 /* responsive */
 @media (max-width: 860px) {
   .hero { grid-template-columns: 1fr; padding: 6rem 1.5rem 4rem; gap: 3rem; }
@@ -408,26 +419,27 @@ footer {
     <span class="nav-ver">v1.0 dev</span>
   </div>
   <ul class="nav-links">
-    <li><a href="#why">왜 Claude DJ</a></li>
-    <li><a href="#how">동작 원리</a></li>
-    <li><a href="#skill">기술 상세</a></li>
-    <li><a href="#arch">아키텍처</a></li>
-    <li><a href="#milestones">로드맵</a></li>
+    <li><a href="#why" data-i18n="nav.why">Why Claude DJ</a></li>
+    <li><a href="#how" data-i18n="nav.how">How It Works</a></li>
+    <li><a href="#skill" data-i18n="nav.tech">Technical</a></li>
+    <li><a href="#arch" data-i18n="nav.arch">Architecture</a></li>
+    <li><a href="#milestones" data-i18n="nav.roadmap">Roadmap</a></li>
     <li><a href="#quickstart">Quick Start</a></li>
     <li><a href="https://github.com/whyjp/claude-dj" target="_blank" rel="noopener" style="color:var(--white);">GitHub &nearr;</a></li>
   </ul>
+  <button class="lang-toggle" id="langToggle" onclick="toggleLang()">KO</button>
 </nav>
 
 <!-- HERO -->
 <div class="hero">
   <div>
     <p class="hero-eyebrow">Claude Code × DJ Deck Controller</p>
-    <h1>코드는 터미널에.<br><span class="g">결정은 덱에서.</span></h1>
-    <p class="hero-desc">
-      Claude Code 세션 여러 개가 돌아가는 동안, 다른 작업에 집중하고 있어도 괜찮다.<br>
-      어떤 세션이든 응답이 필요하면 <strong>덱에 선택지가 뜨고, 버튼 한 번이면 다음 단계로 넘어간다.</strong><br><br>
-      게임 중이든, 문서를 쓰고 있든, 다른 창에 포커스를 두고 있든 —<br>
-      <strong>터미널로 돌아갈 필요 없이, 타이핑 없이, 버튼만 누르면 된다.</strong>
+    <h1 data-i18n="hero.h1">Code in terminal.<br><span class="g">Decisions on deck.</span></h1>
+    <p class="hero-desc" data-i18n="hero.desc">
+      While multiple Claude Code sessions run in the background, you can stay focused on other work.<br>
+      Whenever a session needs a response, <strong>choices appear on the deck — one button press moves it forward.</strong><br><br>
+      Gaming, writing docs, focused on another window —<br>
+      <strong>no terminal switch, no typing, just press the button.</strong>
     </p>
     <div class="tag-row">
       <span class="tag g">Skill Injection</span>
@@ -440,13 +452,13 @@ footer {
     <div class="links">
       <a href="#quickstart" class="link-btn primary">Quick Start</a>
       <a href="https://github.com/whyjp/claude-dj" target="_blank" rel="noopener" class="link-btn" style="color:var(--white);border-color:var(--white);">GitHub &nearr;</a>
-      <a href="#how" class="link-btn">동작 원리 →</a>
+      <a href="#how" class="link-btn" data-i18n="hero.howBtn">How It Works →</a>
     </div>
   </div>
 
   <!-- D200 interactive mock -->
   <div class="d200-outer">
-    <p class="d200-caption">// 실시간 상태 시뮬레이션</p>
+    <p class="d200-caption" data-i18n="hero.caption">// live state simulation</p>
     <div class="state-tabs" id="stabs">
       <button class="stab on" data-s="binary">BINARY</button>
       <button class="stab" data-s="choice">CHOICE</button>
@@ -488,55 +500,55 @@ footer {
 
 <!-- WHY CLAUDE DJ -->
 <section id="why">
-  <p class="label">왜 Claude DJ인가</p>
-  <h2>멀티 모니터, 멀티 세션, 하나의 덱</h2>
-  <p class="sec-sub">Claude Code 세션들은 백그라운드에서 돌아가고, 나는 내 할 일을 한다. 응답이 필요할 때만 덱을 본다.</p>
+  <p class="label" data-i18n="why.label">Why Claude DJ</p>
+  <h2 data-i18n="why.h2">Multi-monitor, multi-session, one deck</h2>
+  <p class="sec-sub" data-i18n="why.sub">Claude Code sessions run in the background while I stay on task. I only look at the deck when a response is needed.</p>
 
   <div class="flow" style="grid-template-columns:repeat(3,1fr);margin-top:2.5rem;">
     <div class="fc hi">
       <div class="fc-n" style="color:var(--green);">01</div>
-      <h4>지금 하던 일을 멈추지 않는다</h4>
-      <p>게임, 문서 작성, 브라우저 — 뭘 하고 있든 Claude가 물어오면 옆의 덱 버튼만 누른다. 터미널로 돌아가서 타이핑할 필요가 없으니, 하던 일의 흐름이 끊기지 않는다.</p>
+      <h4 data-i18n="why.f1.h">Never break your flow</h4>
+      <p data-i18n="why.f1.p">Gaming, writing, browsing — whatever you're doing, when Claude needs input just press a deck button. No terminal switch, no typing, no context break.</p>
     </div>
     <div class="fc hi">
       <div class="fc-n" style="color:var(--green);">02</div>
-      <h4>모든 세션, 한 곳에서</h4>
-      <p>메인 작업, 사이드 브랜치, 별도 프로젝트 — 세션이 몇 개든 응답 대기 중인 세션이 자동으로 덱 위에 올라온다. 화면을 찾아 헤매지 않는다.</p>
+      <h4 data-i18n="why.f2.h">All sessions, one place</h4>
+      <p data-i18n="why.f2.p">Main task, side branch, separate project — however many sessions, whichever one needs a response surfaces automatically on the deck.</p>
     </div>
     <div class="fc hi">
       <div class="fc-n" style="color:var(--green);">03</div>
-      <h4>덱이든 터치든</h4>
-      <p>Ulanzi D200 물리 버튼, 브라우저 가상 덱, 터치 모니터까지 — 환경에 맞는 인터페이스를 고르면 된다. 입력 수단이 바뀌어도 동작은 같다.</p>
+      <h4 data-i18n="why.f3.h">Deck or touch, your choice</h4>
+      <p data-i18n="why.f3.p">Ulanzi D200 physical buttons, browser virtual deck, touch monitor — pick the interface that fits your setup. The behavior is the same regardless of input method.</p>
     </div>
   </div>
 </section>
 
 <!-- EXTENSIBILITY -->
 <section id="extend">
-  <p class="label">확장성</p>
-  <h2>어떤 장비든, 덱이 된다</h2>
-  <p class="sec-sub">Claude DJ의 클라이언트는 WebSocket 하나로 Bridge에 연결된다. 입력 장치의 형태에 제약이 없다.</p>
+  <p class="label" data-i18n="ext.label">Extensibility</p>
+  <h2 data-i18n="ext.h2">Any device becomes a deck</h2>
+  <p class="sec-sub" data-i18n="ext.sub">Claude DJ clients connect to the Bridge over a single WebSocket. No restrictions on input device form factor.</p>
 
   <div class="flow" style="grid-template-columns:repeat(4,1fr);margin-top:2.5rem;">
     <div class="fc hi">
       <div class="fc-n" style="color:var(--green);">A</div>
-      <h4>물리 덱</h4>
-      <p>Ulanzi D200 같은 USB 스트림 덱. 물리 버튼의 촉각 피드백으로 시선 없이도 조작할 수 있다. Translator Plugin이 Bridge와 UlanziStudio 사이를 연결.</p>
+      <h4 data-i18n="ext.fA.h">Physical Deck</h4>
+      <p data-i18n="ext.fA.p">USB stream deck like the Ulanzi D200. Tactile button feedback lets you operate without looking. Translator Plugin bridges Bridge and UlanziStudio.</p>
     </div>
     <div class="fc hi">
       <div class="fc-n" style="color:var(--green);">B</div>
-      <h4>브라우저 가상 덱</h4>
-      <p>별도 장비 없이 브라우저에서 Virtual DJ를 띄운다. 가장 빠르게 시작할 수 있는 방식. 로컬 Bridge에 WebSocket으로 직결.</p>
+      <h4 data-i18n="ext.fB.h">Browser Virtual Deck</h4>
+      <p data-i18n="ext.fB.p">Launch Virtual DJ in a browser with no extra hardware. Fastest way to get started. Direct WebSocket connection to the local Bridge.</p>
     </div>
     <div class="fc hi">
       <div class="fc-n" style="color:var(--amber);">C</div>
-      <h4>터치 모니터 직결</h4>
-      <p>작업 PC에 터치 모니터를 연결하고, 웹앱을 풀스크린으로 띄운다. 넓은 화면에서 선택지를 한눈에 확인하면서 터치로 바로 응답.</p>
+      <h4 data-i18n="ext.fC.h">Touch Monitor</h4>
+      <p data-i18n="ext.fC.p">Attach a touch monitor to your workstation and run the web app fullscreen. See all choices at a glance and respond with a tap.</p>
     </div>
     <div class="fc hi">
       <div class="fc-n" style="color:var(--amber);">D</div>
-      <h4>리모트 디바이스</h4>
-      <p>자체 CPU를 가진 Android 태블릿이나 미니 PC가 네트워크를 통해 Bridge와 통신한다. 작업 PC와 물리적으로 분리된 독립 덱 단말로 작동.</p>
+      <h4 data-i18n="ext.fD.h">Remote Device</h4>
+      <p data-i18n="ext.fD.p">An Android tablet or mini PC with its own CPU communicates with the Bridge over the network — a fully independent deck terminal separate from your workstation.</p>
     </div>
   </div>
 
@@ -545,9 +557,9 @@ footer {
                         <span class="w">Bridge Server</span> (localhost:39200)
                               │ WebSocket /ws
               ┌───────────┬───┴───────┬──────────────┐
-        <span class="g">[A] 물리 덱</span>    <span class="g">[B] 브라우저</span>   <span class="a">[C] 터치 모니터</span>   <span class="a">[D] 리모트 디바이스</span>
-      Translator Plugin  localhost       로컬 네트워크      LAN / Wi-Fi
-              │         Virtual DJ       풀스크린 웹앱    Android · 미니 PC
+        <span class="g" data-i18n="ext.archA">[A] Physical Deck</span>    <span class="g" data-i18n="ext.archB">[B] Browser</span>   <span class="a" data-i18n="ext.archC">[C] Touch Monitor</span>   <span class="a" data-i18n="ext.archD">[D] Remote Device</span>
+      Translator Plugin  localhost       <span data-i18n="ext.archNet">Local Network</span>      LAN / Wi-Fi
+              │         Virtual DJ       <span data-i18n="ext.archFS">Fullscreen Web App</span>    Android · Mini PC
      WS (port 3906)
               │
       <span class="a">UlanziStudio App</span>
@@ -558,33 +570,33 @@ footer {
 <!-- HOW IT WORKS -->
 <div class="band" id="how">
   <div class="band-inner">
-    <p class="label">동작 원리</p>
-    <h2>다섯 단계로 완성되는 루프</h2>
+    <p class="label" data-i18n="how.label">How It Works</p>
+    <h2 data-i18n="how.h2">The loop in five steps</h2>
     <div class="flow" style="grid-template-columns:repeat(5,1fr);">
       <div class="fc hi">
         <div class="fc-n">00</div>
-        <h4>스킬 주입</h4>
-        <p><code>choice-format</code> 스킬이 세션에 자동으로 주입된다. 이후 Claude는 모든 결정을 <strong>AskUserQuestion</strong> 도구 호출로 출력한다.</p>
+        <h4 data-i18n="how.f0.h">Skill Injection</h4>
+        <p data-i18n="how.f0.p">The <code>choice-format</code> skill is automatically injected into the session. From that point Claude outputs every decision as an <strong>AskUserQuestion</strong> tool call.</p>
       </div>
       <div class="fc">
         <div class="fc-n">01</div>
-        <h4>Hook 이벤트 수신</h4>
-        <p>AskUserQuestion 호출이 PermissionRequest 훅을 발화하면, Bridge가 세션을 WAITING_CHOICE로 전환한다. 일반 도구라면 WAITING_BINARY. <strong>응답까지 최대 60초 블로킹.</strong></p>
+        <h4 data-i18n="how.f1.h">Hook Event Received</h4>
+        <p data-i18n="how.f1.p">When AskUserQuestion fires the PermissionRequest hook, the Bridge transitions the session to WAITING_CHOICE. For standard tools it transitions to WAITING_BINARY. <strong>Blocks up to 60s waiting for a response.</strong></p>
       </div>
       <div class="fc hi">
         <div class="fc-n">02</div>
-        <h4>레이아웃 전환</h4>
-        <p>상태 변경 즉시 WebSocket으로 새 레이아웃을 브로드캐스트한다. 크로스세션 포커스 필터링 덕분에, 다른 세션의 작업이 현재 선택 화면을 덮어쓰지 않는다.</p>
+        <h4 data-i18n="how.f2.h">Layout Switch</h4>
+        <p data-i18n="how.f2.p">The moment state changes, the new layout is broadcast over WebSocket. Cross-session focus filtering ensures other sessions don't overwrite the current choice screen.</p>
       </div>
       <div class="fc hi">
         <div class="fc-n">03</div>
-        <h4>버튼 입력</h4>
-        <p>덱에서 선택지를 확인하고 버튼을 누른다. 포커스 이동도, 타이핑도 없다. 응답은 포커스된 세션에 정확히 라우팅된다.</p>
+        <h4 data-i18n="how.f3.h">Button Press</h4>
+        <p data-i18n="how.f3.p">Review choices on the deck and press a button. No focus switch, no typing. The response is routed precisely to the focused session.</p>
       </div>
       <div class="fc">
         <div class="fc-n">04</div>
-        <h4>응답 전달</h4>
-        <p>Bridge가 훅 응답으로 선택 결과를 반환하고, Claude Code는 곧바로 해당 선택지에 따라 다음 단계를 진행한다.</p>
+        <h4 data-i18n="how.f4.h">Response Delivered</h4>
+        <p data-i18n="how.f4.p">The Bridge returns the selection as a hook response, and Claude Code immediately proceeds to the next step based on that choice.</p>
       </div>
     </div>
   </div>
@@ -592,25 +604,25 @@ footer {
 
 <!-- SKILL INJECTION -->
 <section id="skill">
-  <p class="label">핵심 메커니즘</p>
-  <h2>스킬 하나로 Claude의 출력 형태를 바꾸다</h2>
-  <p class="sec-sub">Claude DJ의 핵심은 <strong>choice-format</strong> 스킬이다. 이 스킬 하나가 Claude의 행동을 모델 수준에서 바꾼다 — 모든 결정 지점에서 구조화된 AskUserQuestion 도구를 호출하게 만드는 것.</p>
+  <p class="label" data-i18n="skill.label">Core Mechanism</p>
+  <h2 data-i18n="skill.h2">One skill reshapes Claude's output</h2>
+  <p class="sec-sub" data-i18n="skill.sub">The heart of Claude DJ is the <strong>choice-format</strong> skill. This single skill changes Claude's behavior at the model level — making it call the structured AskUserQuestion tool at every decision point.</p>
 
   <div class="states" style="grid-template-columns:1fr 1fr;margin-top:2rem;">
     <div class="sc">
-      <div class="sc-pill"><div class="dot m"></div><span style="color:var(--muted)">기존 (스킬 없음)</span></div>
-      <h4>텍스트 기반 선택</h4>
-      <p>Claude가 번호 목록을 텍스트로 출력한다. 사용자는 터미널에서 직접 숫자를 타이핑해야 하고, 덱은 이를 감지할 수 없다.</p>
+      <div class="sc-pill"><div class="dot m"></div><span style="color:var(--muted)" data-i18n="skill.before">Before (no skill)</span></div>
+      <h4 data-i18n="skill.before.h">Text-based selection</h4>
+      <p data-i18n="skill.before.p">Claude outputs a numbered list as plain text. The user must manually type a number in the terminal — the deck cannot detect this.</p>
       <div style="background:var(--bg);border:1px solid var(--bd);padding:.75rem;margin-top:.75rem;font-size:10px;color:var(--muted);white-space:pre;line-height:1.7;">Which approach?
 1. Refactor
 2. Rewrite
 3. Patch
-<span style="color:var(--red);">→ 터미널 포커스 필요</span></div>
+<span style="color:var(--red);" data-i18n="skill.before.note">→ terminal focus required</span></div>
     </div>
     <div class="sc">
-      <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)">스킬 주입 후</span></div>
-      <h4>AskUserQuestion 도구 호출</h4>
-      <p>Claude가 <strong>AskUserQuestion</strong> 도구를 호출한다. 이것이 <strong>PermissionRequest</strong> 훅을 트리거하며, 유일하게 <strong>블로킹</strong>되는 훅이다.</p>
+      <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)" data-i18n="skill.after">After skill injection</span></div>
+      <h4 data-i18n="skill.after.h">AskUserQuestion tool call</h4>
+      <p data-i18n="skill.after.p">Claude calls the <strong>AskUserQuestion</strong> tool. This triggers the <strong>PermissionRequest</strong> hook — the only hook that <strong>blocks</strong>.</p>
       <div style="background:var(--bg);border:1px solid var(--green);padding:.75rem;margin-top:.75rem;font-size:10px;color:var(--green);white-space:pre;line-height:1.7;">AskUserQuestion({
   options: [
     "Refactor",
@@ -618,56 +630,56 @@ footer {
     "Patch"
   ]
 })
-<span style="color:var(--green);">→ 덱 버튼 자동 표시</span></div>
+<span style="color:var(--green);" data-i18n="skill.after.note">→ deck buttons auto-displayed</span></div>
     </div>
   </div>
 
-  <p class="label" style="margin-top:2.5rem;">핵심 구분</p>
-  <h2>선택과 확인은 다르다</h2>
-  <p class="sec-sub">스킬은 Claude가 <strong>계획 설명을 선택지처럼 나열</strong>하는 안티패턴을 원천 차단한다. "이대로 할까요?"는 선택이 아니라 확인이다.</p>
+  <p class="label" style="margin-top:2.5rem;" data-i18n="skill.dist.label">Key Distinction</p>
+  <h2 data-i18n="skill.dist.h2">Choice vs. confirmation</h2>
+  <p class="sec-sub" data-i18n="skill.dist.sub">The skill blocks the anti-pattern of <strong>listing plan descriptions as choices</strong>. "Shall we proceed?" is a confirmation, not a choice.</p>
 
   <div class="states" style="grid-template-columns:1fr 1fr 1fr;margin-top:2rem;">
     <div class="sc">
-      <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)">진짜 선택 (Real Choice)</span></div>
-      <h4>서로 다른 경로</h4>
-      <p>2~4개의 진정한 대안이 존재하고, 어떤 옵션을 고르느냐에 따라 결과가 달라진다.</p>
+      <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)" data-i18n="skill.real.pill">Real Choice</span></div>
+      <h4 data-i18n="skill.real.h">Different paths</h4>
+      <p data-i18n="skill.real.p">2–4 genuine alternatives exist, and the outcome differs depending on which option is chosen.</p>
       <div style="background:var(--bg);border:1px solid var(--green);padding:.75rem;margin-top:.75rem;font-size:10px;line-height:1.7;"><span style="color:var(--green);">[1] Refactor</span>
 <span style="color:var(--amber);">[2] Rewrite</span>
 <span style="color:var(--blue);">[3] Patch</span>
-<span style="color:var(--muted);">→ 3개 버튼, 각각 다른 결과</span></div>
+<span style="color:var(--muted);" data-i18n="skill.real.note">→ 3 buttons, each a different result</span></div>
     </div>
     <div class="sc">
-      <div class="sc-pill"><div class="dot a"></div><span style="color:var(--amber)">확인 (Confirmation)</span></div>
-      <h4>계획 승인 요청</h4>
-      <p>계획을 텍스트로 설명한 뒤, "진행 / 다른 방향" 두 가지로 승인을 묻는다.</p>
-      <div style="background:var(--bg);border:1px solid var(--amber);padding:.75rem;margin-top:.75rem;font-size:10px;line-height:1.7;"><span style="color:var(--muted);">계획: Pioneer에 상위 모델 적용</span>
-<span style="color:var(--green);">[1] 진행</span>
-<span style="color:var(--red);">[2] 다른 방향</span>
-<span style="color:var(--muted);">→ Y/N 바이너리, 간결</span></div>
+      <div class="sc-pill"><div class="dot a"></div><span style="color:var(--amber)" data-i18n="skill.confirm.pill">Confirmation</span></div>
+      <h4 data-i18n="skill.confirm.h">Plan approval request</h4>
+      <p data-i18n="skill.confirm.p">Describe the plan in text, then ask for approval with two options: proceed or change direction.</p>
+      <div style="background:var(--bg);border:1px solid var(--amber);padding:.75rem;margin-top:.75rem;font-size:10px;line-height:1.7;"><span style="color:var(--muted);" data-i18n="skill.confirm.plan">Plan: apply upgraded model to Pioneer</span>
+<span style="color:var(--green);" data-i18n="skill.confirm.yes">[1] Proceed</span>
+<span style="color:var(--red);" data-i18n="skill.confirm.no">[2] Change direction</span>
+<span style="color:var(--muted);" data-i18n="skill.confirm.note">→ Y/N binary, concise</span></div>
     </div>
     <div class="sc">
-      <div class="sc-pill"><div class="dot m"></div><span style="color:var(--red)">안티패턴 (금지)</span></div>
-      <h4>계획을 선택지로 위장</h4>
-      <p>계획 설명과 추가 범위를 같은 레벨의 선택지로 섞어 놓는 형태. 사용자가 의미 있게 "선택"할 수 없다.</p>
-      <div style="background:var(--bg);border:1px solid var(--red);padding:.75rem;margin-top:.75rem;font-size:10px;line-height:1.7;"><span style="color:var(--red);">✗ "X를 수정해서 적용"</span>
-<span style="color:var(--red);">✗ "기존 scaffold에도 적용"</span>
-<span style="color:var(--muted);">→ 범위 번들링. 계획을 먼저 설명,
-   그 다음 Y/N으로 물어야 함</span></div>
+      <div class="sc-pill"><div class="dot m"></div><span style="color:var(--red)" data-i18n="skill.anti.pill">Anti-pattern (forbidden)</span></div>
+      <h4 data-i18n="skill.anti.h">Plan disguised as choices</h4>
+      <p data-i18n="skill.anti.p">Mixing plan descriptions and additional scope as same-level choices. The user cannot meaningfully "choose" anything.</p>
+      <div style="background:var(--bg);border:1px solid var(--red);padding:.75rem;margin-top:.75rem;font-size:10px;line-height:1.7;"><span style="color:var(--red);" data-i18n="skill.anti.x1">✗ "Fix X and apply it"</span>
+<span style="color:var(--red);" data-i18n="skill.anti.x2">✗ "Also apply to existing scaffold"</span>
+<span style="color:var(--muted);" data-i18n="skill.anti.note">→ scope bundling. Describe plan first,
+   then ask Y/N</span></div>
     </div>
   </div>
 </section>
 
 <!-- STATES -->
 <section id="states">
-  <p class="label">상태 머신</p>
-  <h2>상태가 곧 레이아웃이다</h2>
-  <p class="sec-sub">세션 상태가 전환되는 순간, 덱의 버튼 배치가 통째로 바뀐다. 작업 중에는 버튼이 웨이브로 흘러, 지금 무엇이 돌고 있는지를 시각으로 보여준다.</p>
+  <p class="label" data-i18n="states.label">State Machine</p>
+  <h2 data-i18n="states.h2">State is layout</h2>
+  <p class="sec-sub" data-i18n="states.sub">The moment a session state transitions, the deck's button layout changes entirely. During processing, buttons pulse in a wave to visually signal what's running.</p>
 
   <div class="states">
     <div class="sc">
       <div class="sc-pill"><div class="dot m"></div><span style="color:var(--muted)">IDLE</span></div>
-      <h4>대기</h4>
-      <p>작업 완료 또는 입력 대기 상태. 모든 버튼이 비활성화된다.</p>
+      <h4 data-i18n="states.idle.h">Idle</h4>
+      <p data-i18n="states.idle.p">Task complete or awaiting input. All buttons deactivated.</p>
       <div class="mini">
         <div class="mk"></div><div class="mk"></div>
         <div class="mk"></div><div class="mk"></div>
@@ -677,8 +689,8 @@ footer {
     </div>
     <div class="sc">
       <div class="sc-pill"><div class="dot b"></div><span style="color:var(--blue)">PROCESSING</span></div>
-      <h4>작업 중</h4>
-      <p>도구 실행이 감지되면 버튼들이 시차를 두고 점멸하며, 진행 중임을 시각적으로 보여준다.</p>
+      <h4 data-i18n="states.processing.h">Processing</h4>
+      <p data-i18n="states.processing.p">When tool execution is detected, buttons blink with staggered delays to visually indicate work in progress.</p>
       <div class="mini">
         <div class="mk b"></div><div class="mk b" style="animation-delay:.15s"></div>
         <div class="mk b" style="animation-delay:.3s"></div><div class="mk b" style="animation-delay:.45s"></div>
@@ -688,8 +700,8 @@ footer {
     </div>
     <div class="sc">
       <div class="sc-pill"><div class="dot a"></div><span style="color:var(--amber)">WAITING_BINARY</span></div>
-      <h4>권한 승인 대기</h4>
-      <p>권한 요청 수신. Approve와 Deny만 활성화되고, 나머지 버튼은 비활성.</p>
+      <h4 data-i18n="states.binary.h">Awaiting Permission</h4>
+      <p data-i18n="states.binary.p">Permission request received. Only Approve and Deny are active; all other buttons are inactive.</p>
       <div class="mini">
         <div class="mk g">✅</div><div class="mk r">❌</div>
         <div class="mk"></div><div class="mk"></div>
@@ -699,8 +711,8 @@ footer {
     </div>
     <div class="sc">
       <div class="sc-pill"><div class="dot a"></div><span style="color:var(--amber)">WAITING_CHOICE</span></div>
-      <h4>선택지 대기</h4>
-      <p>스킬이 유도한 AskUserQuestion 호출이 훅을 블로킹한다. 버튼을 누르면 선택 결과가 즉시 Claude에게 전달된다.</p>
+      <h4 data-i18n="states.choice.h">Awaiting Choice</h4>
+      <p data-i18n="states.choice.p">The skill-driven AskUserQuestion call blocks the hook. Pressing a button instantly delivers the selection to Claude.</p>
       <div class="mini">
         <div class="mk n0">1</div><div class="mk n1">2</div>
         <div class="mk n2">3</div><div class="mk n3">4</div>
@@ -710,8 +722,8 @@ footer {
     </div>
     <div class="sc">
       <div class="sc-pill"><div class="dot a"></div><span style="color:var(--amber)">MULTI-SELECT</span></div>
-      <h4>복수 선택</h4>
-      <p>복수 선택 모드. 각 항목을 토글로 켜고 끈 뒤, Done 버튼으로 한꺼번에 제출한다.</p>
+      <h4 data-i18n="states.multi.h">Multi-select</h4>
+      <p data-i18n="states.multi.p">Multi-select mode. Toggle each item on or off, then submit all at once with the Done button.</p>
       <div class="mini">
         <div class="mk g">☑1</div><div class="mk">☐2</div>
         <div class="mk g">☑3</div><div class="mk">☐4</div>
@@ -721,8 +733,8 @@ footer {
     </div>
     <div class="sc">
       <div class="sc-pill"><div class="dot" style="background:var(--amber)"></div><span style="color:var(--amber)">AWAITING INPUT</span></div>
-      <h4>입력 대기 알림</h4>
-      <p>Claude가 텍스트로 선택지를 출력하고 멈춘 상태. 덱에 대기 표시가 뜨며, 터미널에서 직접 응답해야 한다.</p>
+      <h4 data-i18n="states.awaiting.h">Awaiting Input</h4>
+      <p data-i18n="states.awaiting.p">Claude output choices as text and is paused. A waiting indicator appears on the deck; you must respond directly in the terminal.</p>
       <div class="mini">
         <div class="mk"></div><div class="mk"></div>
         <div class="mk"></div><div class="mk"></div>
@@ -736,36 +748,36 @@ footer {
 <!-- ARCHITECTURE -->
 <div class="band" id="arch">
   <div class="band-inner">
-    <p class="label">아키텍처</p>
-    <h2>시스템 구성도</h2>
+    <p class="label" data-i18n="arch.label">Architecture</p>
+    <h2 data-i18n="arch.h2">System diagram</h2>
     <div class="arch"><span class="w">Claude Code Session</span>
     │
-    │  <span class="b">choice-format 스킬</span> 주입 → 모든 결정을 AskUserQuestion으로 출력
+    │  <span class="b">choice-format skill</span> <span data-i18n="arch.skillInject">injected → all decisions output as AskUserQuestion</span>
     │
     ├─ <span class="g">PermissionRequest</span>  → hooks/permission.js  → POST /api/hook/permission   <span class="a">[BLOCKING 60s]</span>
-    │   tool_name=AskUserQuestion    → WAITING_CHOICE + updatedInput.answer 반환
-    │   tool_name=Bash/Edit/Write    → WAITING_BINARY + allow/deny/alwaysAllow 반환
+    │   tool_name=AskUserQuestion    → WAITING_CHOICE + updatedInput.answer <span data-i18n="arch.returned">returned</span>
+    │   tool_name=Bash/Edit/Write    → WAITING_BINARY + allow/deny/alwaysAllow <span data-i18n="arch.returned2">returned</span>
     │
     ├─ <span class="g">PreToolUse</span>         → hooks/notify.js       → POST /api/hook/notify        [async]
-    │                                  → PROCESSING (포커스 필터링: WAITING 세션 보호)
+    │                                  → PROCESSING (<span data-i18n="arch.focusFilter">focus filtering: WAITING session protected</span>)
     │
     ├─ <span class="g">PostToolUse</span>        → hooks/postToolUse.js  → POST /api/hook/postToolUse   [async]
-    │                                  → PROCESSING + lastToolResult 기록
+    │                                  → PROCESSING + lastToolResult <span data-i18n="arch.recorded">recorded</span>
     │
     ├─ <span class="g">Stop</span>               → hooks/stop.js         → POST /api/hook/stop          [async]
-    │                                  → 트랜스크립트 파싱 → WAITING_RESPONSE 또는 IDLE
+    │                                  → <span data-i18n="arch.transcriptParse">transcript parse</span> → WAITING_RESPONSE <span data-i18n="arch.or">or</span> IDLE
     │
     ├─ <span class="g">UserPromptSubmit</span>   → hooks/userPrompt.js   → GET /api/events/:id          [async]
-    │                                  → events.jsonl에서 덱 이벤트 읽기
+    │                                  → <span data-i18n="arch.readEvents">read deck events from events.jsonl</span>
     │
     ├─ <span class="g">SubagentStart</span>      → hooks/subagentStart.js → POST /api/hook/subagentStart [async]
-    │                                  → session.agents Map에 에이전트 추가
+    │                                  → <span data-i18n="arch.agentAdd">add agent to session.agents Map</span>
     │
     └─ <span class="g">SubagentStop</span>       → hooks/subagentStop.js → POST /api/hook/subagentStop   [async]
-                                       → session.agents Map에서 에이전트 제거
+                                       → <span data-i18n="arch.agentRemove">remove agent from session.agents Map</span>
                                             │
                                      <span class="w">Bridge Server</span> (localhost:39200)
-                                     ├─ SessionManager  (상태, 포커스, 에이전트, prune)
+                                     ├─ SessionManager  (<span data-i18n="arch.smDesc">state, focus, agents, prune</span>)
                                      ├─ ButtonManager   (state → layout, choice resolution)
                                      ├─ WsServer        (broadcast, late-join sync)
                                      └─ Static serve    → Virtual DJ
@@ -776,26 +788,26 @@ footer {
                                           <span class="a">UlanziStudio</span> → USB → <span class="a">D200</span>
                                  │
                           [0][1][2][3][4]  ← dynamic (choices / approve-deny)
-                          [5][6][7][8][9]  ← dynamic (choices, 최대 10개)
+                          [5][6][7][8][9]  ← dynamic (choices, <span data-i18n="arch.max10">max 10</span>)
                           [<span class="a">10</span>][<span class="b">11</span>][<span class="b" style="color:#bb88ff;">12</span>][<span class="b">INFO DISPLAY</span>]
-                           SC  SN  AG  ← SC=세션 수, SN=세션 전환, AG=에이전트 전환
+                           SC  SN  AG  ← <span data-i18n="arch.slots">SC=session count, SN=session switch, AG=agent switch</span>
 
     <span class="w">Plugin System:</span>
     ├─ .claude-plugin/plugin.json + marketplace.json
     ├─ hooks/hooks.json (7 hooks, auto-discovered)
-    └─ skills/choice-format/SKILL.md  <span class="g">← Claude 행동 변경의 핵심</span></div>
+    └─ skills/choice-format/SKILL.md  <span class="g" data-i18n="arch.skillCore">← core of Claude behavior change</span></div>
   </div>
 </div>
 
 <!-- WS PROTOCOL -->
 <section id="protocol">
   <p class="label">WebSocket Protocol</p>
-  <h2>Bridge ↔ 클라이언트 통신 규약</h2>
-  <p class="sec-sub">Bridge Server와 클라이언트(Virtual DJ 또는 Ulanzi D200) 간 주고받는 WebSocket 메시지 스키마.</p>
+  <h2 data-i18n="proto.h2">Bridge ↔ client communication spec</h2>
+  <p class="sec-sub" data-i18n="proto.sub">WebSocket message schema exchanged between the Bridge Server and clients (Virtual DJ or Ulanzi D200).</p>
 
   <div class="proto-grid">
     <div class="proto-card">
-      <div class="proto-dir in">← Bridge → Client: LAYOUT (전체 상태)</div>
+      <div class="proto-dir in" data-i18n="proto.layout.dir">← Bridge → Client: LAYOUT (full state)</div>
       <div class="proto-code">{
   "type": "LAYOUT",
   "preset": "binary" | "choice" | "processing"
@@ -805,23 +817,23 @@ footer {
     "id": "abc", "name": "api-server",
     "state": "WAITING_CHOICE"
   },
-  "agent": {                     // 서브에이전트 (null=root)
+  "agent": {                     // <span data-i18n="proto.agentComment">subagent (null=root)</span>
     "agentId": "ag1",
     "type": "Explore",
     "state": "PROCESSING"
   },
-  "agentCount": 2,               // 현재 세션의 자식 수
-  "focusSwitched": true,          // slot 11/12 전환 시
+  "agentCount": 2,               // <span data-i18n="proto.agentCount">child count of current session</span>
+  "focusSwitched": true,          // <span data-i18n="proto.focusSwitched">on slot 11/12 switch</span>
   "prompt": { ... },              // binary preset
   "choices": [ ... ]              // choice/response preset
 }</div>
     </div>
     <div class="proto-card">
-      <div class="proto-dir in">← Bridge → Client: 기타 메시지</div>
-      <div class="proto-code">// 전체 dim (세션 종료 시)
+      <div class="proto-dir in" data-i18n="proto.other.dir">← Bridge → Client: Other messages</div>
+      <div class="proto-code">// <span data-i18n="proto.allDim">full dim (on session end)</span>
 { "type": "ALL_DIM" }
 
-// 초기 핸드셰이크
+// <span data-i18n="proto.handshake">initial handshake</span>
 { "type": "WELCOME",
   "version": "0.1.0",
   "sessions": [
@@ -837,26 +849,26 @@ footer {
 }</div>
     </div>
     <div class="proto-card">
-      <div class="proto-dir out">→ Client → Bridge: 입력</div>
-      <div class="proto-code">// 버튼 프레스
+      <div class="proto-dir out" data-i18n="proto.input.dir">→ Client → Bridge: Input</div>
+      <div class="proto-code">// <span data-i18n="proto.btnPress">button press</span>
 { "type": "BUTTON_PRESS",
   "slot": 0,
   "timestamp": 1743000000000 }
 
-// 클라이언트 준비
+// <span data-i18n="proto.clientReady">client ready</span>
 { "type": "CLIENT_READY",
   "clientType": "virtual",
   "version": "0.1.0" }
 
-// 슬롯 매핑:
-// slot 0  = Approve (binary) 또는 Choice 1
-// slot 1  = Deny/Always 또는 Choice 2
-// slot 11 = 세션 전환 (cycleFocus)
-// slot 12 = 에이전트 전환 (cycleAgent)</div>
+// <span data-i18n="proto.slotMap">slot mapping:</span>
+// slot 0  = Approve (binary) <span data-i18n="proto.orChoice">or</span> Choice 1
+// slot 1  = Deny/Always <span data-i18n="proto.orChoice2">or</span> Choice 2
+// slot 11 = <span data-i18n="proto.slot11">session switch (cycleFocus)</span>
+// slot 12 = <span data-i18n="proto.slot12">agent switch (cycleAgent)</span></div>
     </div>
     <div class="proto-card">
-      <div class="proto-dir in">← Hook 응답 (permission.js stdout)</div>
-      <div class="proto-code">// AskUserQuestion → 선택 번호 반환
+      <div class="proto-dir in" data-i18n="proto.hook.dir">← Hook response (permission.js stdout)</div>
+      <div class="proto-code">// <span data-i18n="proto.hookAsk">AskUserQuestion → returns selection number</span>
 { "hookSpecificOutput": {
     "hookEventName": "PermissionRequest",
     "decision": {
@@ -866,7 +878,7 @@ footer {
   }
 }
 
-// 일반 Permission → allow/deny/alwaysAllow
+// <span data-i18n="proto.hookPerm">standard Permission → allow/deny/alwaysAllow</span>
 { "hookSpecificOutput": {
     "hookEventName": "PermissionRequest",
     "decision": {
@@ -882,28 +894,28 @@ footer {
 <!-- ASSETS -->
 <div class="band" id="assets">
   <div class="band-inner">
-    <p class="label">전체 애셋</p>
-    <h2>프로덕트를 구성하는 모든 것</h2>
+    <p class="label" data-i18n="assets.label">All Assets</p>
+    <h2 data-i18n="assets.h2">Everything that makes the product</h2>
 
     <div class="asset-grid">
       <div class="ac">
-        <span class="ac-label">소프트웨어</span>
-        <h4>컴포넌트</h4>
+        <span class="ac-label" data-i18n="assets.sw.label">Software</span>
+        <h4 data-i18n="assets.sw.h">Components</h4>
         <ul>
           <li><span class="fn">Bridge Server</span><span class="desc">Node.js :39200</span></li>
-          <li><span class="fn">SessionManager</span><span class="desc">상태+포커스+에이전트</span></li>
+          <li><span class="fn">SessionManager</span><span class="desc" data-i18n="assets.sm.desc">state+focus+agents</span></li>
           <li><span class="fn">ButtonManager</span><span class="desc">state → layout</span></li>
           <li><span class="fn">WsServer</span><span class="desc">broadcast, sync</span></li>
           <li><span class="fn">Hook Scripts ×7</span><span class="desc">permission~subagent</span></li>
-          <li><span class="fn">choice-format Skill</span><span class="desc">Claude 행동 변경</span></li>
-          <li><span class="fn">choiceParser</span><span class="desc">트랜스크립트 파싱</span></li>
+          <li><span class="fn">choice-format Skill</span><span class="desc" data-i18n="assets.skill.desc">Claude behavior change</span></li>
+          <li><span class="fn">choiceParser</span><span class="desc" data-i18n="assets.parser.desc">transcript parsing</span></li>
           <li><span class="fn">Plugin CLI</span><span class="desc">install/uninstall/status</span></li>
-          <li><span class="fn">Virtual DJ FE</span><span class="desc">브라우저 대시보드</span></li>
+          <li><span class="fn">Virtual DJ FE</span><span class="desc" data-i18n="assets.fe.desc">browser dashboard</span></li>
         </ul>
       </div>
       <div class="ac">
-        <span class="ac-label">이미지 에셋 — 버튼</span>
-        <h4>PNG (196×196, 다크 배경)</h4>
+        <span class="ac-label" data-i18n="assets.img.label">Image Assets — Buttons</span>
+        <h4 data-i18n="assets.img.h">PNG (196×196, dark bg)</h4>
         <ul>
           <li><span class="fn">btn_empty.png</span><span class="desc">dim</span></li>
           <li><span class="fn">btn_approve.png</span><span class="desc">✅ Approve</span></li>
@@ -911,41 +923,41 @@ footer {
           <li><span class="fn">btn_always_allow.png</span><span class="desc">🔒 Always</span></li>
           <li><span class="fn">btn_always_deny.png</span><span class="desc">⛔ Always</span></li>
           <li><span class="fn">btn_cancel.png</span><span class="desc">✖</span></li>
-          <li><span class="fn">btn_1.png ~ btn_9.png</span><span class="desc">번호 선택지</span></li>
-          <li><span class="fn">btn_*_active.png</span><span class="desc">×11 눌림 피드백</span></li>
+          <li><span class="fn">btn_1.png ~ btn_9.png</span><span class="desc" data-i18n="assets.numBtn.desc">numbered choices</span></li>
+          <li><span class="fn">btn_*_active.png</span><span class="desc" data-i18n="assets.active.desc">×11 press feedback</span></li>
         </ul>
-        <div class="note">합계: ~28장</div>
+        <div class="note" data-i18n="assets.btnTotal">Total: ~28 images</div>
       </div>
       <div class="ac">
-        <span class="ac-label">이미지 에셋 — 고정 슬롯 + 애니메이션</span>
+        <span class="ac-label" data-i18n="assets.fixed.label">Image Assets — Fixed Slots + Animation</span>
         <h4>PNG + GIF</h4>
         <ul>
-          <li><span class="fn">session_count_normal.png</span><span class="desc">슬롯 10</span></li>
-          <li><span class="fn">session_count_alert.png</span><span class="desc">슬롯 10 대기</span></li>
-          <li><span class="fn">session_name.png</span><span class="desc">슬롯 11</span></li>
-          <li><span class="fn">anim_wave.gif</span><span class="desc">PROCESSING 웨이브</span></li>
-          <li><span class="fn">anim_processing.gif</span><span class="desc">단일 버튼 펄스</span></li>
+          <li><span class="fn">session_count_normal.png</span><span class="desc" data-i18n="assets.slot10.desc">slot 10</span></li>
+          <li><span class="fn">session_count_alert.png</span><span class="desc" data-i18n="assets.slot10a.desc">slot 10 waiting</span></li>
+          <li><span class="fn">session_name.png</span><span class="desc" data-i18n="assets.slot11.desc">slot 11</span></li>
+          <li><span class="fn">anim_wave.gif</span><span class="desc" data-i18n="assets.wave.desc">PROCESSING wave</span></li>
+          <li><span class="fn">anim_processing.gif</span><span class="desc" data-i18n="assets.pulse.desc">single button pulse</span></li>
           <li><span class="fn">plugin_icon.png</span><span class="desc">UlanziStudio</span></li>
-          <li><span class="fn">claudedj_logo.png</span><span class="desc">브랜드</span></li>
+          <li><span class="fn">claudedj_logo.png</span><span class="desc" data-i18n="assets.brand.desc">brand</span></li>
           <li><span class="fn">claude_logo.png</span><span class="desc">Anthropic ※</span></li>
         </ul>
-        <div class="note">합계: ~11장 + GIF 2개<br>※ BIG WIN은 시스템 전용 — 별도 에셋 불필요<br>※ Anthropic 브랜드 가이드 확인 필요</div>
+        <div class="note" data-i18n="assets.fixedNote">Total: ~11 images + 2 GIFs<br>※ BIG WIN is system-only — no separate asset needed<br>※ Check Anthropic brand guidelines</div>
       </div>
     </div>
 
     <div style="margin-top:1rem; padding:.75rem 1.25rem; border:1px solid var(--bd); background:var(--surf); font-size:11px; display:flex; gap:2rem; flex-wrap:wrap; color:var(--muted);">
-      <span>PNG 버튼: <strong style="color:var(--white)">~28장</strong></span>
-      <span>PNG 고정+기타: <strong style="color:var(--white)">~11장</strong></span>
-      <span>GIF 애니메이션: <strong style="color:var(--white)">2개</strong></span>
-      <span style="color:var(--green); font-weight:600;">총계: ~39장 + GIF 2개</span>
+      <span data-i18n="assets.count.btn">PNG buttons: <strong style="color:var(--white)">~28</strong></span>
+      <span data-i18n="assets.count.fixed">PNG fixed+other: <strong style="color:var(--white)">~11</strong></span>
+      <span data-i18n="assets.count.gif">GIF animations: <strong style="color:var(--white)">2</strong></span>
+      <span style="color:var(--green); font-weight:600;" data-i18n="assets.count.total">Total: ~39 images + 2 GIFs</span>
     </div>
   </div>
 </div>
 
 <!-- MILESTONES -->
 <section id="milestones">
-  <p class="label">구현 마일스톤</p>
-  <h2>단계별 개발 로드맵</h2>
+  <p class="label" data-i18n="ms.label">Implementation Milestones</p>
+  <h2 data-i18n="ms.h2">Phased development roadmap</h2>
 
   <div class="milestone-list">
     <div class="ml">
@@ -955,40 +967,40 @@ footer {
       </div>
       <div class="ml-items">
         <span class="ml-item">Bridge Server + SessionManager + ButtonManager</span>
-        <span class="ml-item">PermissionRequest hook (블로킹 60s timeout)</span>
-        <span class="ml-item">AskUserQuestion → WAITING_CHOICE 파이프라인</span>
-        <span class="ml-item">PreToolUse/PostToolUse → PROCESSING 웨이브</span>
-        <span class="ml-item">Stop hook → 트랜스크립트 파싱 + IDLE</span>
-        <span class="ml-item">Virtual DJ FE 전체 루프 검증</span>
+        <span class="ml-item" data-i18n="ms.p1.i2">PermissionRequest hook (blocking 60s timeout)</span>
+        <span class="ml-item" data-i18n="ms.p1.i3">AskUserQuestion → WAITING_CHOICE pipeline</span>
+        <span class="ml-item" data-i18n="ms.p1.i4">PreToolUse/PostToolUse → PROCESSING wave</span>
+        <span class="ml-item" data-i18n="ms.p1.i5">Stop hook → transcript parse + IDLE</span>
+        <span class="ml-item" data-i18n="ms.p1.i6">Virtual DJ FE full loop verified</span>
       </div>
     </div>
     <div class="ml">
       <div class="ml-head">
         <span class="ml-phase main">Phase 2 ✅</span>
-        <h4>스킬 주입 + 멀티세션 + 서브에이전트</h4>
+        <h4 data-i18n="ms.p2.h">Skill Injection + Multi-session + Subagents</h4>
       </div>
       <div class="ml-items">
-        <span class="ml-item">choice-format 스킬 — Claude 행동 변경</span>
-        <span class="ml-item">크로스세션 포커스 관리 (getFocusSession 수정)</span>
-        <span class="ml-item">포커스 필터링 — WAITING 보호</span>
-        <span class="ml-item">SubagentStart/Stop hook + agents Map 트래킹</span>
-        <span class="ml-item">슬롯 11 세션 전환, 슬롯 12 에이전트 전환</span>
-        <span class="ml-item">Plugin install/uninstall CLI + marketplace 호환</span>
+        <span class="ml-item" data-i18n="ms.p2.i1">choice-format skill — Claude behavior change</span>
+        <span class="ml-item" data-i18n="ms.p2.i2">Cross-session focus management (getFocusSession updated)</span>
+        <span class="ml-item" data-i18n="ms.p2.i3">Focus filtering — WAITING session protection</span>
+        <span class="ml-item" data-i18n="ms.p2.i4">SubagentStart/Stop hook + agents Map tracking</span>
+        <span class="ml-item" data-i18n="ms.p2.i5">Slot 11 session switch, slot 12 agent switch</span>
+        <span class="ml-item" data-i18n="ms.p2.i6">Plugin install/uninstall CLI + marketplace compatible</span>
         <span class="ml-item">88 automated tests (9 suites)</span>
       </div>
     </div>
     <div class="ml">
       <div class="ml-head">
         <span class="ml-phase">Phase 3</span>
-        <h4>Physical D200 + 배포</h4>
+        <h4 data-i18n="ms.p3.h">Physical D200 + Distribution</h4>
       </div>
       <div class="ml-items">
         <span class="ml-item">Translator Plugin (Bridge WS ↔ UlanziStudio WS)</span>
-        <span class="ml-item">키 상태 PNG 렌더링 (Canvas/SVG → base64)</span>
-        <span class="ml-item">UlanziStudio 플러그인 패키징 (manifest.json)</span>
-        <span class="ml-item">MCP wrapper — Bridge 자동구동 (POC)</span>
-        <span class="ml-item">D200 물리 버튼 E2E 테스트</span>
-        <span class="ml-item">npm publish + GitHub 배포</span>
+        <span class="ml-item" data-i18n="ms.p3.i2">Key state PNG rendering (Canvas/SVG → base64)</span>
+        <span class="ml-item" data-i18n="ms.p3.i3">UlanziStudio plugin packaging (manifest.json)</span>
+        <span class="ml-item" data-i18n="ms.p3.i4">MCP wrapper — Bridge auto-launch (POC)</span>
+        <span class="ml-item" data-i18n="ms.p3.i5">D200 physical button E2E tests</span>
+        <span class="ml-item" data-i18n="ms.p3.i6">npm publish + GitHub release</span>
       </div>
     </div>
   </div>
@@ -997,52 +1009,52 @@ footer {
 <!-- QUICK START -->
 <div class="band" id="quickstart">
   <div class="band-inner">
-    <p class="label">시작하기</p>
+    <p class="label" data-i18n="qs.label">Get Started</p>
     <h2>Quick Start</h2>
-    <p class="sec-sub" style="margin-bottom:2rem;">Claude Code 세션에서 두 줄이면 설치 완료. 바로 덱을 사용할 수 있다.</p>
+    <p class="sec-sub" style="margin-bottom:2rem;" data-i18n="qs.sub">Two lines in a Claude Code session and you're set. Start using the deck right away.</p>
 
     <div class="states" style="grid-template-columns:1fr 1fr 1fr;margin-top:0;">
       <div class="sc">
-        <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)">Step 1 — 플러그인 설치</span></div>
-        <h4>Claude Code 세션에서 실행</h4>
-        <div style="background:var(--bg);border:1px solid var(--green);padding:1rem;margin-top:.75rem;font-size:11px;color:var(--white);white-space:pre;line-height:1.9;overflow-x:auto;"><span style="color:var(--muted);"># Claude Code 세션에서:</span>
+        <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)" data-i18n="qs.s1.pill">Step 1 — Install Plugin</span></div>
+        <h4 data-i18n="qs.s1.h">Run in a Claude Code session</h4>
+        <div style="background:var(--bg);border:1px solid var(--green);padding:1rem;margin-top:.75rem;font-size:11px;color:var(--white);white-space:pre;line-height:1.9;overflow-x:auto;"><span style="color:var(--muted);"># <span data-i18n="qs.s1.comment">In a Claude Code session:</span></span>
 <span style="color:var(--green);">/plugin marketplace add https://github.com/whyjp/claude-dj</span>
 <span style="color:var(--green);">/plugin install claude-dj-plugin</span></div>
-        <p style="margin-top:.75rem;">Hooks 7개 + choice-format 스킬이 자동 등록된다.</p>
+        <p style="margin-top:.75rem;" data-i18n="qs.s1.note">7 hooks + choice-format skill registered automatically.</p>
       </div>
       <div class="sc">
-        <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)">Step 2 — Bridge 시작</span></div>
-        <h4>자동 시작 (또는 수동)</h4>
-        <div style="background:var(--bg);border:1px solid var(--bd);padding:1rem;margin-top:.75rem;font-size:11px;color:var(--white);white-space:pre;line-height:1.9;overflow-x:auto;"><span style="color:var(--muted);"># SessionStart 훅이 자동 시작</span>
-<span style="color:var(--muted);"># 수동 시작:</span>
+        <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)" data-i18n="qs.s2.pill">Step 2 — Start Bridge</span></div>
+        <h4 data-i18n="qs.s2.h">Auto-start (or manual)</h4>
+        <div style="background:var(--bg);border:1px solid var(--bd);padding:1rem;margin-top:.75rem;font-size:11px;color:var(--white);white-space:pre;line-height:1.9;overflow-x:auto;"><span style="color:var(--muted);"># <span data-i18n="qs.s2.auto">SessionStart hook auto-launches</span></span>
+<span style="color:var(--muted);"># <span data-i18n="qs.s2.manual">manual start:</span></span>
 <span style="color:var(--amber);">node bridge/server.js</span>
 <span style="color:var(--amber);">./scripts/start-bridge.sh --debug</span></div>
-        <p style="margin-top:.75rem;"><a href="http://localhost:39200" style="color:var(--blue);">http://localhost:39200</a> 에서 Virtual DJ 대시보드 확인.</p>
+        <p style="margin-top:.75rem;" data-i18n="qs.s2.note">Virtual DJ dashboard at <a href="http://localhost:39200" style="color:var(--blue);">http://localhost:39200</a></p>
       </div>
       <div class="sc">
-        <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)">Step 3 — 사용</span></div>
-        <h4>Claude Code 실행</h4>
+        <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)" data-i18n="qs.s3.pill">Step 3 — Use It</span></div>
+        <h4 data-i18n="qs.s3.h">Launch Claude Code</h4>
         <div style="background:var(--bg);border:1px solid var(--bd);padding:1rem;margin-top:.75rem;font-size:11px;color:var(--white);white-space:pre;line-height:1.9;overflow-x:auto;"><span style="color:var(--green);">claude</span>
-<span style="color:var(--muted);"># hooks + skills 자동 로드</span>
-<span style="color:var(--muted);"># 모든 권한/선택 → 덱 버튼으로</span></div>
-        <p style="margin-top:.75rem;">터미널 포커스 없이, 타이핑 없이, 버튼만 누르면 된다.</p>
+<span style="color:var(--muted);"># <span data-i18n="qs.s3.c1">hooks + skills auto-loaded</span></span>
+<span style="color:var(--muted);"># <span data-i18n="qs.s3.c2">all permissions/choices → deck buttons</span></span></div>
+        <p style="margin-top:.75rem;" data-i18n="qs.s3.note">No terminal focus, no typing — just press the button.</p>
       </div>
     </div>
 
     <div style="margin-top:1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
-      <p style="font-size:11px;color:var(--muted);">수동 설치 (git clone):</p>
-      <div style="background:var(--bg);border:1px solid var(--bd);padding:.5rem 1rem;font-size:11px;color:var(--white);white-space:pre;overflow-x:auto;flex:1;min-width:300px;">git clone https://github.com/whyjp/claude-dj.git && cd claude-dj && npm install && npx claude-dj install</div>
+      <p style="font-size:11px;color:var(--muted);" data-i18n="qs.manual">Local dev (live code):</p>
+      <div style="background:var(--bg);border:1px solid var(--bd);padding:.5rem 1rem;font-size:11px;color:var(--white);white-space:pre;overflow-x:auto;flex:1;min-width:300px;">git clone https://github.com/whyjp/claude-dj.git && cd claude-dj && npm install && claude --plugin-dir claude-plugin</div>
     </div>
 
     <div style="margin-top:1.5rem;text-align:center;">
-      <a href="https://github.com/whyjp/claude-dj" target="_blank" rel="noopener" class="link-btn primary" style="font-size:12px;padding:.65rem 2rem;">GitHub에서 자세히 보기 &nearr;</a>
+      <a href="https://github.com/whyjp/claude-dj" target="_blank" rel="noopener" class="link-btn primary" style="font-size:12px;padding:.65rem 2rem;" data-i18n="qs.ghBtn">View on GitHub &nearr;</a>
       <a href="https://github.com/whyjp/claude-dj/issues" target="_blank" rel="noopener" class="link-btn" style="font-size:12px;padding:.65rem 2rem;">Issues &amp; Feedback</a>
     </div>
   </div>
 </div>
 
 <footer>
-  <span>Claude DJ — 코드는 터미널에, 결정은 덱에서 · v0.1.0 · 88 tests · 2026</span>
+  <span data-i18n="footer.copy">Claude DJ — Code in terminal, decisions on deck · v0.1.0 · 88 tests · 2026</span>
   <div class="footer-links">
     <a href="https://github.com/whyjp/claude-dj" target="_blank" rel="noopener" style="color:var(--green);font-weight:600;">GitHub</a>
     <a href="https://code.claude.com/docs/en/hooks">Hooks API</a>
@@ -1053,6 +1065,285 @@ footer {
 </footer>
 
 <script>
+// ── i18n ──
+const TRANSLATIONS = {
+  'nav.why':              { en: 'Why Claude DJ',         ko: '왜 Claude DJ' },
+  'nav.how':              { en: 'How It Works',          ko: '동작 원리' },
+  'nav.tech':             { en: 'Technical',             ko: '기술 상세' },
+  'nav.arch':             { en: 'Architecture',          ko: '아키텍처' },
+  'nav.roadmap':          { en: 'Roadmap',               ko: '로드맵' },
+
+  'hero.h1':              { en: 'Code in terminal.<br><span class="g">Decisions on deck.</span>', ko: '코드는 터미널에.<br><span class="g">결정은 덱에서.</span>' },
+  'hero.desc':            { en: 'While multiple Claude Code sessions run in the background, you can stay focused on other work.<br>Whenever a session needs a response, <strong>choices appear on the deck — one button press moves it forward.</strong><br><br>Gaming, writing docs, focused on another window —<br><strong>no terminal switch, no typing, just press the button.</strong>', ko: 'Claude Code 세션 여러 개가 돌아가는 동안, 다른 작업에 집중하고 있어도 괜찮다.<br>어떤 세션이든 응답이 필요하면 <strong>덱에 선택지가 뜨고, 버튼 한 번이면 다음 단계로 넘어간다.</strong><br><br>게임 중이든, 문서를 쓰고 있든, 다른 창에 포커스를 두고 있든 —<br><strong>터미널로 돌아갈 필요 없이, 타이핑 없이, 버튼만 누르면 된다.</strong>' },
+  'hero.howBtn':          { en: 'How It Works →',        ko: '동작 원리 →' },
+  'hero.caption':         { en: '// live state simulation', ko: '// 실시간 상태 시뮬레이션' },
+
+  'why.label':            { en: 'Why Claude DJ',         ko: '왜 Claude DJ인가' },
+  'why.h2':               { en: 'Multi-monitor, multi-session, one deck', ko: '멀티 모니터, 멀티 세션, 하나의 덱' },
+  'why.sub':              { en: 'Claude Code sessions run in the background while I stay on task. I only look at the deck when a response is needed.', ko: 'Claude Code 세션들은 백그라운드에서 돌아가고, 나는 내 할 일을 한다. 응답이 필요할 때만 덱을 본다.' },
+  'why.f1.h':             { en: 'Never break your flow',  ko: '지금 하던 일을 멈추지 않는다' },
+  'why.f1.p':             { en: 'Gaming, writing, browsing — whatever you\'re doing, when Claude needs input just press a deck button. No terminal switch, no typing, no context break.', ko: '게임, 문서 작성, 브라우저 — 뭘 하고 있든 Claude가 물어오면 옆의 덱 버튼만 누른다. 터미널로 돌아가서 타이핑할 필요가 없으니, 하던 일의 흐름이 끊기지 않는다.' },
+  'why.f2.h':             { en: 'All sessions, one place', ko: '모든 세션, 한 곳에서' },
+  'why.f2.p':             { en: 'Main task, side branch, separate project — however many sessions, whichever one needs a response surfaces automatically on the deck.', ko: '메인 작업, 사이드 브랜치, 별도 프로젝트 — 세션이 몇 개든 응답 대기 중인 세션이 자동으로 덱 위에 올라온다. 화면을 찾아 헤매지 않는다.' },
+  'why.f3.h':             { en: 'Deck or touch, your choice', ko: '덱이든 터치든' },
+  'why.f3.p':             { en: 'Ulanzi D200 physical buttons, browser virtual deck, touch monitor — pick the interface that fits your setup. The behavior is the same regardless of input method.', ko: 'Ulanzi D200 물리 버튼, 브라우저 가상 덱, 터치 모니터까지 — 환경에 맞는 인터페이스를 고르면 된다. 입력 수단이 바뀌어도 동작은 같다.' },
+
+  'ext.label':            { en: 'Extensibility',         ko: '확장성' },
+  'ext.h2':               { en: 'Any device becomes a deck', ko: '어떤 장비든, 덱이 된다' },
+  'ext.sub':              { en: 'Claude DJ clients connect to the Bridge over a single WebSocket. No restrictions on input device form factor.', ko: 'Claude DJ의 클라이언트는 WebSocket 하나로 Bridge에 연결된다. 입력 장치의 형태에 제약이 없다.' },
+  'ext.fA.h':             { en: 'Physical Deck',          ko: '물리 덱' },
+  'ext.fA.p':             { en: 'USB stream deck like the Ulanzi D200. Tactile button feedback lets you operate without looking. Translator Plugin bridges Bridge and UlanziStudio.', ko: 'Ulanzi D200 같은 USB 스트림 덱. 물리 버튼의 촉각 피드백으로 시선 없이도 조작할 수 있다. Translator Plugin이 Bridge와 UlanziStudio 사이를 연결.' },
+  'ext.fB.h':             { en: 'Browser Virtual Deck',   ko: '브라우저 가상 덱' },
+  'ext.fB.p':             { en: 'Launch Virtual DJ in a browser with no extra hardware. Fastest way to get started. Direct WebSocket connection to the local Bridge.', ko: '별도 장비 없이 브라우저에서 Virtual DJ를 띄운다. 가장 빠르게 시작할 수 있는 방식. 로컬 Bridge에 WebSocket으로 직결.' },
+  'ext.fC.h':             { en: 'Touch Monitor',          ko: '터치 모니터 직결' },
+  'ext.fC.p':             { en: 'Attach a touch monitor to your workstation and run the web app fullscreen. See all choices at a glance and respond with a tap.', ko: '작업 PC에 터치 모니터를 연결하고, 웹앱을 풀스크린으로 띄운다. 넓은 화면에서 선택지를 한눈에 확인하면서 터치로 바로 응답.' },
+  'ext.fD.h':             { en: 'Remote Device',          ko: '리모트 디바이스' },
+  'ext.fD.p':             { en: 'An Android tablet or mini PC with its own CPU communicates with the Bridge over the network — a fully independent deck terminal separate from your workstation.', ko: '자체 CPU를 가진 Android 태블릿이나 미니 PC가 네트워크를 통해 Bridge와 통신한다. 작업 PC와 물리적으로 분리된 독립 덱 단말로 작동.' },
+  'ext.archA':            { en: '[A] Physical Deck',       ko: '[A] 물리 덱' },
+  'ext.archB':            { en: '[B] Browser',             ko: '[B] 브라우저' },
+  'ext.archC':            { en: '[C] Touch Monitor',       ko: '[C] 터치 모니터' },
+  'ext.archD':            { en: '[D] Remote Device',       ko: '[D] 리모트 디바이스' },
+  'ext.archNet':          { en: 'Local Network',           ko: '로컬 네트워크' },
+  'ext.archFS':           { en: 'Fullscreen Web App',      ko: '풀스크린 웹앱' },
+
+  'how.label':            { en: 'How It Works',            ko: '동작 원리' },
+  'how.h2':               { en: 'The loop in five steps',  ko: '다섯 단계로 완성되는 루프' },
+  'how.f0.h':             { en: 'Skill Injection',         ko: '스킬 주입' },
+  'how.f0.p':             { en: 'The <code>choice-format</code> skill is automatically injected into the session. From that point Claude outputs every decision as an <strong>AskUserQuestion</strong> tool call.', ko: '<code>choice-format</code> 스킬이 세션에 자동으로 주입된다. 이후 Claude는 모든 결정을 <strong>AskUserQuestion</strong> 도구 호출로 출력한다.' },
+  'how.f1.h':             { en: 'Hook Event Received',     ko: 'Hook 이벤트 수신' },
+  'how.f1.p':             { en: 'When AskUserQuestion fires the PermissionRequest hook, the Bridge transitions the session to WAITING_CHOICE. For standard tools it transitions to WAITING_BINARY. <strong>Blocks up to 60s waiting for a response.</strong>', ko: 'AskUserQuestion 호출이 PermissionRequest 훅을 발화하면, Bridge가 세션을 WAITING_CHOICE로 전환한다. 일반 도구라면 WAITING_BINARY. <strong>응답까지 최대 60초 블로킹.</strong>' },
+  'how.f2.h':             { en: 'Layout Switch',           ko: '레이아웃 전환' },
+  'how.f2.p':             { en: 'The moment state changes, the new layout is broadcast over WebSocket. Cross-session focus filtering ensures other sessions don\'t overwrite the current choice screen.', ko: '상태 변경 즉시 WebSocket으로 새 레이아웃을 브로드캐스트한다. 크로스세션 포커스 필터링 덕분에, 다른 세션의 작업이 현재 선택 화면을 덮어쓰지 않는다.' },
+  'how.f3.h':             { en: 'Button Press',            ko: '버튼 입력' },
+  'how.f3.p':             { en: 'Review choices on the deck and press a button. No focus switch, no typing. The response is routed precisely to the focused session.', ko: '덱에서 선택지를 확인하고 버튼을 누른다. 포커스 이동도, 타이핑도 없다. 응답은 포커스된 세션에 정확히 라우팅된다.' },
+  'how.f4.h':             { en: 'Response Delivered',      ko: '응답 전달' },
+  'how.f4.p':             { en: 'The Bridge returns the selection as a hook response, and Claude Code immediately proceeds to the next step based on that choice.', ko: 'Bridge가 훅 응답으로 선택 결과를 반환하고, Claude Code는 곧바로 해당 선택지에 따라 다음 단계를 진행한다.' },
+
+  'skill.label':          { en: 'Core Mechanism',          ko: '핵심 메커니즘' },
+  'skill.h2':             { en: 'One skill reshapes Claude\'s output', ko: '스킬 하나로 Claude의 출력 형태를 바꾸다' },
+  'skill.sub':            { en: 'The heart of Claude DJ is the <strong>choice-format</strong> skill. This single skill changes Claude\'s behavior at the model level — making it call the structured AskUserQuestion tool at every decision point.', ko: 'Claude DJ의 핵심은 <strong>choice-format</strong> 스킬이다. 이 스킬 하나가 Claude의 행동을 모델 수준에서 바꾼다 — 모든 결정 지점에서 구조화된 AskUserQuestion 도구를 호출하게 만드는 것.' },
+  'skill.before':         { en: 'Before (no skill)',        ko: '기존 (스킬 없음)' },
+  'skill.before.h':       { en: 'Text-based selection',    ko: '텍스트 기반 선택' },
+  'skill.before.p':       { en: 'Claude outputs a numbered list as plain text. The user must manually type a number in the terminal — the deck cannot detect this.', ko: 'Claude가 번호 목록을 텍스트로 출력한다. 사용자는 터미널에서 직접 숫자를 타이핑해야 하고, 덱은 이를 감지할 수 없다.' },
+  'skill.before.note':    { en: '→ terminal focus required', ko: '→ 터미널 포커스 필요' },
+  'skill.after':          { en: 'After skill injection',   ko: '스킬 주입 후' },
+  'skill.after.h':        { en: 'AskUserQuestion tool call', ko: 'AskUserQuestion 도구 호출' },
+  'skill.after.p':        { en: 'Claude calls the <strong>AskUserQuestion</strong> tool. This triggers the <strong>PermissionRequest</strong> hook — the only hook that <strong>blocks</strong>.', ko: 'Claude가 <strong>AskUserQuestion</strong> 도구를 호출한다. 이것이 <strong>PermissionRequest</strong> 훅을 트리거하며, 유일하게 <strong>블로킹</strong>되는 훅이다.' },
+  'skill.after.note':     { en: '→ deck buttons auto-displayed', ko: '→ 덱 버튼 자동 표시' },
+  'skill.dist.label':     { en: 'Key Distinction',         ko: '핵심 구분' },
+  'skill.dist.h2':        { en: 'Choice vs. confirmation', ko: '선택과 확인은 다르다' },
+  'skill.dist.sub':       { en: 'The skill blocks the anti-pattern of <strong>listing plan descriptions as choices</strong>. "Shall we proceed?" is a confirmation, not a choice.', ko: '스킬은 Claude가 <strong>계획 설명을 선택지처럼 나열</strong>하는 안티패턴을 원천 차단한다. "이대로 할까요?"는 선택이 아니라 확인이다.' },
+  'skill.real.pill':      { en: 'Real Choice',             ko: '진짜 선택 (Real Choice)' },
+  'skill.real.h':         { en: 'Different paths',         ko: '서로 다른 경로' },
+  'skill.real.p':         { en: '2–4 genuine alternatives exist, and the outcome differs depending on which option is chosen.', ko: '2~4개의 진정한 대안이 존재하고, 어떤 옵션을 고르느냐에 따라 결과가 달라진다.' },
+  'skill.real.note':      { en: '→ 3 buttons, each a different result', ko: '→ 3개 버튼, 각각 다른 결과' },
+  'skill.confirm.pill':   { en: 'Confirmation',            ko: '확인 (Confirmation)' },
+  'skill.confirm.h':      { en: 'Plan approval request',   ko: '계획 승인 요청' },
+  'skill.confirm.p':      { en: 'Describe the plan in text, then ask for approval with two options: proceed or change direction.', ko: '계획을 텍스트로 설명한 뒤, "진행 / 다른 방향" 두 가지로 승인을 묻는다.' },
+  'skill.confirm.plan':   { en: 'Plan: apply upgraded model to Pioneer', ko: '계획: Pioneer에 상위 모델 적용' },
+  'skill.confirm.yes':    { en: '[1] Proceed',             ko: '[1] 진행' },
+  'skill.confirm.no':     { en: '[2] Change direction',    ko: '[2] 다른 방향' },
+  'skill.confirm.note':   { en: '→ Y/N binary, concise',  ko: '→ Y/N 바이너리, 간결' },
+  'skill.anti.pill':      { en: 'Anti-pattern (forbidden)', ko: '안티패턴 (금지)' },
+  'skill.anti.h':         { en: 'Plan disguised as choices', ko: '계획을 선택지로 위장' },
+  'skill.anti.p':         { en: 'Mixing plan descriptions and additional scope as same-level choices. The user cannot meaningfully "choose" anything.', ko: '계획 설명과 추가 범위를 같은 레벨의 선택지로 섞어 놓는 형태. 사용자가 의미 있게 "선택"할 수 없다.' },
+  'skill.anti.x1':        { en: '✗ "Fix X and apply it"', ko: '✗ "X를 수정해서 적용"' },
+  'skill.anti.x2':        { en: '✗ "Also apply to existing scaffold"', ko: '✗ "기존 scaffold에도 적용"' },
+  'skill.anti.note':      { en: '→ scope bundling. Describe plan first,\n   then ask Y/N', ko: '→ 범위 번들링. 계획을 먼저 설명,\n   그 다음 Y/N으로 물어야 함' },
+
+  'states.label':         { en: 'State Machine',           ko: '상태 머신' },
+  'states.h2':            { en: 'State is layout',         ko: '상태가 곧 레이아웃이다' },
+  'states.sub':           { en: 'The moment a session state transitions, the deck\'s button layout changes entirely. During processing, buttons pulse in a wave to visually signal what\'s running.', ko: '세션 상태가 전환되는 순간, 덱의 버튼 배치가 통째로 바뀐다. 작업 중에는 버튼이 웨이브로 흘러, 지금 무엇이 돌고 있는지를 시각으로 보여준다.' },
+  'states.idle.h':        { en: 'Idle',                    ko: '대기' },
+  'states.idle.p':        { en: 'Task complete or awaiting input. All buttons deactivated.', ko: '작업 완료 또는 입력 대기 상태. 모든 버튼이 비활성화된다.' },
+  'states.processing.h':  { en: 'Processing',              ko: '작업 중' },
+  'states.processing.p':  { en: 'When tool execution is detected, buttons blink with staggered delays to visually indicate work in progress.', ko: '도구 실행이 감지되면 버튼들이 시차를 두고 점멸하며, 진행 중임을 시각적으로 보여준다.' },
+  'states.binary.h':      { en: 'Awaiting Permission',     ko: '권한 승인 대기' },
+  'states.binary.p':      { en: 'Permission request received. Only Approve and Deny are active; all other buttons are inactive.', ko: '권한 요청 수신. Approve와 Deny만 활성화되고, 나머지 버튼은 비활성.' },
+  'states.choice.h':      { en: 'Awaiting Choice',         ko: '선택지 대기' },
+  'states.choice.p':      { en: 'The skill-driven AskUserQuestion call blocks the hook. Pressing a button instantly delivers the selection to Claude.', ko: '스킬이 유도한 AskUserQuestion 호출이 훅을 블로킹한다. 버튼을 누르면 선택 결과가 즉시 Claude에게 전달된다.' },
+  'states.multi.h':       { en: 'Multi-select',            ko: '복수 선택' },
+  'states.multi.p':       { en: 'Multi-select mode. Toggle each item on or off, then submit all at once with the Done button.', ko: '복수 선택 모드. 각 항목을 토글로 켜고 끈 뒤, Done 버튼으로 한꺼번에 제출한다.' },
+  'states.awaiting.h':    { en: 'Awaiting Input',          ko: '입력 대기 알림' },
+  'states.awaiting.p':    { en: 'Claude output choices as text and is paused. A waiting indicator appears on the deck; you must respond directly in the terminal.', ko: 'Claude가 텍스트로 선택지를 출력하고 멈춘 상태. 덱에 대기 표시가 뜨며, 터미널에서 직접 응답해야 한다.' },
+
+  'arch.label':           { en: 'Architecture',            ko: '아키텍처' },
+  'arch.h2':              { en: 'System diagram',          ko: '시스템 구성도' },
+  'arch.skillInject':     { en: 'injected → all decisions output as AskUserQuestion', ko: '주입 → 모든 결정을 AskUserQuestion으로 출력' },
+  'arch.returned':        { en: 'returned',                ko: '반환' },
+  'arch.returned2':       { en: 'returned',                ko: '반환' },
+  'arch.focusFilter':     { en: 'focus filtering: WAITING session protected', ko: '포커스 필터링: WAITING 세션 보호' },
+  'arch.recorded':        { en: 'recorded',                ko: '기록' },
+  'arch.transcriptParse': { en: 'transcript parse',        ko: '트랜스크립트 파싱' },
+  'arch.or':              { en: 'or',                      ko: '또는' },
+  'arch.readEvents':      { en: 'read deck events from events.jsonl', ko: 'events.jsonl에서 덱 이벤트 읽기' },
+  'arch.agentAdd':        { en: 'add agent to session.agents Map', ko: 'session.agents Map에 에이전트 추가' },
+  'arch.agentRemove':     { en: 'remove agent from session.agents Map', ko: 'session.agents Map에서 에이전트 제거' },
+  'arch.smDesc':          { en: 'state, focus, agents, prune', ko: '상태, 포커스, 에이전트, prune' },
+  'arch.max10':           { en: 'max 10',                  ko: '최대 10개' },
+  'arch.slots':           { en: 'SC=session count, SN=session switch, AG=agent switch', ko: 'SC=세션 수, SN=세션 전환, AG=에이전트 전환' },
+  'arch.skillCore':       { en: '← core of Claude behavior change', ko: '← Claude 행동 변경의 핵심' },
+
+  'proto.h2':             { en: 'Bridge ↔ client communication spec', ko: 'Bridge ↔ 클라이언트 통신 규약' },
+  'proto.sub':            { en: 'WebSocket message schema exchanged between the Bridge Server and clients (Virtual DJ or Ulanzi D200).', ko: 'Bridge Server와 클라이언트(Virtual DJ 또는 Ulanzi D200) 간 주고받는 WebSocket 메시지 스키마.' },
+  'proto.layout.dir':     { en: '← Bridge → Client: LAYOUT (full state)', ko: '← Bridge → Client: LAYOUT (전체 상태)' },
+  'proto.agentComment':   { en: 'subagent (null=root)',     ko: '서브에이전트 (null=root)' },
+  'proto.agentCount':     { en: 'child count of current session', ko: '현재 세션의 자식 수' },
+  'proto.focusSwitched':  { en: 'on slot 11/12 switch',    ko: 'slot 11/12 전환 시' },
+  'proto.other.dir':      { en: '← Bridge → Client: Other messages', ko: '← Bridge → Client: 기타 메시지' },
+  'proto.input.dir':      { en: '→ Client → Bridge: Input', ko: '→ Client → Bridge: 입력' },
+  'proto.btnPress':       { en: 'button press',            ko: '버튼 프레스' },
+  'proto.clientReady':    { en: 'client ready',            ko: '클라이언트 준비' },
+  'proto.slotMap':        { en: 'slot mapping:',           ko: '슬롯 매핑:' },
+  'proto.orChoice':       { en: 'or',                      ko: '또는' },
+  'proto.orChoice2':      { en: 'or',                      ko: '또는' },
+  'proto.slot11':         { en: 'session switch (cycleFocus)', ko: '세션 전환 (cycleFocus)' },
+  'proto.slot12':         { en: 'agent switch (cycleAgent)', ko: '에이전트 전환 (cycleAgent)' },
+  'proto.allDim':         { en: 'full dim (on session end)', ko: '전체 dim (세션 종료 시)' },
+  'proto.handshake':      { en: 'initial handshake',        ko: '초기 핸드셰이크' },
+  'proto.hook.dir':       { en: '← Hook response (permission.js stdout)', ko: '← Hook 응답 (permission.js stdout)' },
+  'proto.hookAsk':        { en: 'AskUserQuestion → returns selection number', ko: 'AskUserQuestion → 선택 번호 반환' },
+  'proto.hookPerm':       { en: 'standard Permission → allow/deny/alwaysAllow', ko: '일반 Permission → allow/deny/alwaysAllow' },
+
+  'assets.label':         { en: 'All Assets',              ko: '전체 애셋' },
+  'assets.h2':            { en: 'Everything that makes the product', ko: '프로덕트를 구성하는 모든 것' },
+  'assets.sw.label':      { en: 'Software',                ko: '소프트웨어' },
+  'assets.sw.h':          { en: 'Components',              ko: '컴포넌트' },
+  'assets.sm.desc':       { en: 'state+focus+agents',      ko: '상태+포커스+에이전트' },
+  'assets.skill.desc':    { en: 'Claude behavior change',  ko: 'Claude 행동 변경' },
+  'assets.parser.desc':   { en: 'transcript parsing',      ko: '트랜스크립트 파싱' },
+  'assets.fe.desc':       { en: 'browser dashboard',       ko: '브라우저 대시보드' },
+  'assets.img.label':     { en: 'Image Assets — Buttons',  ko: '이미지 에셋 — 버튼' },
+  'assets.img.h':         { en: 'PNG (196×196, dark bg)',   ko: 'PNG (196×196, 다크 배경)' },
+  'assets.numBtn.desc':   { en: 'numbered choices',        ko: '번호 선택지' },
+  'assets.active.desc':   { en: '×11 press feedback',      ko: '×11 눌림 피드백' },
+  'assets.btnTotal':      { en: 'Total: ~28 images',       ko: '합계: ~28장' },
+  'assets.fixed.label':   { en: 'Image Assets — Fixed Slots + Animation', ko: '이미지 에셋 — 고정 슬롯 + 애니메이션' },
+  'assets.slot10.desc':   { en: 'slot 10',                 ko: '슬롯 10' },
+  'assets.slot10a.desc':  { en: 'slot 10 waiting',         ko: '슬롯 10 대기' },
+  'assets.slot11.desc':   { en: 'slot 11',                 ko: '슬롯 11' },
+  'assets.wave.desc':     { en: 'PROCESSING wave',         ko: 'PROCESSING 웨이브' },
+  'assets.pulse.desc':    { en: 'single button pulse',     ko: '단일 버튼 펄스' },
+  'assets.brand.desc':    { en: 'brand',                   ko: '브랜드' },
+  'assets.fixedNote':     { en: 'Total: ~11 images + 2 GIFs<br>※ BIG WIN is system-only — no separate asset needed<br>※ Check Anthropic brand guidelines', ko: '합계: ~11장 + GIF 2개<br>※ BIG WIN은 시스템 전용 — 별도 에셋 불필요<br>※ Anthropic 브랜드 가이드 확인 필요' },
+  'assets.count.btn':     { en: 'PNG buttons: <strong style="color:var(--white)">~28</strong>', ko: 'PNG 버튼: <strong style="color:var(--white)">~28장</strong>' },
+  'assets.count.fixed':   { en: 'PNG fixed+other: <strong style="color:var(--white)">~11</strong>', ko: 'PNG 고정+기타: <strong style="color:var(--white)">~11장</strong>' },
+  'assets.count.gif':     { en: 'GIF animations: <strong style="color:var(--white)">2</strong>', ko: 'GIF 애니메이션: <strong style="color:var(--white)">2개</strong>' },
+  'assets.count.total':   { en: 'Total: ~39 images + 2 GIFs', ko: '총계: ~39장 + GIF 2개' },
+
+  'ms.label':             { en: 'Implementation Milestones', ko: '구현 마일스톤' },
+  'ms.h2':                { en: 'Phased development roadmap', ko: '단계별 개발 로드맵' },
+  'ms.p1.i2':             { en: 'PermissionRequest hook (blocking 60s timeout)', ko: 'PermissionRequest hook (블로킹 60s timeout)' },
+  'ms.p1.i3':             { en: 'AskUserQuestion → WAITING_CHOICE pipeline', ko: 'AskUserQuestion → WAITING_CHOICE 파이프라인' },
+  'ms.p1.i4':             { en: 'PreToolUse/PostToolUse → PROCESSING wave', ko: 'PreToolUse/PostToolUse → PROCESSING 웨이브' },
+  'ms.p1.i5':             { en: 'Stop hook → transcript parse + IDLE', ko: 'Stop hook → 트랜스크립트 파싱 + IDLE' },
+  'ms.p1.i6':             { en: 'Virtual DJ FE full loop verified', ko: 'Virtual DJ FE 전체 루프 검증' },
+  'ms.p2.h':              { en: 'Skill Injection + Multi-session + Subagents', ko: '스킬 주입 + 멀티세션 + 서브에이전트' },
+  'ms.p2.i1':             { en: 'choice-format skill — Claude behavior change', ko: 'choice-format 스킬 — Claude 행동 변경' },
+  'ms.p2.i2':             { en: 'Cross-session focus management (getFocusSession updated)', ko: '크로스세션 포커스 관리 (getFocusSession 수정)' },
+  'ms.p2.i3':             { en: 'Focus filtering — WAITING session protection', ko: '포커스 필터링 — WAITING 보호' },
+  'ms.p2.i4':             { en: 'SubagentStart/Stop hook + agents Map tracking', ko: 'SubagentStart/Stop hook + agents Map 트래킹' },
+  'ms.p2.i5':             { en: 'Slot 11 session switch, slot 12 agent switch', ko: '슬롯 11 세션 전환, 슬롯 12 에이전트 전환' },
+  'ms.p2.i6':             { en: 'Plugin install/uninstall CLI + marketplace compatible', ko: 'Plugin install/uninstall CLI + marketplace 호환' },
+  'ms.p3.h':              { en: 'Physical D200 + Distribution', ko: 'Physical D200 + 배포' },
+  'ms.p3.i2':             { en: 'Key state PNG rendering (Canvas/SVG → base64)', ko: '키 상태 PNG 렌더링 (Canvas/SVG → base64)' },
+  'ms.p3.i3':             { en: 'UlanziStudio plugin packaging (manifest.json)', ko: 'UlanziStudio 플러그인 패키징 (manifest.json)' },
+  'ms.p3.i4':             { en: 'MCP wrapper — Bridge auto-launch (POC)', ko: 'MCP wrapper — Bridge 자동구동 (POC)' },
+  'ms.p3.i5':             { en: 'D200 physical button E2E tests', ko: 'D200 물리 버튼 E2E 테스트' },
+  'ms.p3.i6':             { en: 'npm publish + GitHub release', ko: 'npm publish + GitHub 배포' },
+
+  'qs.label':             { en: 'Get Started',             ko: '시작하기' },
+  'qs.sub':               { en: 'Two lines in a Claude Code session and you\'re set. Start using the deck right away.', ko: 'Claude Code 세션에서 두 줄이면 설치 완료. 바로 덱을 사용할 수 있다.' },
+  'qs.s1.pill':           { en: 'Step 1 — Install Plugin', ko: 'Step 1 — 플러그인 설치' },
+  'qs.s1.h':              { en: 'Run in a Claude Code session', ko: 'Claude Code 세션에서 실행' },
+  'qs.s1.comment':        { en: 'In a Claude Code session:', ko: 'Claude Code 세션에서:' },
+  'qs.s1.note':           { en: '7 hooks + choice-format skill registered automatically.', ko: 'Hooks 7개 + choice-format 스킬이 자동 등록된다.' },
+  'qs.s2.pill':           { en: 'Step 2 — Start Bridge',   ko: 'Step 2 — Bridge 시작' },
+  'qs.s2.h':              { en: 'Auto-start (or manual)',   ko: '자동 시작 (또는 수동)' },
+  'qs.s2.auto':           { en: 'SessionStart hook auto-launches', ko: 'SessionStart 훅이 자동 시작' },
+  'qs.s2.manual':         { en: 'manual start:',           ko: '수동 시작:' },
+  'qs.s2.note':           { en: 'Virtual DJ dashboard at <a href="http://localhost:39200" style="color:var(--blue);">http://localhost:39200</a>', ko: '<a href="http://localhost:39200" style="color:var(--blue);">http://localhost:39200</a> 에서 Virtual DJ 대시보드 확인.' },
+  'qs.s3.pill':           { en: 'Step 3 — Use It',         ko: 'Step 3 — 사용' },
+  'qs.s3.h':              { en: 'Launch Claude Code',      ko: 'Claude Code 실행' },
+  'qs.s3.c1':             { en: 'hooks + skills auto-loaded', ko: 'hooks + skills 자동 로드' },
+  'qs.s3.c2':             { en: 'all permissions/choices → deck buttons', ko: '모든 권한/선택 → 덱 버튼으로' },
+  'qs.s3.note':           { en: 'No terminal focus, no typing — just press the button.', ko: '터미널 포커스 없이, 타이핑 없이, 버튼만 누르면 된다.' },
+  'qs.manual':            { en: 'Local dev (live code):', ko: '로컬 개발 (실시간 코드):' },
+  'qs.ghBtn':             { en: 'View on GitHub &nearr;',  ko: 'GitHub에서 자세히 보기 &nearr;' },
+
+  'footer.copy':          { en: 'Claude DJ — Code in terminal, decisions on deck · v0.1.0 · 88 tests · 2026', ko: 'Claude DJ — 코드는 터미널에, 결정은 덱에서 · v0.1.0 · 88 tests · 2026' },
+};
+
+// STATES prompt translations
+const STATE_PROMPTS = {
+  binary: {
+    en: '<span class="tool">Bash</span> <span class="cmd">rm -rf node_modules && npm install</span>\nAllow this?',
+    ko: '<span class="tool">Bash</span> <span class="cmd">rm -rf node_modules && npm install</span>\n허용하시겠습니까?',
+  },
+  binary_onAction: {
+    en: (a) => a === 'approve' ? '✅ Approved — running...' : '❌ Denied',
+    ko: (a) => a === 'approve' ? '✅ Approved — 실행 중...' : '❌ Denied',
+  },
+  choice: {
+    en: 'Which approach should we take?\n\n<span class="hl">AskUserQuestion</span>: 4 choices → respond via deck button',
+    ko: 'Which approach should we take?\n\n<span class="hl">AskUserQuestion</span>: 4개 선택지 → 덱 버튼으로 즉시 응답',
+  },
+  multi: {
+    en: 'Which features to enable?\n\n<span class="hl">multiSelect</span>: toggle then submit with <span class="hl">Done</span>',
+    ko: 'Which features to enable?\n\n<span class="hl">multiSelect</span>: 토글 후 <span class="hl">Done</span>으로 제출',
+  },
+  processing: {
+    en: '<span class="tool">Read</span> src/components/App.tsx\n<span class="tool">Bash</span> npm test\n\nWorking...',
+    ko: '<span class="tool">Read</span> src/components/App.tsx\n<span class="tool">Bash</span> npm test\n\n작업 진행 중...',
+  },
+  awaiting: {
+    en: 'Will modify 3 files. Shall we proceed?\n\nClaude is waiting for input in the terminal.',
+    ko: '3개 파일을 수정하겠습니다. 진행할까요?\n\nClaude가 터미널에서 입력을 기다리고 있습니다.',
+  },
+  idle: {
+    en: 'Session idle — waiting for the next prompt',
+    ko: '세션 대기 중 — 다음 프롬프트를 기다리는 상태',
+  },
+};
+
+let currentLang = localStorage.getItem('cdj-lang') || 'en';
+
+function applyLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('cdj-lang', lang);
+  document.documentElement.lang = lang;
+  document.title = lang === 'ko'
+    ? 'Claude DJ — 코드는 터미널에, 결정은 덱에서'
+    : 'Claude DJ — Code in terminal, decisions on deck';
+  const btn = document.getElementById('langToggle');
+  if (btn) btn.textContent = lang === 'en' ? 'KO' : 'EN';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const entry = TRANSLATIONS[key];
+    if (entry && entry[lang] !== undefined) {
+      el.innerHTML = entry[lang];
+    }
+  });
+  // Update STATES prompts
+  STATES.binary.prompt = STATE_PROMPTS.binary[lang];
+  STATES.binary.onAction = STATE_PROMPTS.binary_onAction[lang];
+  STATES.choice.prompt = STATE_PROMPTS.choice[lang];
+  STATES.multi.prompt = STATE_PROMPTS.multi[lang];
+  STATES.processing.prompt = STATE_PROMPTS.processing[lang];
+  STATES.awaiting.prompt = STATE_PROMPTS.awaiting[lang];
+  STATES.idle.prompt = STATE_PROMPTS.idle[lang];
+  // Re-render current prompt box
+  const promptText = document.getElementById('promptText');
+  if (promptText) {
+    const s = STATES[currentState];
+    if (s) promptText.innerHTML = s.prompt || '';
+  }
+}
+
+function toggleLang() {
+  applyLang(currentLang === 'en' ? 'ko' : 'en');
+}
+
 // ── State machine: state = layout = prompt context ──
 const STATES = {
   binary: {
@@ -1062,8 +1353,8 @@ const STATES = {
       { cls:'dim' }, { cls:'dim' }, { cls:'dim' }
     ],
     r1: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' }],
-    prompt: '<span class="tool">Bash</span> <span class="cmd">rm -rf node_modules && npm install</span>\n허용하시겠습니까?',
-    onAction(a) { return a === 'approve' ? '✅ Approved — 실행 중...' : '❌ Denied'; },
+    prompt: '<span class="tool">Bash</span> <span class="cmd">rm -rf node_modules && npm install</span>\nAllow this?',
+    onAction(a) { return a === 'approve' ? '✅ Approved — running...' : '❌ Denied'; },
     resultClass(a) { return a === 'deny' ? 'denied' : ''; },
   },
   choice: {
@@ -1075,7 +1366,7 @@ const STATES = {
       { cls:'dim' }
     ],
     r1: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' }],
-    prompt: 'Which approach should we take?\n\n<span class="hl">AskUserQuestion</span>: 4개 선택지 → 덱 버튼으로 즉시 응답',
+    prompt: 'Which approach should we take?\n\n<span class="hl">AskUserQuestion</span>: 4 choices → respond via deck button',
     onAction(a) { const m={c1:'Refactor',c2:'Fix tests',c3:'Show diff',c4:'Skip'}; return `→ Selected: ${m[a]}`; },
   },
   multi: {
@@ -1088,7 +1379,7 @@ const STATES = {
     r1: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },
       { cls:'c1', icon:'✔', lbl:'Done', action:'submit' }
     ],
-    prompt: 'Which features to enable?\n\n<span class="hl">multiSelect</span>: 토글 후 <span class="hl">Done</span>으로 제출',
+    prompt: 'Which features to enable?\n\n<span class="hl">multiSelect</span>: toggle then submit with <span class="hl">Done</span>',
     _selected: new Set(),
     onAction(a, el) {
       if (a === 'submit') {
@@ -1115,21 +1406,21 @@ const STATES = {
       { cls:'proc', d:'.6s' }, { cls:'proc', d:'.72s' },
       { cls:'proc', d:'.84s' }, { cls:'proc', d:'.96s' }, { cls:'proc', d:'1.08s' }
     ],
-    prompt: '<span class="tool">Read</span> src/components/App.tsx\n<span class="tool">Bash</span> npm test\n\n작업 진행 중...',
+    prompt: '<span class="tool">Read</span> src/components/App.tsx\n<span class="tool">Bash</span> npm test\n\nWorking...',
   },
   awaiting: {
     r0: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' }],
     r1: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },
       { cls:'c1', icon:'⏳', lbl:'Awaiting' }
     ],
-    prompt: '3개 파일을 수정하겠습니다. 진행할까요?\n\nClaude가 터미널에서 입력을 기다리고 있습니다.',
+    prompt: 'Will modify 3 files. Shall we proceed?\n\nClaude is waiting for input in the terminal.',
   },
   idle: {
     r0: Array(5).fill({ cls:'dim' }),
     r1: [{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },{ cls:'dim' },
       { cls:'dim', icon:'💤', lbl:'Idle' }
     ],
-    prompt: '세션 대기 중 — 다음 프롬프트를 기다리는 상태',
+    prompt: 'Session idle — waiting for the next prompt',
   }
 };
 
@@ -1246,6 +1537,9 @@ setInterval(() => {
 
 // Initial render
 applyState('binary');
+
+// Apply saved/default language
+applyLang(currentLang);
 </script>
 </body>
 </html>
