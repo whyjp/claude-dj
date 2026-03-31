@@ -28,6 +28,18 @@ export class SessionManager {
         lastToolResult: null,
         agents: new Map(),
       });
+    } else {
+      // Refresh name from disk on every hook event (catches /rename immediately)
+      const session = this.sessions.get(id);
+      if (session._diskPid) {
+        try {
+          const file = path.join(os.homedir(), '.claude', 'sessions', `${session._diskPid}.json`);
+          const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+          if (data.name && data.name !== session.name) {
+            session.name = data.name;
+          }
+        } catch { /* file may not exist */ }
+      }
     }
     return this.sessions.get(id);
   }
@@ -442,16 +454,17 @@ export class SessionManager {
     try { sessionsDir = path.join(os.homedir(), '.claude', 'sessions'); }
     catch { return result; }
 
-    // Read all on-disk session files → Map<pid, {sessionId, name}>
+    // Read all on-disk session files → Map<pid, entry> and Map<sessionId, entry>
     const diskByPid = new Map();
+    const diskBySessionId = new Map();
     try {
       const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
       for (const file of files) {
         try {
           const data = JSON.parse(fs.readFileSync(path.join(sessionsDir, file), 'utf8'));
-          if (data.pid) {
-            diskByPid.set(data.pid, { sessionId: data.sessionId, name: data.name || null });
-          }
+          const entry = { sessionId: data.sessionId, name: data.name || null, pid: data.pid };
+          if (data.pid) diskByPid.set(data.pid, entry);
+          if (data.sessionId) diskBySessionId.set(data.sessionId, entry);
         } catch { /* skip malformed */ }
       }
     } catch { /* sessions dir doesn't exist */ return result; }
@@ -463,20 +476,25 @@ export class SessionManager {
         const disk = _findDiskSession(id, session.cwd);
         if (disk) session._diskPid = disk.pid;
       }
+
+      // Find disk entry by PID or sessionId (double lookup for resilience)
       const pid = session._diskPid;
-      if (!pid) continue;
+      let disk = pid ? diskByPid.get(pid) : undefined;
+      if (!disk) {
+        disk = diskBySessionId.get(id);
+        if (disk && disk.pid) session._diskPid = disk.pid;
+      }
+      if (!disk) continue;
+      const effectivePid = disk.pid || pid;
 
-      const disk = diskByPid.get(pid);
-      if (disk === undefined) continue;
-
-      if (_isPidAlive(pid)) {
+      if (effectivePid && _isPidAlive(effectivePid)) {
         result.alive.push(id);
         // Sync name from disk if changed
         if (disk.name && disk.name !== session.name) {
           session.name = disk.name;
           result.renamed.push(id);
         }
-      } else {
+      } else if (effectivePid) {
         // PID dead → clean up
         if (session._permissionTimeout) {
           clearTimeout(session._permissionTimeout);
