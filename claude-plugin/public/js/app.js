@@ -18,10 +18,16 @@ let _manualDisconnect = false;
 
 // ── Bootstrap ────────────────────────────────────────────────
 
+function _updateAboutVersion() {
+  const el = document.getElementById('about-version');
+  if (el) el.textContent = VERSION;
+}
+
 function init() {
   initGrid();
   initDashboard();
   _initMiniview();
+  _updateAboutVersion();
 
   // Populate WS URL input with default
   const wsInput = document.getElementById('wsUrlInput');
@@ -157,7 +163,7 @@ function _handleMessage(msg) {
   const sid = msg.session?.id || null;
   switch (msg.type) {
     case 'WELCOME':
-      if (msg.version) VERSION = msg.version;
+      if (msg.version) { VERSION = msg.version; _updateAboutVersion(); }
       log('sys', `Bridge v${msg.version || '?'} — ${(msg.sessions || []).length} session(s)`);
       if (msg.sessions) setSessions(msg.sessions);
       if (msg.sessions && msg.sessions.length > 0) {

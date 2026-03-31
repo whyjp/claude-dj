@@ -3,7 +3,7 @@
   "Name": "Claude DJ",
   "Description": "Control Claude Code with Ulanzi D200 physical buttons",
   "Icon": "assets/icons/icon.png",
-  "Version": "0.1.0",
+  "Version": "0.2.8",
   "UUID": "com.claudedj.ulanzistudio.claudedj",
   "Type": "JavaScript",
   "CodePath": "app.js",
