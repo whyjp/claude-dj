@@ -12,7 +12,7 @@ In a Claude Code session:
 
 ```
 /plugin marketplace add whyjp/claude-dj
-/plugin install claude-dj
+/plugin install claude-dj-plugin
 ```
 
 This single install registers **hooks + skills** automatically.
