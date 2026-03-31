@@ -46,4 +46,15 @@ for (const rel of jsonFiles) {
   } catch { console.log(`  ✗ ${rel} (skipped)`); }
 }
 
+// Update frontend VERSION in app.js
+const appJsPath = path.join(root, 'claude-plugin', 'public', 'js', 'app.js');
+try {
+  const appJs = readFileSync(appJsPath, 'utf8');
+  const updated = appJs.replace(/^let VERSION = '[^']*';/m, `let VERSION = '${version}';`);
+  if (updated !== appJs) {
+    writeFileSync(appJsPath, updated);
+    console.log(`  ✓ claude-plugin/public/js/app.js`);
+  }
+} catch { console.log(`  ✗ claude-plugin/public/js/app.js (skipped)`); }
+
 console.log(`[claude-dj] Done — version ${version}`);

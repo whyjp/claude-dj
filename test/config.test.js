@@ -11,7 +11,10 @@ describe('config', () => {
     assert.equal(config.buttonTimeout, 60000);
   });
 
-  it('respects CLAUDE_DJ_PORT env var', () => {
+  it('respects CLAUDE_DJ_PORT env var (parsing logic)', () => {
+    // Note: config module evaluates once at import — this tests the parsing
+    // logic directly, not the cached config object. For a true integration
+    // test, config would need to be loaded in a subprocess with the env set.
     process.env.CLAUDE_DJ_PORT = '12345';
     const port = parseInt(process.env.CLAUDE_DJ_PORT, 10) || 39200;
     assert.equal(port, 12345);

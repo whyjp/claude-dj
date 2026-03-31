@@ -8,7 +8,7 @@
 import { initGrid, onPress, renderLayout, renderAllDim, setConnectionOverlay, updateMiniAgentTabs } from './d200-renderer.js';
 import { initDashboard, log, updateWsStatus, clearLog, updateSession, dimAllSessions, disconnectSessions, setSessions, switchLogSession } from './dashboard.js';
 
-const VERSION = '0.1.0';
+let VERSION = 'unknown';
 const WS_PATH = '/ws';
 const RECONNECT_DELAY = 3000;
 
@@ -157,6 +157,7 @@ function _handleMessage(msg) {
   const sid = msg.session?.id || null;
   switch (msg.type) {
     case 'WELCOME':
+      if (msg.version) VERSION = msg.version;
       log('sys', `Bridge v${msg.version || '?'} — ${(msg.sessions || []).length} session(s)`);
       if (msg.sessions) setSessions(msg.sessions);
       if (msg.sessions && msg.sessions.length > 0) {

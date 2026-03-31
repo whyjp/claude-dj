@@ -19,10 +19,26 @@ const LOG_FILE = path.join(LOG_DIR, 'bridge.log');
 
 const DEBUG = !!(process.env.CLAUDE_DJ_DEBUG || process.env.DEBUG);
 
+const MAX_LOG_SIZE = 10 * 1024 * 1024; // 10MB
+
 let _stream = null;
+
+function _rotateIfNeeded() {
+  try {
+    const stat = fs.statSync(LOG_FILE);
+    if (stat.size >= MAX_LOG_SIZE) {
+      const old = LOG_FILE + '.old';
+      try { fs.unlinkSync(old); } catch { /* no previous .old */ }
+      fs.renameSync(LOG_FILE, old);
+      return true;
+    }
+  } catch { /* file doesn't exist yet */ }
+  return false;
+}
 
 if (DEBUG) {
   fs.mkdirSync(LOG_DIR, { recursive: true });
+  _rotateIfNeeded();
   _stream = fs.createWriteStream(LOG_FILE, { flags: 'a' });
   const ts = new Date().toISOString();
   _stream.write(`\n${'='.repeat(60)}\n[${ts}] Bridge started (debug mode)\n${'='.repeat(60)}\n`);

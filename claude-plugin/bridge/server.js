@@ -16,6 +16,11 @@ const sm = new SessionManager();
 const ws = new WsServer();
 
 app.use(express.json({ limit: '100kb' }));
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  next();
+});
 
 // Input validation middleware for hook endpoints
 function validateHookInput(req, res, next) {
@@ -69,16 +74,9 @@ function broadcastLayout(layout) {
 
 // --- Hook Endpoints ---
 
-const _stopTimers = new Map();
-
 app.post('/api/hook/notify', (req, res) => {
   const input = req.body;
   log(`[hook/notify] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
-  // Cancel pending response timer — Claude is still working
-  if (_stopTimers.has(input.session_id)) {
-    clearTimeout(_stopTimers.get(input.session_id));
-    _stopTimers.delete(input.session_id);
-  }
   const session = sm.handleNotify(input);
   // Only broadcast if this is the focused session — don't override WAITING_BINARY/CHOICE
   const focus = sm.getFocusSession();
@@ -129,12 +127,6 @@ app.post('/api/hook/stop', (req, res) => {
   }
 
   const sessionId = input.session_id;
-
-  // Clear any pending response timer
-  if (_stopTimers.has(sessionId)) {
-    clearTimeout(_stopTimers.get(sessionId));
-    _stopTimers.delete(sessionId);
-  }
 
   if (choices && choices.length > 0) {
     // Choices detected in transcript — show "waiting for input" on deck (display-only, no interaction)
@@ -223,7 +215,7 @@ app.post('/api/hook/permission', (req, res) => {
   const session = sm.handlePermission(input);
   // Auto-focus: new permission request takes focus (including subagent)
   sm.setFocus(session.id);
-  if (input.agent_id) sm.focusAgentId = input.agent_id;
+  if (input.agent_id) sm.setAgentFocus(input.agent_id);
   const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
   const isChoice = session.state === 'WAITING_CHOICE';
 
@@ -241,12 +233,13 @@ app.post('/api/hook/permission', (req, res) => {
   broadcastLayout(layout);
 
   const timeout = setTimeout(() => {
+    if (!session.respondFn) return; // already resolved by button press
     warn(`[hook→claude] TIMEOUT (${config.buttonTimeout}ms) session=${session.id} tool=${input.tool_name} — auto-deny sent`);
     session.respondFn = null;
     session._permissionTimeout = null;
     sm.handleStop({ session_id: session.id, stop_hook_active: false });
     ws.broadcast({ type: 'ALL_DIM' });
-    res.json(ButtonManager.buildTimeoutResponse());
+    try { res.json(ButtonManager.buildTimeoutResponse()); } catch { /* headers already sent */ }
   }, config.buttonTimeout);
 
   session._permissionTimeout = timeout;
@@ -379,12 +372,6 @@ ws.onSessionFocus = (sessionId) => {
 const pruneInterval = setInterval(() => {
   const pruned = sm.pruneIdle(config.sessionIdleTimeout);
   if (pruned.length > 0) {
-    for (const id of pruned) {
-      if (_stopTimers.has(id)) {
-        clearTimeout(_stopTimers.get(id));
-        _stopTimers.delete(id);
-      }
-    }
     log(`[claude-dj] Pruned ${pruned.length} idle session(s): ${pruned.join(', ')}`);
     ws.broadcast({ type: 'SESSION_DISCONNECTED', sessionIds: pruned, reason: 'idle_timeout' });
   }
@@ -398,12 +385,6 @@ const AUTO_SHUTDOWN_TICKS = parseInt(process.env.CLAUDE_DJ_SHUTDOWN_TICKS, 10) |
 const syncInterval = setInterval(() => {
   const { pruned, alive } = sm.syncFromDisk();
   if (pruned.length > 0) {
-    for (const id of pruned) {
-      if (_stopTimers.has(id)) {
-        clearTimeout(_stopTimers.get(id));
-        _stopTimers.delete(id);
-      }
-    }
     log(`[claude-dj] Synced: removed ${pruned.length} dead session(s): ${pruned.join(', ')}`);
     ws.broadcast({ type: 'SESSION_DISCONNECTED', sessionIds: pruned, reason: 'process_exit' });
   }
@@ -429,8 +410,8 @@ const syncInterval = setInterval(() => {
 // --- Start ---
 
 const port = config.port;
-server.listen(port, () => {
-  log(`[claude-dj] Bridge running at http://localhost:${port}`);
+server.listen(port, '127.0.0.1', () => {
+  log(`[claude-dj] Bridge running at http://127.0.0.1:${port}`);
   log(`[claude-dj] Virtual DJ at http://localhost:${port}`);
   log(`[claude-dj] WebSocket at ws://localhost:${port}${config.wsPath}`);
 });

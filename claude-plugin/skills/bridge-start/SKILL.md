@@ -10,13 +10,12 @@ Start the claude-dj bridge server. Run this if the bridge didn't auto-start or w
 
 1. Use the Bash tool to run:
 ```bash
-cd "${CLAUDE_PLUGIN_ROOT}" && node -e "
-const { existsSync } = require('fs');
-const { execSync } = require('child_process');
-const { spawn } = require('child_process');
+cd "${CLAUDE_PLUGIN_ROOT}" && node --input-type=module -e "
+import { existsSync } from 'node:fs';
+import { execFileSync, spawn } from 'node:child_process';
 if (!existsSync('node_modules/express')) {
   console.log('[claude-dj] Installing dependencies...');
-  execSync('npm install --omit=dev', { stdio: 'inherit' });
+  execFileSync(process.execPath, [process.env.npm_execpath || 'npm', 'install', '--omit=dev'], { stdio: 'inherit' });
 }
 const child = spawn(process.execPath, ['bridge/server.js'], { detached: true, stdio: 'ignore' });
 child.unref();

@@ -12,9 +12,22 @@ export class WsServer {
   }
 
   attach(server, path) {
-    this.wss = new WebSocketServer({ server, path });
+    this.wss = new WebSocketServer({
+      server,
+      path,
+      maxPayload: 64 * 1024, // 64KB
+      verifyClient: ({ origin }) => {
+        // Allow non-browser clients (no origin header) and localhost origins
+        if (!origin) return true;
+        return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      },
+    });
 
     this.wss.on('connection', (ws) => {
+      if (this.clients.size >= 50) {
+        ws.close(1013, 'Too many connections');
+        return;
+      }
       this.clients.add(ws);
       log(`[ws] client connected (total: ${this.clients.size})`);
 
@@ -45,14 +58,20 @@ export class WsServer {
         log(`[ws] client ready: ${msg.clientType} v${msg.version}`);
         if (this.onClientReady) this.onClientReady(ws);
         break;
-      case 'BUTTON_PRESS':
-        log(`[ws] BUTTON_PRESS slot=${msg.slot}`);
+      case 'BUTTON_PRESS': {
+        const slot = Number(msg.slot);
+        if (!Number.isInteger(slot) || slot < 0 || slot > 12) {
+          warn(`[ws] BUTTON_PRESS dropped — invalid slot: ${msg.slot}`);
+          break;
+        }
+        log(`[ws] BUTTON_PRESS slot=${slot}`);
         if (this.onButtonPress) {
-          this.onButtonPress(msg.slot, msg.timestamp);
+          this.onButtonPress(slot, msg.timestamp);
         } else {
           warn(`[ws] BUTTON_PRESS dropped — no handler registered`);
         }
         break;
+      }
       case 'AGENT_FOCUS':
         if (this.onAgentFocus) this.onAgentFocus(msg.agentId || null);
         break;

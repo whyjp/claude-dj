@@ -1,8 +1,15 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 import { parseFencedChoices, parseRegexChoices } from './choiceParser.js';
 
-const BRIDGE_URL = process.env.CLAUDE_DJ_URL || 'http://localhost:39200';
+const BRIDGE_URL = (() => {
+  const url = process.env.CLAUDE_DJ_URL || 'http://localhost:39200';
+  try { const h = new URL(url).hostname; if (['localhost','127.0.0.1','::1'].includes(h)) return url; } catch {}
+  process.stderr.write(`[claude-dj] CLAUDE_DJ_URL must be localhost, got: ${url}\n`);
+  process.exit(1);
+})();
 
 /**
  * Extract last assistant text from transcript JSONL and parse choices.
@@ -10,7 +17,11 @@ const BRIDGE_URL = process.env.CLAUDE_DJ_URL || 'http://localhost:39200';
  */
 function parseChoices(transcriptPath) {
   try {
-    const content = readFileSync(transcriptPath, 'utf8');
+    // Guard against path traversal — only allow files under ~/.claude/ or system temp
+    const resolved = path.resolve(transcriptPath);
+    const allowedPrefixes = [path.join(os.homedir(), '.claude'), os.tmpdir()];
+    if (!allowedPrefixes.some(p => resolved.startsWith(p))) return null;
+    const content = readFileSync(resolved, 'utf8');
     const lines = content.trim().split('\n');
 
     let lastAssistant = null;

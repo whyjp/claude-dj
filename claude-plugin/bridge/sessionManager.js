@@ -12,6 +12,7 @@ export class SessionManager {
 
   getOrCreate(input) {
     const id = input.session_id;
+    if (!id) throw new Error('session_id is required');
     if (!this.sessions.has(id)) {
       this.sessions.set(id, {
         id,
@@ -160,10 +161,13 @@ export class SessionManager {
       clearTimeout(session._permissionTimeout);
       session._permissionTimeout = null;
     }
+    if (session.respondFn) {
+      try { session.respondFn({ type: 'binary', value: 'deny' }); } catch { /* already sent */ }
+      session.respondFn = null;
+    }
     session.state = 'IDLE';
     session.prompt = null;
     session.waitingSince = null;
-    session.respondFn = null;
     session.idleSince = Date.now();
     return session;
   }
@@ -305,8 +309,10 @@ export class SessionManager {
    * - Returns { pruned: [...sessionIds], alive: [...sessionIds] }
    */
   syncFromDisk() {
-    const sessionsDir = path.join(os.homedir(), '.claude', 'sessions');
     const result = { pruned: [], alive: [] };
+    let sessionsDir;
+    try { sessionsDir = path.join(os.homedir(), '.claude', 'sessions'); }
+    catch { return result; }
 
     // Read all on-disk session files → Map<sessionId, pid>
     const diskSessions = new Map();

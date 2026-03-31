@@ -42,13 +42,13 @@ describe('SessionManager: edge cases', () => {
     assert.equal(session.respondFn, null);
   });
 
-  it('dismissSession clears respondFn without calling it', () => {
-    let called = false;
+  it('dismissSession calls respondFn with deny before clearing', () => {
+    let decision = null;
     const session = sm.getOrCreate({ session_id: 's1', cwd: '/tmp' });
     sm.handlePermission({ session_id: 's1', tool_name: 'Bash', tool_input: { command: 'ls' } });
-    session.respondFn = () => { called = true; };
+    session.respondFn = (d) => { decision = d; };
     sm.dismissSession('s1');
-    assert.equal(called, false);
+    assert.deepStrictEqual(decision, { type: 'binary', value: 'deny' });
     assert.equal(session.respondFn, null);
     assert.equal(session.state, 'IDLE');
   });
@@ -114,10 +114,8 @@ describe('SessionManager: edge cases', () => {
     assert.equal(json[0].prompt.type, 'BINARY');
   });
 
-  it('getOrCreate with undefined session_id creates session with undefined id', () => {
-    const session = sm.getOrCreate({ cwd: '/tmp' });
-    assert.equal(session.id, undefined);
-    assert.equal(sm.sessions.has(undefined), true);
+  it('getOrCreate with undefined session_id throws', () => {
+    assert.throws(() => sm.getOrCreate({ cwd: '/tmp' }), { message: 'session_id is required' });
   });
 
   it('handleSubagentStop resets focusAgentId if it matches stopped agent', () => {

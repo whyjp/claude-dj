@@ -361,6 +361,7 @@ const STATE_LABELS = {
   PROCESSING: 'processing',
   WAITING_BINARY: 'waiting',
   WAITING_CHOICE: 'choosing',
+  WAITING_RESPONSE: 'awaiting input',
   DISCONNECTED: 'disconnected',
 };
 

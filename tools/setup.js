@@ -99,7 +99,7 @@ export async function install({ global = true } = {}) {
   console.log(`  Key:     ${PLUGIN_KEY}`);
   console.log(`  Path:    ${pluginRoot}`);
   console.log(`  Repo:    github:${GITHUB_REPO}`);
-  console.log(`  Hooks:   5 (permission, notify, postToolUse, stop, userPrompt)`);
+  console.log(`  Hooks:   8 (sessionStart, permission, notify, postToolUse, stop, userPrompt, subagentStart, subagentStop)`);
   console.log(`  Skills:  choice-format`);
   console.log(``);
   console.log(`  New Claude sessions will auto-load claude-dj.`);
