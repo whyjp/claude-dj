@@ -390,8 +390,11 @@ app.post('/api/hook/permission', (req, res) => {
     const response = ButtonManager.buildHookResponse(decision, isChoice, question);
     broadcastSessionLayout(session);
 
-    // Persist always-allow rules to settings.local.json (Claude Code hook can't do this)
+    // Persist always-allow rules to settings.local.json as fallback.
+    // With updatedPermissions in hook response, Claude Code should persist natively.
+    // TODO: remove this fallback after confirming native persistence works.
     if (decision.suggestion?.rules?.length && session.cwd) {
+      log(`[rules] fallback persist (updatedPermissions should handle this natively)`);
       _persistAlwaysAllowRules(session.cwd, decision.suggestion);
     }
 

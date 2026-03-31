@@ -126,13 +126,16 @@ export class ButtonManager {
       };
     }
 
-    // When "always allow" is pressed, return the permission_suggestion as the decision.
-    // Claude Code uses this to both allow the tool AND persist the rule.
+    // When "always allow" is pressed, return the permission_suggestion via updatedPermissions.
+    // Claude Code persists the rule natively when updatedPermissions is present.
     if (decision.suggestion) {
       return {
         hookSpecificOutput: {
           hookEventName: 'PermissionRequest',
-          decision: decision.suggestion,
+          decision: {
+            behavior: 'allow',
+            updatedPermissions: [decision.suggestion],
+          },
         },
       };
     }

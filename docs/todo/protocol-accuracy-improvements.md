@@ -121,14 +121,14 @@
 
 ## MEDIUM Priority — Protocol Enhancements
 
-### 7. Use `updatedPermissions` instead of direct settings.local.json write
-- **Current:** Bridge writes always-allow rules directly to `~/.claude/settings.local.json`
-- **Better:** Return `updatedPermissions` in hook response — Claude Code persists natively
-- **Risk:** Requires testing — confirm Claude Code applies rules from PermissionRequest response
+### 7. Use `updatedPermissions` instead of direct settings.local.json write — IN PROGRESS
+- **Current:** Hook response now includes `updatedPermissions` in correct format
+- **Status:** `_persistAlwaysAllowRules()` kept as fallback with log marker
 - **Implementation:**
-  - [ ] Update `resolvePress()` in `server.js` — return `decision.updatedPermissions` array
-  - [ ] Remove `_persistAlwaysAllowRules()` function
-  - [ ] Test: verify rules applied by Claude Code on next tool call
+  - [x] Update `buildHookResponse()` — return `{behavior: 'allow', updatedPermissions: [suggestion]}`
+  - [x] Add fallback log marker to identify when direct write triggers
+  - [ ] Live test: verify Claude Code applies rules from hook response natively
+  - [ ] Remove `_persistAlwaysAllowRules()` after confirming native persistence
 
 ### 8. ~~Leverage PreToolUse permission decisions~~ — REMOVED
 - **Reason:** Claude Code's internal auto-mode classifier (LLM-based) and permission rules already handle auto-approval. Auto-approved tools never fire PermissionRequest, so they never reach the deck. A bridge-side rule engine would be redundant.
