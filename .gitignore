@@ -8,3 +8,4 @@ ulanzi/software/
 test/live/scratch.txt
 .playwright-mcp/
 *.png
+!docs/images/*.png

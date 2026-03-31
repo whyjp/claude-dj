@@ -320,7 +320,14 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 ## Features
 
 - **Skill-injected choice pipeline** — Claude uses `AskUserQuestion` for all decisions, enabling button-driven interaction
+
+![Virtual DJ choice buttons in action](docs/images/virtualdeck_choice_sample.png)
 - **Permission buttons** — Approve / Always Allow / Deny mapped to deck slots
+
+| Claude Code (terminal) | Virtual DJ (deck) |
+|:-:|:-:|
+| ![Permission prompt in Claude Code](docs/images/allow-addrule-deny-claude.png) | ![Permission buttons on Virtual DJ](docs/images/allow-addrule-deny-deck.png) |
+
 - **Multi-select toggle+submit** — `multiSelect` questions show ☐/☑ toggle buttons (slots 0-8) + ✔ Done (slot 9), live verified
 - **Cross-session focus** — WAITING_CHOICE/BINARY sessions auto-prioritized, processing events filtered
 - **Subagent tracking** — Tree-view display, independent state per agent, slot 12 cycling
