@@ -8,7 +8,7 @@
 import { initGrid, onPress, renderLayout, renderAllDim, setConnectionOverlay, updateMiniAgentTabs } from './d200-renderer.js';
 import { initDashboard, log, updateWsStatus, clearLog, updateSession, dimAllSessions, disconnectSessions, setSessions, switchLogSession } from './dashboard.js';
 
-let VERSION = '0.2.6';
+let VERSION = '0.2.7';
 const WS_PATH = '/ws';
 const RECONNECT_DELAY = 3000;
 
