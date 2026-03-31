@@ -8,22 +8,19 @@ Control Claude Code with physical buttons or browser — no terminal focus neede
 
 ### 1. Install Plugin
 
-Add the marketplace to `~/.claude/settings.json`:
+Claude Code 세션에서:
 
-```jsonc
-{
-  "extraKnownMarketplaces": {
-    "claude-dj": {
-      "source": {
-        "source": "github",
-        "repo": "whyjp/claude-dj"
-      }
-    }
-  }
-}
+```
+/plugin marketplace add whyjp/claude-dj
+/plugin install claude-dj
 ```
 
-Then in Claude Code, run `/plugin` and enable **claude-dj**. Hooks + skills are registered automatically.
+이 한 번의 설치로 **hooks + skills**가 모두 설정됩니다.
+
+| 자동 설정 항목 | 내용 |
+|-------------|------|
+| **Hooks** | PermissionRequest(blocking), PreToolUse/PostToolUse(notify), Stop(choice parsing), SubagentStart/Stop, UserPromptSubmit |
+| **Skills** | choice-format — Claude가 모든 선택지를 AskUserQuestion으로 출력 |
 
 ### 2. Start the Bridge
 
