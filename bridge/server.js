@@ -44,7 +44,12 @@ app.post('/api/shutdown', (req, res) => {
   res.json({ status: 'shutting_down' });
   clearInterval(pruneInterval);
   clearInterval(syncInterval);
-  server.close(() => process.exit(0));
+  // Terminate all WebSocket clients
+  for (const client of ws.clients) {
+    client.terminate();
+  }
+  // Force exit — server.close can hang with keep-alive connections
+  setTimeout(() => process.exit(0), 500);
 });
 
 app.get('/api/status', (req, res) => {
@@ -343,7 +348,11 @@ const syncInterval = setInterval(() => {
       log(`[claude-dj] No sessions or clients for ${_emptyTicks * 30}s — shutting down`);
       clearInterval(pruneInterval);
       clearInterval(syncInterval);
+      for (const client of ws.clients) {
+        client.close(1001, 'bridge shutting down');
+      }
       server.close(() => process.exit(0));
+      setTimeout(() => process.exit(0), 3000);
     }
   } else {
     _emptyTicks = 0;
