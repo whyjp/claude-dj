@@ -429,18 +429,25 @@ describe('SessionManager', () => {
     assert.equal(session.prompt.choices.length, 2);
   });
 
-  it('handlePermission binary sets hasAlwaysAllow from permission_suggestions', () => {
+  it('handlePermission binary builds options with addRule from permission_suggestions', () => {
     sm.handlePermission({
       session_id: 's1', cwd: '/a', tool_name: 'Bash',
       tool_input: { command: 'ls' },
-      permission_suggestions: [{ rule: 'always allow' }],
+      permission_suggestions: [{ type: 'addRules', rules: [{ toolName: 'Bash', ruleContent: 'ls' }], behavior: 'allow', destination: 'localSettings' }],
     });
-    assert.equal(sm.get('s1').prompt.hasAlwaysAllow, true);
+    const opts = sm.get('s1').prompt.options;
+    assert.equal(opts.length, 3); // allow, addRule, deny
+    assert.equal(opts[0].type, 'allow');
+    assert.equal(opts[1].type, 'addRule');
+    assert.equal(opts[2].type, 'deny');
   });
 
-  it('handlePermission binary without permission_suggestions', () => {
+  it('handlePermission binary without permission_suggestions builds 2 options', () => {
     sm.handlePermission({ session_id: 's1', cwd: '/a', tool_name: 'Bash', tool_input: { command: 'ls' } });
-    assert.equal(sm.get('s1').prompt.hasAlwaysAllow, false);
+    const opts = sm.get('s1').prompt.options;
+    assert.equal(opts.length, 2); // allow, deny
+    assert.equal(opts[0].type, 'allow');
+    assert.equal(opts[1].type, 'deny');
   });
 
   it('handleSubagentStop clears focusAgentId when matching', () => {

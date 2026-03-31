@@ -6,7 +6,7 @@
  */
 
 import { initGrid, onPress, renderLayout, renderAllDim, setConnectionOverlay, updateMiniAgentTabs } from './d200-renderer.js';
-import { initDashboard, log, updateWsStatus, clearLog, updateSession, dimAllSessions, disconnectSessions, setSessions, switchLogSession } from './dashboard.js';
+import { initDashboard, log, updateWsStatus, clearLog, updateSession, dimAllSessions, disconnectSessions, setSessions, getSessions, switchLogSession } from './dashboard.js';
 
 const VERSION = '0.1.0';
 const WS_PATH = '/ws';
@@ -156,19 +156,18 @@ function _clearReconnect() {
 function _handleMessage(msg) {
   const sid = msg.session?.id || null;
   switch (msg.type) {
-    case 'WELCOME':
+    case 'WELCOME': {
       log('sys', `Bridge v${msg.version || '?'} — ${(msg.sessions || []).length} session(s)`);
       if (msg.sessions) setSessions(msg.sessions);
-      if (msg.sessions && msg.sessions.length > 0) {
-        const first = msg.sessions[0];
-        updateMiniAgentTabs(first.agents || [], null, _sendAgentFocus);
-      }
+      const firstId = msg.sessions?.[0]?.id || null;
+      _refreshMiniTabs(firstId, null);
       break;
+    }
 
     case 'LAYOUT':
       renderLayout(msg);
       updateSession(msg);
-      updateMiniAgentTabs(msg.agents || [], msg.agent?.agentId || null, _sendAgentFocus);
+      _refreshMiniTabs(sid, msg.agent?.agentId || null);
       if (msg.focusSwitched && sid) {
         switchLogSession(sid, msg.agent?.agentId || null);
       }
@@ -177,12 +176,13 @@ function _handleMessage(msg) {
     case 'ALL_DIM':
       renderAllDim();
       dimAllSessions();
-      updateMiniAgentTabs([], null, _sendAgentFocus);
+      _refreshMiniTabs(null, null);
       break;
 
     case 'SESSION_DISCONNECTED':
       renderAllDim();
       disconnectSessions(msg.sessionIds || [], msg.reason || 'process_exit');
+      _refreshMiniTabs(null, null);
       break;
 
     default:
@@ -286,6 +286,20 @@ async function _openMiniPopup() {
 
 function _sendAgentFocus(agentId) {
   _sendJson({ type: 'AGENT_FOCUS', agentId: agentId || null });
+}
+
+function _sendSessionFocus(sessionId) {
+  _sendJson({ type: 'SESSION_FOCUS', sessionId });
+}
+
+/** Refresh both tiers of the mini agent tab bar from current sessions state. */
+function _refreshMiniTabs(focusSessionId, focusAgentId) {
+  const sessions = getSessions();
+  // Determine focused session: use provided or first available
+  const sid = focusSessionId || (sessions.size > 0 ? [...sessions.keys()][0] : null);
+  const sess = sid ? sessions.get(sid) : null;
+  const agents = sess?.agents || [];
+  updateMiniAgentTabs(sessions, sid, focusAgentId, agents, _sendSessionFocus, _sendAgentFocus);
 }
 
 // ── Start ─────────────────────────────────────────────────────

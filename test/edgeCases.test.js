@@ -201,7 +201,7 @@ describe('ButtonManager: edge cases', () => {
   });
 
   it('resolvePress WAITING_BINARY slot 3+ returns null', () => {
-    const prompt = { type: 'BINARY', hasAlwaysAllow: true };
+    const prompt = { type: 'BINARY', options: [{ type: 'allow' }, { type: 'addRule', suggestion: {} }, { type: 'deny' }] };
     assert.equal(ButtonManager.resolvePress(3, 'WAITING_BINARY', prompt), null);
     assert.equal(ButtonManager.resolvePress(10, 'WAITING_BINARY', prompt), null);
   });
@@ -217,9 +217,9 @@ describe('ButtonManager: edge cases', () => {
     assert.equal(ButtonManager.resolvePress(5, 'WAITING_CHOICE', prompt), null);
   });
 
-  it('buildHookResponse for alwaysAllow with suggestion returns suggestion as decision', () => {
+  it('buildHookResponse for addRule option returns suggestion as decision', () => {
     const suggestion = { type: 'addRules', rules: [{ toolName: 'Bash', ruleContent: 'npm test' }], behavior: 'allow', destination: 'localSettings' };
-    const resp = ButtonManager.buildHookResponse({ type: 'binary', value: 'allow', suggestion }, false);
+    const resp = ButtonManager.buildHookResponse({ type: 'binary', value: 'allow', option: { type: 'addRule', suggestion } }, false);
     assert.deepEqual(resp.hookSpecificOutput.decision, suggestion);
   });
 

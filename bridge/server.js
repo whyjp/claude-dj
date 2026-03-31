@@ -219,10 +219,8 @@ app.post('/api/hook/permission', (req, res) => {
     const labels = session.prompt.choices.map((c) => `${c.index}:${c.label}`).join(', ');
     log(`[deck←] ${session.prompt.choices.length} buttons → [${labels}]${session.prompt.multiSelect ? ' (multiSelect)' : ''}`);
   } else {
-    const buttons = session.prompt.hasAlwaysAllow
-      ? '[0:Allow, 1:AlwaysAllow, 2:Deny]'
-      : '[0:Allow, 1:Deny]';
-    log(`[deck←] tool=${input.tool_name} cmd="${session.prompt.command}" ${buttons}${session.prompt.hasAlwaysAllow ? ` rule="${session.prompt.alwaysAllowSuggestion?.rules?.[0]?.ruleContent || '?'}"` : ''}`);
+    const optLabels = session.prompt.options.map((o, i) => `${i}:${o.label}${o.preview ? '(' + o.preview.slice(0, 30) + ')' : ''}`).join(', ');
+    log(`[deck←] tool=${input.tool_name} cmd="${session.prompt.command}" [${optLabels}]`);
   }
 
   broadcastLayout(layout);
@@ -249,14 +247,15 @@ app.post('/api/hook/permission', (req, res) => {
     broadcastLayout(newLayout);
 
     // Persist always-allow rules to settings.local.json (Claude Code hook can't do this)
-    if (decision.suggestion?.rules?.length && session.cwd) {
-      _persistAlwaysAllowRules(session.cwd, decision.suggestion);
+    const opt = decision.option;
+    if (opt?.type === 'addRule' && opt.suggestion?.rules?.length && session.cwd) {
+      _persistAlwaysAllowRules(session.cwd, opt.suggestion);
     }
 
     try {
       res.json(response);
       const d = response.hookSpecificOutput?.decision;
-      if (decision.suggestion) {
+      if (opt?.type === 'addRule') {
         log(`[claude←] tool=${input.tool_name} behavior=allow+addRules dest=${d.destination} rules=${JSON.stringify(d.rules)}`);
       } else if (isChoice) {
         log(`[claude←] tool=${input.tool_name} behavior=allow answer=${d.updatedInput?.answer}`);
@@ -337,7 +336,7 @@ ws.onButtonPress = (slot, timestamp) => {
   }
 
   // Log what the user actually pressed
-  const label = decision.suggestion ? 'AlwaysAllow' : decision.type === 'choice' ? `choice:${decision.value}` : decision.value;
+  const label = decision.option?.label || (decision.type === 'choice' ? `choice:${decision.value}` : decision.value);
   log(`[deck→] slot=${slot} pressed="${label}" session=${focus.name}`);
   sm.resolveWaiting(focus.id, decision);
 };

@@ -95,12 +95,22 @@ export class SessionManager {
     } else {
       session.state = 'WAITING_BINARY';
       const suggestions = Array.isArray(input.permission_suggestions) ? input.permission_suggestions : [];
+      const cmd = input.tool_input?.command || input.tool_input?.file_path || '';
+      const options = [
+        { type: 'allow', label: 'Allow' },
+        ...suggestions.map((s) => ({
+          type: 'addRule',
+          label: 'AddRule',
+          suggestion: s,
+          preview: s.rules?.[0]?.ruleContent || '',
+        })),
+        { type: 'deny', label: 'Deny' },
+      ];
       session.prompt = {
         type: 'BINARY',
         toolName: input.tool_name,
-        command: input.tool_input?.command || input.tool_input?.file_path || '',
-        hasAlwaysAllow: suggestions.length > 0,
-        alwaysAllowSuggestion: suggestions[0] || null,
+        command: cmd,
+        options,
       };
     }
 

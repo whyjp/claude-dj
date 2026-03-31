@@ -13,14 +13,16 @@ describe('ButtonManager', () => {
     assert.equal(layout.preset, 'processing');
   });
 
-  it('returns binary layout with approve/deny', () => {
+  it('returns binary layout with options', () => {
     const session = {
       state: 'WAITING_BINARY',
-      prompt: { type: 'BINARY', toolName: 'Bash', command: 'rm -rf dist', hasAlwaysAllow: false },
+      prompt: { type: 'BINARY', toolName: 'Bash', command: 'rm -rf dist', options: [
+        { type: 'allow', label: 'Allow' }, { type: 'deny', label: 'Deny' },
+      ] },
     };
     const layout = ButtonManager.layoutFor(session);
     assert.equal(layout.preset, 'binary');
-    assert.deepEqual(layout.prompt, session.prompt);
+    assert.equal(layout.prompt.options.length, 2);
   });
 
   it('returns choice layout with choices', () => {
@@ -39,34 +41,46 @@ describe('ButtonManager', () => {
     assert.equal(layout.choices.length, 2);
   });
 
-  it('resolves binary button press slot 0 to approve', () => {
-    const decision = ButtonManager.resolvePress(0, 'WAITING_BINARY', {
-      type: 'BINARY', hasAlwaysAllow: false,
-    });
+  it('resolves binary slot 0 to allow', () => {
+    const prompt = { options: [{ type: 'allow', label: 'Allow' }, { type: 'deny', label: 'Deny' }] };
+    const decision = ButtonManager.resolvePress(0, 'WAITING_BINARY', prompt);
     assert.equal(decision.value, 'allow');
+    assert.equal(decision.option.type, 'allow');
   });
 
-  it('resolves binary button press slot 1 to deny (no alwaysAllow)', () => {
-    const decision = ButtonManager.resolvePress(1, 'WAITING_BINARY', {
-      type: 'BINARY', hasAlwaysAllow: false,
-    });
+  it('resolves binary slot 1 to deny (2-button)', () => {
+    const prompt = { options: [{ type: 'allow', label: 'Allow' }, { type: 'deny', label: 'Deny' }] };
+    const decision = ButtonManager.resolvePress(1, 'WAITING_BINARY', prompt);
     assert.equal(decision.value, 'deny');
   });
 
-  it('resolves binary button press slot 1 to allow with suggestion (with alwaysAllow)', () => {
+  it('resolves binary slot 1 to addRule (3-button)', () => {
     const suggestion = { type: 'addRules', rules: [{ toolName: 'Bash', ruleContent: 'npm test' }], behavior: 'allow', destination: 'localSettings' };
-    const decision = ButtonManager.resolvePress(1, 'WAITING_BINARY', {
-      type: 'BINARY', hasAlwaysAllow: true, alwaysAllowSuggestion: suggestion,
-    });
+    const prompt = { options: [
+      { type: 'allow', label: 'Allow' },
+      { type: 'addRule', label: 'AddRule', suggestion, preview: 'npm test' },
+      { type: 'deny', label: 'Deny' },
+    ] };
+    const decision = ButtonManager.resolvePress(1, 'WAITING_BINARY', prompt);
     assert.equal(decision.value, 'allow');
-    assert.deepEqual(decision.suggestion, suggestion);
+    assert.equal(decision.option.type, 'addRule');
+    assert.deepEqual(decision.option.suggestion, suggestion);
   });
 
-  it('resolves binary button press slot 2 to deny (with alwaysAllow)', () => {
-    const decision = ButtonManager.resolvePress(2, 'WAITING_BINARY', {
-      type: 'BINARY', hasAlwaysAllow: true,
-    });
+  it('resolves binary slot 2 to deny (3-button)', () => {
+    const prompt = { options: [
+      { type: 'allow', label: 'Allow' },
+      { type: 'addRule', label: 'AddRule', suggestion: {}, preview: '' },
+      { type: 'deny', label: 'Deny' },
+    ] };
+    const decision = ButtonManager.resolvePress(2, 'WAITING_BINARY', prompt);
     assert.equal(decision.value, 'deny');
+  });
+
+  it('resolves binary out-of-range slot to null', () => {
+    const prompt = { options: [{ type: 'allow', label: 'Allow' }, { type: 'deny', label: 'Deny' }] };
+    assert.equal(ButtonManager.resolvePress(5, 'WAITING_BINARY', prompt), null);
+    assert.equal(ButtonManager.resolvePress(-1, 'WAITING_BINARY', prompt), null);
   });
 
   it('resolves choice button press slot 2 to answer "3"', () => {
@@ -84,7 +98,7 @@ describe('ButtonManager', () => {
 
   it('returns null for invalid slot press', () => {
     const decision = ButtonManager.resolvePress(7, 'WAITING_BINARY', {
-      type: 'BINARY', hasAlwaysAllow: false,
+      type: 'BINARY', options: [{ type: 'allow' }, { type: 'deny' }],
     });
     assert.equal(decision, null);
   });
@@ -198,11 +212,6 @@ describe('ButtonManager', () => {
     assert.deepEqual(layout.agents, []);
   });
 
-  it('resolvePress returns null for negative slot', () => {
-    const result = ButtonManager.resolvePress(-1, 'WAITING_BINARY', { type: 'BINARY', hasAlwaysAllow: false });
-    assert.equal(result, null);
-  });
-
   it('resolvePress returns null for slot beyond choices', () => {
     const result = ButtonManager.resolvePress(5, 'WAITING_CHOICE', {
       type: 'CHOICE', choices: [{ index: 1, label: 'A' }, { index: 2, label: 'B' }],
@@ -212,16 +221,6 @@ describe('ButtonManager', () => {
 
   it('resolvePress returns null for unknown state', () => {
     const result = ButtonManager.resolvePress(0, 'SOME_STATE', {});
-    assert.equal(result, null);
-  });
-
-  it('resolvePress binary slot 3+ returns null (no alwaysAllow)', () => {
-    const result = ButtonManager.resolvePress(3, 'WAITING_BINARY', { type: 'BINARY', hasAlwaysAllow: false });
-    assert.equal(result, null);
-  });
-
-  it('resolvePress binary slot 3+ returns null (with alwaysAllow)', () => {
-    const result = ButtonManager.resolvePress(3, 'WAITING_BINARY', { type: 'BINARY', hasAlwaysAllow: true });
     assert.equal(result, null);
   });
 
@@ -259,17 +258,15 @@ describe('ButtonManager', () => {
     assert.equal(resp.hookSpecificOutput.decision.behavior, 'deny');
   });
 
-  it('buildHookResponse for alwaysAllow returns suggestion as decision', () => {
+  it('buildHookResponse for addRule option returns suggestion as decision', () => {
     const suggestion = { type: 'addRules', rules: [{ toolName: 'Bash', ruleContent: 'npm test' }], behavior: 'allow', destination: 'localSettings' };
-    const resp = ButtonManager.buildHookResponse({ value: 'allow', suggestion }, false);
+    const resp = ButtonManager.buildHookResponse({ value: 'allow', option: { type: 'addRule', suggestion } }, false);
     assert.deepEqual(resp.hookSpecificOutput.decision, suggestion);
-    assert.equal(resp.hookSpecificOutput.decision.behavior, 'allow');
   });
 
-  it('buildHookResponse for allow without suggestion returns simple allow', () => {
-    const resp = ButtonManager.buildHookResponse({ value: 'allow' }, false);
+  it('buildHookResponse for allow option returns simple allow', () => {
+    const resp = ButtonManager.buildHookResponse({ value: 'allow', option: { type: 'allow' } }, false);
     assert.equal(resp.hookSpecificOutput.decision.behavior, 'allow');
-    assert.equal(resp.hookSpecificOutput.decision.type, undefined);
   });
 
   it('buildTimeoutResponse returns deny behavior', () => {

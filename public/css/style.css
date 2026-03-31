@@ -487,21 +487,32 @@ body.mini .dev-panel { border-right: none; }
 body.mini .dev-hdr { display: none; }
 body.mini .state-info { display: none; }
 
-/* ── MINI AGENT TAB BAR ── */
+/* ── MINI AGENT TAB BAR (2-tier) ── */
 .mini-agent-bar { display: none; }
 body.mini .mini-agent-bar {
   display: flex; align-items: center;
   border-bottom: 1px solid var(--bd);
   background: var(--bg2); padding: 0 8px; gap: 0; flex-shrink: 0;
 }
+body.mini .mini-agent-child {
+  background: var(--surf); border-bottom: 1px solid var(--bd);
+}
+body.mini .mini-agent-child:empty { display: none; }
 .mini-agent-bar .ma-tab {
   padding: 5px 10px; font-size: 9px; color: var(--muted);
   letter-spacing: .04em; cursor: pointer; white-space: nowrap;
   border-bottom: 2px solid transparent; transition: all .15s; flex-shrink: 0;
 }
 .mini-agent-bar .ma-tab:hover { color: var(--white); }
-.mini-agent-bar .ma-tab.on { color: var(--purple); border-bottom-color: var(--purple); }
-.mini-agent-bar .ma-tab.root.on { color: var(--blue); border-bottom-color: var(--blue); }
+/* Row 1: session tabs — blue when active */
+.mini-agent-bar .ma-tab.session.on { color: var(--blue); border-bottom-color: var(--blue); }
+/* Row 1: agent count badge */
+.mini-agent-bar .ma-tab .ma-badge {
+  font-size: 8px; color: var(--purple); margin-left: 3px; opacity: .7;
+}
+/* Row 2: subagent tabs — purple when active, root tab blue */
+.mini-agent-child .ma-tab.on { color: var(--purple); border-bottom-color: var(--purple); }
+.mini-agent-child .ma-tab.root.on { color: var(--blue); border-bottom-color: var(--blue); }
 .mini-agent-bar .ma-expand {
   margin-left: auto; padding: 4px 8px; font-size: 14px; color: var(--muted);
   cursor: pointer; transition: color .15s; flex-shrink: 0;

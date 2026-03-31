@@ -52,13 +52,12 @@ export class ButtonManager {
 
   static resolvePress(slot, state, prompt) {
     if (!prompt) return null;
-    // Match Claude Code's permission dialog order: 1=Allow, 2=Always, 3=Deny
+    // Dynamic options: [allow, ...addRule×N, deny]
     if (state === 'WAITING_BINARY') {
-      if (slot === 0) return { type: 'binary', value: 'allow' };
-      if (slot === 1 && prompt.hasAlwaysAllow) return { type: 'binary', value: 'allow', suggestion: prompt.alwaysAllowSuggestion };
-      if (slot === 1 && !prompt.hasAlwaysAllow) return { type: 'binary', value: 'deny' };
-      if (slot === 2) return { type: 'binary', value: 'deny' };
-      return null;
+      const options = prompt.options || [];
+      if (slot < 0 || slot >= options.length) return null;
+      const opt = options[slot];
+      return { type: 'binary', value: opt.type === 'deny' ? 'deny' : 'allow', option: opt };
     }
 
     if (state === 'WAITING_CHOICE') {
@@ -109,17 +108,17 @@ export class ButtonManager {
       };
     }
 
-    // When "always allow" is pressed, return the permission_suggestion as the decision.
-    // Claude Code uses this to both allow the tool AND persist the rule.
-    if (decision.suggestion) {
+    // addRule: return the permission_suggestion as decision (behavior:"allow" + addRules)
+    if (decision.option?.type === 'addRule' && decision.option.suggestion) {
       return {
         hookSpecificOutput: {
           hookEventName: 'PermissionRequest',
-          decision: decision.suggestion,
+          decision: decision.option.suggestion,
         },
       };
     }
 
+    // allow or deny
     return {
       hookSpecificOutput: {
         hookEventName: 'PermissionRequest',

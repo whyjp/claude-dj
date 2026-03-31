@@ -174,21 +174,16 @@ export function renderLayout(msg) {
       _setInfoState('PROCESSING');
       break;
 
-    // Match Claude Code dialog: 1=Allow, 2=Always Allow, 3=Deny
+    // Dynamic options: [allow, ...addRule×N, deny]
     case 'binary': {
-      const toolName = msg.prompt?.toolName || '';
+      const options = msg.prompt?.options || [];
       const command = msg.prompt?.command || '';
-      const cmdPreview = _truncCmd(command, 18);
-
-      _setKeyState(0, 'approve', { cmdPreview });
-      if (msg.prompt?.hasAlwaysAllow) {
-        const ruleContent = msg.prompt?.alwaysAllowSuggestion?.rules?.[0]?.ruleContent || '';
-        const rulePreview = _truncCmd(ruleContent, 18);
-        _setKeyState(1, 'always', { rulePreview });
-        _setKeyState(2, 'deny');
-      } else {
-        _setKeyState(1, 'deny');
-      }
+      options.forEach((opt, i) => {
+        const meta = {};
+        if (opt.type === 'allow') meta.cmdPreview = _truncCmd(command, 18);
+        if (opt.type === 'addRule') meta.rulePreview = _truncCmd(opt.preview || '', 18);
+        _setKeyState(i, opt.type === 'allow' ? 'approve' : opt.type === 'addRule' ? 'always' : 'deny', meta);
+      });
       _setInfoState('WAITING_BINARY');
       if (msg.prompt) {
         const actEl = document.getElementById('iAct');
