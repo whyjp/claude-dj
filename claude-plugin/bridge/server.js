@@ -272,24 +272,19 @@ app.post('/api/hook/permission', (req, res) => {
 
   broadcastSessionLayout(session);
 
-  const timeout = setTimeout(() => {
-    if (!session.respondFn) return; // already resolved by button press
-    warn(`[hook→claude] TIMEOUT (${config.buttonTimeout}ms) session=${session.id} tool=${input.tool_name} — auto-deny sent`);
+  // Detect hook process killed by Claude Code (connection drop)
+  req.on('close', () => {
+    if (!session.respondFn) return; // already resolved
+    log(`[hook/permission] connection closed by client — session=${session.id} tool=${input.tool_name}`);
     session.respondFn = null;
-    session._permissionTimeout = null;
-    sm.handleStop({ session_id: session.id, stop_hook_active: false });
-    ws.broadcast({ type: 'ALL_DIM' });
-    try { res.json(ButtonManager.buildTimeoutResponse()); } catch { /* headers already sent */ }
-  }, config.buttonTimeout);
-
-  session._permissionTimeout = timeout;
+    session.state = 'PROCESSING';
+    session.prompt = null;
+    session.waitingSince = null;
+    broadcastSessionLayout(session);
+  });
 
   const question = session.prompt?.question || '';
   session.respondFn = (decision) => {
-    if (session._permissionTimeout) {
-      clearTimeout(session._permissionTimeout);
-      session._permissionTimeout = null;
-    }
     const response = ButtonManager.buildHookResponse(decision, isChoice, question);
     broadcastSessionLayout(session);
 

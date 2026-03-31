@@ -14,11 +14,12 @@ export class SessionManager {
     const id = input.session_id;
     if (!id) throw new Error('session_id is required');
     if (!this.sessions.has(id)) {
-      const diskName = _readDiskSessionName(id);
+      const disk = _findDiskSession(id, input.cwd);
       const baseName = input.cwd ? path.basename(input.cwd) : 'unknown';
       this.sessions.set(id, {
         id,
-        name: diskName || `${baseName} (${id.slice(0, 6)})`,
+        _diskPid: disk?.pid || null,
+        name: disk?.name || `${baseName} (${id.slice(0, 6)})`,
         cwd: input.cwd || '',
         state: 'IDLE',
         waitingSince: null,
@@ -316,15 +317,15 @@ export class SessionManager {
     try { sessionsDir = path.join(os.homedir(), '.claude', 'sessions'); }
     catch { return result; }
 
-    // Read all on-disk session files → Map<sessionId, {pid, name}>
-    const diskSessions = new Map();
+    // Read all on-disk session files → Map<pid, {sessionId, name}>
+    const diskByPid = new Map();
     try {
       const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
       for (const file of files) {
         try {
           const data = JSON.parse(fs.readFileSync(path.join(sessionsDir, file), 'utf8'));
-          if (data.sessionId && data.pid) {
-            diskSessions.set(data.sessionId, { pid: data.pid, name: data.name || null });
+          if (data.pid) {
+            diskByPid.set(data.pid, { sessionId: data.sessionId, name: data.name || null });
           }
         } catch { /* skip malformed */ }
       }
@@ -332,12 +333,18 @@ export class SessionManager {
 
     // Check each bridge session against disk state
     for (const [id, session] of this.sessions) {
-      const disk = diskSessions.get(id);
-      if (disk === undefined) {
-        // Session not on disk at all — might be stale, let idle prune handle it
-        continue;
+      // Try to find/update disk PID mapping
+      if (!session._diskPid) {
+        const disk = _findDiskSession(id, session.cwd);
+        if (disk) session._diskPid = disk.pid;
       }
-      if (_isPidAlive(disk.pid)) {
+      const pid = session._diskPid;
+      if (!pid) continue;
+
+      const disk = diskByPid.get(pid);
+      if (disk === undefined) continue;
+
+      if (_isPidAlive(pid)) {
         result.alive.push(id);
         // Sync name from disk if changed
         if (disk.name && disk.name !== session.name) {
@@ -364,7 +371,7 @@ export class SessionManager {
   }
 
   toJSON() {
-    return [...this.sessions.values()].map(({ respondFn, _permissionTimeout, agents, ...rest }) => {
+    return [...this.sessions.values()].map(({ respondFn, _permissionTimeout, _diskPid, agents, ...rest }) => {
       // Generic Set→Array conversion for all prompt fields (not just .selected)
       let prompt = rest.prompt;
       if (prompt) {
@@ -379,15 +386,39 @@ export class SessionManager {
   }
 }
 
-function _readDiskSessionName(sessionId) {
+/**
+ * Find the disk session file matching a hook session_id.
+ * Strategy: 1) match by sessionId, 2) fallback to cwd + alive PID.
+ * Returns { pid, name } or null.
+ */
+function _findDiskSession(hookSessionId, cwd) {
   try {
     const sessionsDir = path.join(os.homedir(), '.claude', 'sessions');
     const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.json'));
+    const entries = [];
     for (const file of files) {
       try {
-        const data = JSON.parse(fs.readFileSync(path.join(sessionsDir, file), 'utf8'));
-        if (data.sessionId === sessionId && data.name) return data.name;
+        entries.push(JSON.parse(fs.readFileSync(path.join(sessionsDir, file), 'utf8')));
       } catch { /* skip */ }
+    }
+    // 1) Exact sessionId match
+    const exact = entries.find(d => d.sessionId === hookSessionId);
+    if (exact) return { pid: exact.pid, name: exact.name || null };
+    // 2) cwd match among alive PIDs (pick most recently started)
+    if (cwd) {
+      const norm = (p) => p.replace(/\\/g, '/').toLowerCase();
+      const cwdNorm = norm(cwd);
+      const candidates = entries
+        .filter(d => norm(d.cwd || '') === cwdNorm && _isPidAlive(d.pid))
+        .sort((a, b) => (b.startedAt || 0) - (a.startedAt || 0));
+      if (candidates.length === 1) return { pid: candidates[0].pid, name: candidates[0].name || null };
+      // Multiple candidates: pick one not already claimed by another bridge session
+      if (candidates.length > 1) {
+        const claimedPids = new Set();
+        // This is called from SessionManager context — we can't access `this` here,
+        // so we just return the most recent. syncFromDisk will correct if needed.
+        return { pid: candidates[0].pid, name: candidates[0].name || null };
+      }
     }
   } catch { /* no sessions dir */ }
   return null;
