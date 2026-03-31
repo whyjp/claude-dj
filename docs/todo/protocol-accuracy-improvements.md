@@ -140,22 +140,26 @@
   - [ ] Return `{hookSpecificOutput: {hookEventName: 'PreToolUse', permissionDecision: 'allow'}}` for matching rules
   - [ ] Fallback: `permissionDecision: 'ask'` for unknown tools
 
-### 9. Inject `additionalContext` from D200 actions
+### 9. Inject `additionalContext` from D200 actions — FUTURE FEATURE
 - **Current:** Button presses only resolve permission — no context to model
-- **Potential:** User notes/feedback sent as `additionalContext` in hook response
-- **Use case:** "approved with caution" or custom notes on choices
-- **Implementation:**
-  - [ ] Add optional text input on D200 permission view (long-press on approve?)
-  - [ ] Include as `additionalContext` in hook response
+- **Limitation:** Physical deck buttons cannot carry text input
+- **Future:** Virtual DJ dashboard can add a text input box alongside approve/deny buttons
+  - Text input → button press flow: user types note → presses approve → note sent as `additionalContext`
+  - Model receives as system-reminder in conversation
+  - Very useful for "approved with caution" or conditional approval notes
+- **Implementation (deferred):**
+  - [ ] Add text input field to virtual DJ permission view (not physical deck)
+  - [ ] Include text as `additionalContext` in hook response
   - [ ] Model receives as system-reminder in conversation
 
-### 10. Add Notification hook for D200 display
-- **Current:** Notifications (build done, test results) not shown on deck
+### 10. Add Notification hook — bridge log only (no D200 display)
+- **Limitation:** D200 info display is non-interactive and already used for state — notifications cannot be shown as toast without conflicting with current state display
+- **Scope:** Receive notifications at bridge, log them, but do not display on deck
 - **Payload:** `{session_id, message, title?, notification_type}`
 - **Implementation:**
-  - [ ] Create `hooks/notification.js`
-  - [ ] Show notification as temporary toast on info display
-  - [ ] Auto-dismiss after 5s, return to current state
+  - [x] Create `hooks/notification.js` — POST to `/api/hook/notification`
+  - [x] Add endpoint in `server.js` — log notification, no display
+  - [x] Register in plugin `hooks.json` under `Notification`
 
 ---
 

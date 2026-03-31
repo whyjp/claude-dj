@@ -235,6 +235,16 @@ app.post('/api/hook/stop', (req, res, next) => { try {
 } catch (e) { next(e); }
 });
 
+app.post('/api/hook/notification', (req, res, next) => {
+  try {
+    const input = req.body;
+    const title = input.title || '';
+    const msg = input.message || '';
+    log(`[hook/notification] session=${input.session_id} type=${input.notification_type || '?'} title="${title}" msg="${msg.slice(0, 80)}"`);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
 app.post('/api/hook/stopFailure', (req, res, next) => {
   try {
     const input = req.body;
