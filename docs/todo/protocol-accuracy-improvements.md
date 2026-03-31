@@ -51,71 +51,71 @@
 - **Payload fields:** `{session_id, cwd, hook_event_name: 'SessionStart', source: 'startup'|'resume'|'clear'|'compact', agent_type?, model?}`
 - **Response fields:** `{additionalContext?, initialUserMessage?, watchPaths?}`
 - **Implementation:**
-  - [ ] Create `hooks/sessionStart.js` — POST to `/api/hook/sessionStart`
-  - [ ] Add `POST /api/hook/sessionStart` endpoint in `server.js`
-  - [ ] `sm.handleSessionStart(input)` — create session immediately with name from `cwd`
-  - [ ] Register in plugin `hooks.json` under `SessionStart`
-  - [ ] Broadcast LAYOUT with state=IDLE on session creation
+  - [x] Create `hooks/sessionStart.js` — POST to `/api/hook/sessionStart`
+  - [x] Add `POST /api/hook/sessionStart` endpoint in `server.js`
+  - [x] `sm.handleSessionStart(input)` — create session immediately with name from `cwd`
+  - [x] Register in plugin `hooks.json` under `SessionStart`
+  - [x] Broadcast LAYOUT with state=IDLE on session creation
 
 ### 2. Add SessionEnd hook
 - **Impact:** Exact session termination — no more 5-min idle guessing
 - **Current gap:** Dead sessions linger until idle timeout or PID check (30s interval)
 - **Payload fields:** `{session_id, hook_event_name: 'SessionEnd', reason: 'clear'|'resume'|'logout'|'prompt_input_exit'|'other'}`
 - **Implementation:**
-  - [ ] Create `hooks/sessionEnd.js` — POST to `/api/hook/sessionEnd`
-  - [ ] Add `POST /api/hook/sessionEnd` endpoint in `server.js`
-  - [ ] `sm.handleSessionEnd(input)` — auto-deny pending permission, remove session, broadcast SESSION_DISCONNECTED
-  - [ ] Register in plugin `hooks.json` under `SessionEnd`
-  - [ ] Keep disk-sync as fallback for crashes (no SessionEnd fired)
+  - [x] Create `hooks/sessionEnd.js` — POST to `/api/hook/sessionEnd`
+  - [x] Add `POST /api/hook/sessionEnd` endpoint in `server.js`
+  - [x] `sm.handleSessionEnd(input)` — auto-deny pending permission, remove session, broadcast SESSION_DISCONNECTED
+  - [x] Register in plugin `hooks.json` under `SessionEnd`
+  - [x] Keep disk-sync as fallback for crashes (no SessionEnd fired)
 
-### 3. Add PostToolUseFailure hook
+### 3. Add PostToolUseFailure hook — DONE
 - **Impact:** Show tool errors on D200 display immediately
 - **Current gap:** Failed tools show no visual feedback — bridge stays in PROCESSING
 - **Payload fields:** `{session_id, tool_name, tool_input, tool_use_id, error, is_interrupt?}`
 - **Implementation:**
-  - [ ] Create `hooks/postToolUseFailure.js` — POST to `/api/hook/postToolUseFailure`
-  - [ ] Add endpoint in `server.js`
-  - [ ] Show error state on info display: red border + error icon + tool name
-  - [ ] Add `.k-info.error` CSS class (red theme, similar to `.k-info.wait`)
-  - [ ] Auto-clear after 3s back to PROCESSING
-  - [ ] Register in plugin `hooks.json` under `PostToolUseFailure`
+  - [x] Create `hooks/postToolUseFailure.js` — POST to `/api/hook/postToolUseFailure`
+  - [x] Add endpoint in `server.js`
+  - [x] Show error state on info display: red border + error icon + tool name
+  - [x] Add `.k-info.error` CSS class (red theme, similar to `.k-info.wait`)
+  - [x] Auto-clear after 5s back to PROCESSING
+  - [x] Register in plugin `hooks.json` under `PostToolUseFailure`
 
-### 4. Support multi-question AskUserQuestion
+### 4. Support multi-question AskUserQuestion — DONE
 - **Impact:** Handle all 1-4 questions instead of only the first
 - **Current gap:** `questions[1..3]` silently dropped, answers incomplete
 - **Payload:** `tool_input.questions[]` — each has `{question, header, options[], multiSelect, preview}`
 - **Implementation:**
-  - [ ] Update `server.js handlePermission()` — detect `questions.length > 1`
-  - [ ] Store full `questions[]` array in `session.prompt`
-  - [ ] Add `currentQuestionIndex` to prompt state
-  - [ ] On button press: record answer for current question, advance index
-  - [ ] On last question submit: build complete `answers` object, respond
-  - [ ] Update LAYOUT protocol: add `questionIndex`, `questionCount` fields
-  - [ ] Update `d200-renderer.js` — show question header + progress (e.g., "Q1/3")
-  - [ ] Update response format: `updatedInput.answers = {q1: ans1, q2: ans2, ...}`
+  - [x] Update `sessionManager.js handlePermission()` — detect `questions.length > 1`
+  - [x] Store full `questions[]` array in `session.prompt`
+  - [x] Add `questionIndex` to prompt state
+  - [x] On button press: record answer for current question, advance index
+  - [x] On last question submit: build complete `answers` object, respond
+  - [x] Update LAYOUT protocol: add `questionIndex`, `questionCount` fields
+  - [x] Update `d200-renderer.js` — show question progress (e.g., "Q1/3")
+  - [x] Update response format: `updatedInput.answers = {q1: ans1, q2: ans2, ...}`
 
-### 5. Add UserPromptSubmit hook
+### 5. Add UserPromptSubmit hook — DONE
 - **Impact:** Instant PROCESSING transition when user types, not when first tool fires
 - **Current gap:** ~0.5-2s delay between user input and visual PROCESSING state
 - **Payload fields:** `{session_id, hook_event_name: 'UserPromptSubmit', prompt}`
 - **Response fields:** `{additionalContext?}` — can inject context before model runs
 - **Implementation:**
-  - [ ] Create `hooks/userPromptSubmit.js` — POST to `/api/hook/userPromptSubmit`
-  - [ ] Add endpoint in `server.js`
-  - [ ] Transition session from IDLE → PROCESSING immediately
-  - [ ] Clear any stale WAITING_RESPONSE state
-  - [ ] Register in plugin `hooks.json` under `UserPromptSubmit`
+  - [x] Update `hooks/userPrompt.js` — POST to `/api/hook/userPromptSubmit`
+  - [x] Add endpoint in `server.js`
+  - [x] Transition session from IDLE → PROCESSING immediately
+  - [x] Clear any stale WAITING_RESPONSE state
+  - [x] Already registered in plugin `hooks.json` under `UserPromptSubmit`
 
-### 6. Add StopFailure hook
+### 6. Add StopFailure hook — DONE
 - **Impact:** Show API errors (rate limit, auth, network) on D200 immediately
 - **Current gap:** API failures invisible — session stays in PROCESSING until timeout
 - **Payload fields:** `{session_id, hook_event_name: 'StopFailure', error, error_details?, last_assistant_message?}`
 - **Implementation:**
-  - [ ] Create `hooks/stopFailure.js` — POST to `/api/hook/stopFailure`
-  - [ ] Add endpoint in `server.js`
-  - [ ] Show error on D200: red info display with error type
-  - [ ] Transition to IDLE after display (session turn ended with error)
-  - [ ] Register in plugin `hooks.json` under `StopFailure`
+  - [x] Create `hooks/stopFailure.js` — POST to `/api/hook/stopFailure`
+  - [x] Add endpoint in `server.js`
+  - [x] Show error on D200: red info display with error type
+  - [x] Transition to IDLE after display (session turn ended with error)
+  - [x] Register in plugin `hooks.json` under `StopFailure`
 
 ---
 
