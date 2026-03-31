@@ -8,13 +8,22 @@ Control Claude Code with physical buttons or browser — no terminal focus neede
 
 ### 1. Install Plugin
 
-In Claude Code, run:
+Add the marketplace to `~/.claude/settings.json`:
 
-```
-/install-plugin https://github.com/whyjp/claude-dj
+```jsonc
+{
+  "extraKnownMarketplaces": {
+    "claude-dj": {
+      "source": {
+        "source": "github",
+        "repo": "whyjp/claude-dj"
+      }
+    }
+  }
+}
 ```
 
-This registers hooks + skills automatically.
+Then in Claude Code, run `/plugin` and enable **claude-dj**. Hooks + skills are registered automatically.
 
 ### 2. Start the Bridge
 
