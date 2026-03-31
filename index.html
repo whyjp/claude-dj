@@ -447,7 +447,7 @@ footer {
       <span class="tag a">Cross-Session Focus</span>
       <span class="tag">Subagent Tracking</span>
       <span class="tag">7 Hook Pipeline</span>
-      <span class="tag">88 Tests</span>
+      <span class="tag">220+ Tests</span>
     </div>
     <div class="links">
       <a href="#quickstart" class="link-btn primary">Quick Start</a>
@@ -891,69 +891,6 @@ footer {
   </div>
 </section>
 
-<!-- ASSETS -->
-<div class="band" id="assets">
-  <div class="band-inner">
-    <p class="label" data-i18n="assets.label">All Assets</p>
-    <h2 data-i18n="assets.h2">Everything that makes the product</h2>
-
-    <div class="asset-grid">
-      <div class="ac">
-        <span class="ac-label" data-i18n="assets.sw.label">Software</span>
-        <h4 data-i18n="assets.sw.h">Components</h4>
-        <ul>
-          <li><span class="fn">Bridge Server</span><span class="desc">Node.js :39200</span></li>
-          <li><span class="fn">SessionManager</span><span class="desc" data-i18n="assets.sm.desc">state+focus+agents</span></li>
-          <li><span class="fn">ButtonManager</span><span class="desc">state → layout</span></li>
-          <li><span class="fn">WsServer</span><span class="desc">broadcast, sync</span></li>
-          <li><span class="fn">Hook Scripts ×7</span><span class="desc">permission~subagent</span></li>
-          <li><span class="fn">choice-format Skill</span><span class="desc" data-i18n="assets.skill.desc">Claude behavior change</span></li>
-          <li><span class="fn">choiceParser</span><span class="desc" data-i18n="assets.parser.desc">transcript parsing</span></li>
-          <li><span class="fn">Plugin CLI</span><span class="desc">install/uninstall/status</span></li>
-          <li><span class="fn">Virtual DJ FE</span><span class="desc" data-i18n="assets.fe.desc">browser dashboard</span></li>
-        </ul>
-      </div>
-      <div class="ac">
-        <span class="ac-label" data-i18n="assets.img.label">Image Assets — Buttons</span>
-        <h4 data-i18n="assets.img.h">PNG (196×196, dark bg)</h4>
-        <ul>
-          <li><span class="fn">btn_empty.png</span><span class="desc">dim</span></li>
-          <li><span class="fn">btn_approve.png</span><span class="desc">✅ Approve</span></li>
-          <li><span class="fn">btn_deny.png</span><span class="desc">❌ Deny</span></li>
-          <li><span class="fn">btn_always_allow.png</span><span class="desc">🔒 Always</span></li>
-          <li><span class="fn">btn_always_deny.png</span><span class="desc">⛔ Always</span></li>
-          <li><span class="fn">btn_cancel.png</span><span class="desc">✖</span></li>
-          <li><span class="fn">btn_1.png ~ btn_9.png</span><span class="desc" data-i18n="assets.numBtn.desc">numbered choices</span></li>
-          <li><span class="fn">btn_*_active.png</span><span class="desc" data-i18n="assets.active.desc">×11 press feedback</span></li>
-        </ul>
-        <div class="note" data-i18n="assets.btnTotal">Total: ~28 images</div>
-      </div>
-      <div class="ac">
-        <span class="ac-label" data-i18n="assets.fixed.label">Image Assets — Fixed Slots + Animation</span>
-        <h4>PNG + GIF</h4>
-        <ul>
-          <li><span class="fn">session_count_normal.png</span><span class="desc" data-i18n="assets.slot10.desc">slot 10</span></li>
-          <li><span class="fn">session_count_alert.png</span><span class="desc" data-i18n="assets.slot10a.desc">slot 10 waiting</span></li>
-          <li><span class="fn">session_name.png</span><span class="desc" data-i18n="assets.slot11.desc">slot 11</span></li>
-          <li><span class="fn">anim_wave.gif</span><span class="desc" data-i18n="assets.wave.desc">PROCESSING wave</span></li>
-          <li><span class="fn">anim_processing.gif</span><span class="desc" data-i18n="assets.pulse.desc">single button pulse</span></li>
-          <li><span class="fn">plugin_icon.png</span><span class="desc">UlanziStudio</span></li>
-          <li><span class="fn">claudedj_logo.png</span><span class="desc" data-i18n="assets.brand.desc">brand</span></li>
-          <li><span class="fn">claude_logo.png</span><span class="desc">Anthropic ※</span></li>
-        </ul>
-        <div class="note" data-i18n="assets.fixedNote">Total: ~11 images + 2 GIFs<br>※ BIG WIN is system-only — no separate asset needed<br>※ Check Anthropic brand guidelines</div>
-      </div>
-    </div>
-
-    <div style="margin-top:1rem; padding:.75rem 1.25rem; border:1px solid var(--bd); background:var(--surf); font-size:11px; display:flex; gap:2rem; flex-wrap:wrap; color:var(--muted);">
-      <span data-i18n="assets.count.btn">PNG buttons: <strong style="color:var(--white)">~28</strong></span>
-      <span data-i18n="assets.count.fixed">PNG fixed+other: <strong style="color:var(--white)">~11</strong></span>
-      <span data-i18n="assets.count.gif">GIF animations: <strong style="color:var(--white)">2</strong></span>
-      <span style="color:var(--green); font-weight:600;" data-i18n="assets.count.total">Total: ~39 images + 2 GIFs</span>
-    </div>
-  </div>
-</div>
-
 <!-- MILESTONES -->
 <section id="milestones">
   <p class="label" data-i18n="ms.label">Implementation Milestones</p>
@@ -986,7 +923,9 @@ footer {
         <span class="ml-item" data-i18n="ms.p2.i4">SubagentStart/Stop hook + agents Map tracking</span>
         <span class="ml-item" data-i18n="ms.p2.i5">Slot 11 session switch, slot 12 agent switch</span>
         <span class="ml-item" data-i18n="ms.p2.i6">Plugin install/uninstall CLI + marketplace compatible</span>
-        <span class="ml-item">88 automated tests (9 suites)</span>
+        <span class="ml-item" data-i18n="ms.p2.i7">Bridge auto-start via SessionStart hook</span>
+        <span class="ml-item" data-i18n="ms.p2.i8">Miniview mode — always-on-top PiP window</span>
+        <span class="ml-item">220+ automated tests</span>
       </div>
     </div>
     <div class="ml">
@@ -1054,7 +993,7 @@ footer {
 </div>
 
 <footer>
-  <span data-i18n="footer.copy">Claude DJ — Code in terminal, decisions on deck · v0.1.0 · 88 tests · 2026</span>
+  <span data-i18n="footer.copy">Claude DJ — Code in terminal, decisions on deck · v0.2.2 · 88 tests · 2026</span>
   <div class="footer-links">
     <a href="https://github.com/whyjp/claude-dj" target="_blank" rel="noopener" style="color:var(--green);font-weight:600;">GitHub</a>
     <a href="https://code.claude.com/docs/en/hooks">Hooks API</a>
@@ -1205,32 +1144,6 @@ const TRANSLATIONS = {
   'proto.hookAsk':        { en: 'AskUserQuestion → returns selection number', ko: 'AskUserQuestion → 선택 번호 반환' },
   'proto.hookPerm':       { en: 'standard Permission → allow/deny/alwaysAllow', ko: '일반 Permission → allow/deny/alwaysAllow' },
 
-  'assets.label':         { en: 'All Assets',              ko: '전체 애셋' },
-  'assets.h2':            { en: 'Everything that makes the product', ko: '프로덕트를 구성하는 모든 것' },
-  'assets.sw.label':      { en: 'Software',                ko: '소프트웨어' },
-  'assets.sw.h':          { en: 'Components',              ko: '컴포넌트' },
-  'assets.sm.desc':       { en: 'state+focus+agents',      ko: '상태+포커스+에이전트' },
-  'assets.skill.desc':    { en: 'Claude behavior change',  ko: 'Claude 행동 변경' },
-  'assets.parser.desc':   { en: 'transcript parsing',      ko: '트랜스크립트 파싱' },
-  'assets.fe.desc':       { en: 'browser dashboard',       ko: '브라우저 대시보드' },
-  'assets.img.label':     { en: 'Image Assets — Buttons',  ko: '이미지 에셋 — 버튼' },
-  'assets.img.h':         { en: 'PNG (196×196, dark bg)',   ko: 'PNG (196×196, 다크 배경)' },
-  'assets.numBtn.desc':   { en: 'numbered choices',        ko: '번호 선택지' },
-  'assets.active.desc':   { en: '×11 press feedback',      ko: '×11 눌림 피드백' },
-  'assets.btnTotal':      { en: 'Total: ~28 images',       ko: '합계: ~28장' },
-  'assets.fixed.label':   { en: 'Image Assets — Fixed Slots + Animation', ko: '이미지 에셋 — 고정 슬롯 + 애니메이션' },
-  'assets.slot10.desc':   { en: 'slot 10',                 ko: '슬롯 10' },
-  'assets.slot10a.desc':  { en: 'slot 10 waiting',         ko: '슬롯 10 대기' },
-  'assets.slot11.desc':   { en: 'slot 11',                 ko: '슬롯 11' },
-  'assets.wave.desc':     { en: 'PROCESSING wave',         ko: 'PROCESSING 웨이브' },
-  'assets.pulse.desc':    { en: 'single button pulse',     ko: '단일 버튼 펄스' },
-  'assets.brand.desc':    { en: 'brand',                   ko: '브랜드' },
-  'assets.fixedNote':     { en: 'Total: ~11 images + 2 GIFs<br>※ BIG WIN is system-only — no separate asset needed<br>※ Check Anthropic brand guidelines', ko: '합계: ~11장 + GIF 2개<br>※ BIG WIN은 시스템 전용 — 별도 에셋 불필요<br>※ Anthropic 브랜드 가이드 확인 필요' },
-  'assets.count.btn':     { en: 'PNG buttons: <strong style="color:var(--white)">~28</strong>', ko: 'PNG 버튼: <strong style="color:var(--white)">~28장</strong>' },
-  'assets.count.fixed':   { en: 'PNG fixed+other: <strong style="color:var(--white)">~11</strong>', ko: 'PNG 고정+기타: <strong style="color:var(--white)">~11장</strong>' },
-  'assets.count.gif':     { en: 'GIF animations: <strong style="color:var(--white)">2</strong>', ko: 'GIF 애니메이션: <strong style="color:var(--white)">2개</strong>' },
-  'assets.count.total':   { en: 'Total: ~39 images + 2 GIFs', ko: '총계: ~39장 + GIF 2개' },
-
   'ms.label':             { en: 'Implementation Milestones', ko: '구현 마일스톤' },
   'ms.h2':                { en: 'Phased development roadmap', ko: '단계별 개발 로드맵' },
   'ms.p1.i2':             { en: 'PermissionRequest hook (blocking 60s timeout)', ko: 'PermissionRequest hook (블로킹 60s timeout)' },
@@ -1245,6 +1158,8 @@ const TRANSLATIONS = {
   'ms.p2.i4':             { en: 'SubagentStart/Stop hook + agents Map tracking', ko: 'SubagentStart/Stop hook + agents Map 트래킹' },
   'ms.p2.i5':             { en: 'Slot 11 session switch, slot 12 agent switch', ko: '슬롯 11 세션 전환, 슬롯 12 에이전트 전환' },
   'ms.p2.i6':             { en: 'Plugin install/uninstall CLI + marketplace compatible', ko: 'Plugin install/uninstall CLI + marketplace 호환' },
+  'ms.p2.i7':             { en: 'Bridge auto-start via SessionStart hook', ko: 'SessionStart 훅을 통한 Bridge 자동 시작' },
+  'ms.p2.i8':             { en: 'Miniview mode — always-on-top PiP window', ko: 'Miniview 모드 — always-on-top PiP 윈도우' },
   'ms.p3.h':              { en: 'Physical D200 + Distribution', ko: 'Physical D200 + 배포' },
   'ms.p3.i2':             { en: 'Key state PNG rendering (Canvas/SVG → base64)', ko: '키 상태 PNG 렌더링 (Canvas/SVG → base64)' },
   'ms.p3.i3':             { en: 'UlanziStudio plugin packaging (manifest.json)', ko: 'UlanziStudio 플러그인 패키징 (manifest.json)' },
@@ -1268,10 +1183,10 @@ const TRANSLATIONS = {
   'qs.s3.c1':             { en: 'hooks + skills auto-loaded', ko: 'hooks + skills 자동 로드' },
   'qs.s3.c2':             { en: 'all permissions/choices → deck buttons', ko: '모든 권한/선택 → 덱 버튼으로' },
   'qs.s3.note':           { en: 'No terminal focus, no typing — just press the button.', ko: '터미널 포커스 없이, 타이핑 없이, 버튼만 누르면 된다.' },
-  'qs.manual':            { en: 'Local dev (live code):', ko: '로컬 개발 (실시간 코드):' },
+  'qs.manual':            { en: 'Manual install (git clone):', ko: '수동 설치 (git clone):' },
   'qs.ghBtn':             { en: 'View on GitHub &nearr;',  ko: 'GitHub에서 자세히 보기 &nearr;' },
 
-  'footer.copy':          { en: 'Claude DJ — Code in terminal, decisions on deck · v0.1.0 · 88 tests · 2026', ko: 'Claude DJ — 코드는 터미널에, 결정은 덱에서 · v0.1.0 · 88 tests · 2026' },
+  'footer.copy':          { en: 'Claude DJ — Code in terminal, decisions on deck · v0.2.2 · 88 tests · 2026', ko: 'Claude DJ — 코드는 터미널에, 결정은 덱에서 · v0.2.2 · 88 tests · 2026' },
 };
 
 // STATES prompt translations
