@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "node bridge/server.js",
+    "stop": "node cli/index.js stop",
     "debug": "CLAUDE_DJ_DEBUG=1 node bridge/server.js",
     "test": "node --test test/*.test.js",
     "setup": "node tools/setup.js"

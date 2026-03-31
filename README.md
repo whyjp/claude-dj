@@ -8,21 +8,23 @@ Control Claude Code with physical buttons or browser — no terminal focus neede
 
 ### 1. Install Plugin
 
-Claude Code 세션에서:
+In a Claude Code session:
 
 ```
 /plugin marketplace add whyjp/claude-dj
 /plugin install claude-dj
 ```
 
-이 한 번의 설치로 **hooks + skills**가 모두 설정됩니다.
+This single install registers **hooks + skills** automatically.
 
-| 자동 설정 항목 | 내용 |
-|-------------|------|
-| **Hooks** | PermissionRequest(blocking), PreToolUse/PostToolUse(notify), Stop(choice parsing), SubagentStart/Stop, UserPromptSubmit |
-| **Skills** | choice-format — Claude가 모든 선택지를 AskUserQuestion으로 출력 |
+| Auto-configured | Details |
+|----------------|---------|
+| **Hooks** | PermissionRequest(blocking), PreToolUse/PostToolUse(notify), Stop(choice parsing), SubagentStart/Stop, UserPromptSubmit, SessionStart(auto-start bridge) |
+| **Skills** | choice-format — instructs Claude to emit all choices via AskUserQuestion |
 
 ### 2. Start the Bridge
+
+The bridge auto-starts on session open via the `SessionStart` hook. To start manually:
 
 ```bash
 node bridge/server.js                  # http://localhost:39200
@@ -138,7 +140,7 @@ The `choice-format` skill causes three behavioral shifts in Claude:
 3. **Choice vs Confirmation** — The skill distinguishes two interaction patterns:
 
    - **Real choice** (multiple genuinely different paths): 2-4 distinct options, e.g. "Refactor" / "Rewrite" / "Patch"
-   - **Confirmation** (plan approval): Claude states its plan as text, then asks with exactly 2 options: "진행" / "다른 방향"
+   - **Confirmation** (plan approval): Claude states its plan as text, then asks with exactly 2 options: "Proceed" / "Different approach"
 
    This prevents a common anti-pattern where Claude presents a plan description *as* a choice option (e.g. "modify X and apply Y" as option 1, "also apply to Z" as option 2). Plan descriptions are not choices — they should be stated as text followed by a yes/no confirmation.
 
@@ -284,7 +286,8 @@ Claude Code hooks are **short-lived child processes** — each hook invocation s
 ├─ plugin.json              Plugin metadata
 ├─ marketplace.json         Distribution metadata
 hooks/
-├─ hooks.json               7 hook definitions (auto-discovered by Claude Code)
+├─ hooks.json               8 hook definitions (auto-discovered by Claude Code)
+├─ sessionStart.js          SessionStart → auto-start bridge + display dashboard URL
 ├─ permission.js            PermissionRequest → HTTP POST (blocking)
 ├─ notify.js                PreToolUse → HTTP POST (async)
 ├─ postToolUse.js           PostToolUse → HTTP POST (async)
@@ -325,6 +328,8 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 - **Late-join sync** — New clients receive current deck state immediately
 - **Miniview mode** — Pop-out deck as always-on-top PiP window (`▣` button or `?view=mini`), with agent tab bar for root/subagent switching
 - **Plugin packaging** — `.claude-plugin/plugin.json` with portable `${CLAUDE_PLUGIN_ROOT}` paths
+- **Bridge auto-start** — SessionStart hook spawns the bridge if not running, displays dashboard URL
+- **Bridge auto-shutdown** — Graceful shutdown after 5 minutes with no sessions or clients
 - **Session auto-cleanup** — Idle sessions pruned after 5 minutes
 - **Debug logging** — `--debug` flag enables file logging to `logs/bridge.log` with structured levels (INFO/WARN/ERROR)
 

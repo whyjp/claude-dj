@@ -39,6 +39,14 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', version: config.version, port: config.port, uptime: process.uptime() | 0 });
 });
 
+app.post('/api/shutdown', (req, res) => {
+  log('[claude-dj] Shutdown requested via API');
+  res.json({ status: 'shutting_down' });
+  clearInterval(pruneInterval);
+  clearInterval(syncInterval);
+  server.close(() => process.exit(0));
+});
+
 app.get('/api/status', (req, res) => {
   res.json({
     version: config.version,
