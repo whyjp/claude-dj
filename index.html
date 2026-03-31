@@ -413,6 +413,8 @@ footer {
     <li><a href="#skill">기술 상세</a></li>
     <li><a href="#arch">아키텍처</a></li>
     <li><a href="#milestones">로드맵</a></li>
+    <li><a href="#quickstart">Quick Start</a></li>
+    <li><a href="https://github.com/whyjp/claude-dj" target="_blank" rel="noopener" style="color:var(--white);">GitHub &nearr;</a></li>
   </ul>
 </nav>
 
@@ -436,7 +438,8 @@ footer {
       <span class="tag">88 Tests</span>
     </div>
     <div class="links">
-      <a href="#why" class="link-btn primary">왜 필요한가</a>
+      <a href="#quickstart" class="link-btn primary">Quick Start</a>
+      <a href="https://github.com/whyjp/claude-dj" target="_blank" rel="noopener" class="link-btn" style="color:var(--white);border-color:var(--white);">GitHub &nearr;</a>
       <a href="#how" class="link-btn">동작 원리 →</a>
     </div>
   </div>
@@ -991,9 +994,57 @@ footer {
   </div>
 </section>
 
+<!-- QUICK START -->
+<div class="band" id="quickstart">
+  <div class="band-inner">
+    <p class="label">시작하기</p>
+    <h2>Quick Start</h2>
+    <p class="sec-sub" style="margin-bottom:2rem;">Claude Code 세션에서 두 줄이면 설치 완료. 바로 덱을 사용할 수 있다.</p>
+
+    <div class="states" style="grid-template-columns:1fr 1fr 1fr;margin-top:0;">
+      <div class="sc">
+        <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)">Step 1 — 플러그인 설치</span></div>
+        <h4>Claude Code 세션에서 실행</h4>
+        <div style="background:var(--bg);border:1px solid var(--green);padding:1rem;margin-top:.75rem;font-size:11px;color:var(--white);white-space:pre;line-height:1.9;overflow-x:auto;"><span style="color:var(--muted);"># Claude Code 세션에서:</span>
+<span style="color:var(--green);">/plugin marketplace add https://github.com/whyjp/claude-dj</span>
+<span style="color:var(--green);">/plugin install claude-dj-plugin</span></div>
+        <p style="margin-top:.75rem;">Hooks 7개 + choice-format 스킬이 자동 등록된다.</p>
+      </div>
+      <div class="sc">
+        <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)">Step 2 — Bridge 시작</span></div>
+        <h4>자동 시작 (또는 수동)</h4>
+        <div style="background:var(--bg);border:1px solid var(--bd);padding:1rem;margin-top:.75rem;font-size:11px;color:var(--white);white-space:pre;line-height:1.9;overflow-x:auto;"><span style="color:var(--muted);"># SessionStart 훅이 자동 시작</span>
+<span style="color:var(--muted);"># 수동 시작:</span>
+<span style="color:var(--amber);">node bridge/server.js</span>
+<span style="color:var(--amber);">./scripts/start-bridge.sh --debug</span></div>
+        <p style="margin-top:.75rem;"><a href="http://localhost:39200" style="color:var(--blue);">http://localhost:39200</a> 에서 Virtual DJ 대시보드 확인.</p>
+      </div>
+      <div class="sc">
+        <div class="sc-pill"><div class="dot g"></div><span style="color:var(--green)">Step 3 — 사용</span></div>
+        <h4>Claude Code 실행</h4>
+        <div style="background:var(--bg);border:1px solid var(--bd);padding:1rem;margin-top:.75rem;font-size:11px;color:var(--white);white-space:pre;line-height:1.9;overflow-x:auto;"><span style="color:var(--green);">claude</span>
+<span style="color:var(--muted);"># hooks + skills 자동 로드</span>
+<span style="color:var(--muted);"># 모든 권한/선택 → 덱 버튼으로</span></div>
+        <p style="margin-top:.75rem;">터미널 포커스 없이, 타이핑 없이, 버튼만 누르면 된다.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+      <p style="font-size:11px;color:var(--muted);">수동 설치 (git clone):</p>
+      <div style="background:var(--bg);border:1px solid var(--bd);padding:.5rem 1rem;font-size:11px;color:var(--white);white-space:pre;overflow-x:auto;flex:1;min-width:300px;">git clone https://github.com/whyjp/claude-dj.git && cd claude-dj && npm install && npx claude-dj install</div>
+    </div>
+
+    <div style="margin-top:1.5rem;text-align:center;">
+      <a href="https://github.com/whyjp/claude-dj" target="_blank" rel="noopener" class="link-btn primary" style="font-size:12px;padding:.65rem 2rem;">GitHub에서 자세히 보기 &nearr;</a>
+      <a href="https://github.com/whyjp/claude-dj/issues" target="_blank" rel="noopener" class="link-btn" style="font-size:12px;padding:.65rem 2rem;">Issues &amp; Feedback</a>
+    </div>
+  </div>
+</div>
+
 <footer>
   <span>Claude DJ — 코드는 터미널에, 결정은 덱에서 · v0.1.0 · 88 tests · 2026</span>
   <div class="footer-links">
+    <a href="https://github.com/whyjp/claude-dj" target="_blank" rel="noopener" style="color:var(--green);font-weight:600;">GitHub</a>
     <a href="https://code.claude.com/docs/en/hooks">Hooks API</a>
     <a href="https://github.com/UlanziTechnology/UlanziDeckPlugin-SDK">Ulanzi SDK</a>
     <a href="https://github.com/shobhit99/claude-watch">claude-watch</a>
