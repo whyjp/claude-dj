@@ -9,6 +9,15 @@ import { SessionManager } from './sessionManager.js';
 import { ButtonManager } from './buttonManager.js';
 import { WsServer } from './wsServer.js';
 
+// --- Process Error Handlers ---
+process.on('unhandledRejection', (err) => {
+  error('[fatal] unhandledRejection:', err);
+});
+process.on('uncaughtException', (err) => {
+  error('[fatal] uncaughtException:', err);
+  process.exit(1);
+});
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const server = http.createServer(app);
@@ -19,6 +28,7 @@ app.use(express.json({ limit: '100kb' }));
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws://localhost:* ws://127.0.0.1:*");
   next();
 });
 
@@ -72,53 +82,62 @@ function broadcastLayout(layout) {
   ws.broadcast({ type: 'LAYOUT', sessionCount: sm.sessionCount, ...layout });
 }
 
+function broadcastSessionLayout(session, extras) {
+  const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
+  broadcastLayout(extras ? { ...layout, ...extras } : layout);
+}
+
 // --- Hook Endpoints ---
 
-app.post('/api/hook/notify', (req, res) => {
-  const input = req.body;
-  log(`[hook/notify] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
-  const session = sm.handleNotify(input);
-  // Only broadcast if this is the focused session — don't override WAITING_BINARY/CHOICE
-  const focus = sm.getFocusSession();
-  if (!focus || focus.id === session.id) {
-    const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
-    broadcastLayout(layout);
-  }
-  res.json({ ok: true });
+app.post('/api/hook/notify', (req, res, next) => {
+  try {
+    const input = req.body;
+    log(`[hook/notify] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
+    const session = sm.handleNotify(input);
+    // Only broadcast if this is the focused session — don't override WAITING_BINARY/CHOICE
+    const focus = sm.getFocusSession();
+    if (!focus || focus.id === session.id) {
+      broadcastSessionLayout(session);
+    }
+    res.json({ ok: true });
+  } catch (e) { next(e); }
 });
 
-app.post('/api/hook/postToolUse', (req, res) => {
-  const input = req.body;
-  log(`[hook/postToolUse] session=${input.session_id} tool=${input.tool_name} errored=${input.tool_result?.errored}`);
-  const session = sm.handlePostToolUse(input);
-  // Only broadcast if this is the focused session
-  const focus = sm.getFocusSession();
-  if (!focus || focus.id === session.id) {
-    const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
-    broadcastLayout(layout);
-  }
-  res.json({ ok: true });
+app.post('/api/hook/postToolUse', (req, res, next) => {
+  try {
+    const input = req.body;
+    log(`[hook/postToolUse] session=${input.session_id} tool=${input.tool_name} errored=${input.tool_result?.errored}`);
+    const session = sm.handlePostToolUse(input);
+    // Only broadcast if this is the focused session
+    const focus = sm.getFocusSession();
+    if (!focus || focus.id === session.id) {
+      broadcastSessionLayout(session);
+    }
+    res.json({ ok: true });
+  } catch (e) { next(e); }
 });
 
-app.post('/api/hook/subagentStart', (req, res) => {
-  const input = req.body;
-  log(`[hook/subagentStart] session=${input.session_id} agent=${input.agent_id} type=${input.agent_type}`);
-  const session = sm.handleSubagentStart(input);
-  const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
-  broadcastLayout(layout);
-  res.json({ ok: true });
+app.post('/api/hook/subagentStart', (req, res, next) => {
+  try {
+    const input = req.body;
+    log(`[hook/subagentStart] session=${input.session_id} agent=${input.agent_id} type=${input.agent_type}`);
+    const session = sm.handleSubagentStart(input);
+    broadcastSessionLayout(session);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
 });
 
-app.post('/api/hook/subagentStop', (req, res) => {
-  const input = req.body;
-  log(`[hook/subagentStop] session=${input.session_id} agent=${input.agent_id}`);
-  const session = sm.handleSubagentStop(input);
-  const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
-  broadcastLayout(layout);
-  res.json({ ok: true });
+app.post('/api/hook/subagentStop', (req, res, next) => {
+  try {
+    const input = req.body;
+    log(`[hook/subagentStop] session=${input.session_id} agent=${input.agent_id}`);
+    const session = sm.handleSubagentStop(input);
+    broadcastSessionLayout(session);
+    res.json({ ok: true });
+  } catch (e) { next(e); }
 });
 
-app.post('/api/hook/stop', (req, res) => {
+app.post('/api/hook/stop', (req, res, next) => { try {
   const input = req.body;
   const choices = input._djChoices || null;
   log(`[hook/stop] session=${input.session_id} active=${input.stop_hook_active} choices=${choices?.length || 0}`);
@@ -131,8 +150,7 @@ app.post('/api/hook/stop', (req, res) => {
   if (choices && choices.length > 0) {
     // Choices detected in transcript — show "waiting for input" on deck (display-only, no interaction)
     const session = sm.handleStopWithChoices(input, choices);
-    const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
-    broadcastLayout(layout);
+    broadcastSessionLayout(session);
   } else {
     // No choices — go to IDLE (dismiss if session exists, ignore if not)
     sm.dismissSession(sessionId);
@@ -140,6 +158,7 @@ app.post('/api/hook/stop', (req, res) => {
   }
 
   res.json({ ok: true });
+} catch (e) { next(e); }
 });
 
 // --- Events File API ---
@@ -201,11 +220,14 @@ app.post('/api/hook/permission', (req, res) => {
   const input = req.body;
   log(`[hook/permission] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
 
-  // Auto-deny previous pending permission to prevent orphaned HTTP responses
+  // Auto-deny previous pending permission to prevent orphaned HTTP responses.
+  // Safe: Node.js is single-threaded, so this completes before handlePermission overwrites state.
   const existing = sm.get(input.session_id);
   if (existing?.respondFn) {
     warn(`[hook/permission] auto-denying previous pending permission for session=${input.session_id}`);
-    existing.respondFn({ type: 'binary', value: 'deny' });
+    const prevRespondFn = existing.respondFn;
+    existing.respondFn = null; // nullify first to prevent double-call
+    prevRespondFn({ type: 'binary', value: 'deny' });
   }
   if (existing?._permissionTimeout) {
     clearTimeout(existing._permissionTimeout);
@@ -216,7 +238,6 @@ app.post('/api/hook/permission', (req, res) => {
   // Auto-focus: new permission request takes focus (including subagent)
   sm.setFocus(session.id);
   if (input.agent_id) sm.setAgentFocus(input.agent_id);
-  const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
   const isChoice = session.state === 'WAITING_CHOICE';
 
   // Log buttons sent to deck
@@ -230,7 +251,7 @@ app.post('/api/hook/permission', (req, res) => {
     log(`[deck←] tool=${input.tool_name} cmd="${session.prompt.command}" ${buttons}${session.prompt.hasAlwaysAllow ? ` rule="${session.prompt.alwaysAllowSuggestion?.rules?.[0]?.ruleContent || '?'}"` : ''}`);
   }
 
-  broadcastLayout(layout);
+  broadcastSessionLayout(session);
 
   const timeout = setTimeout(() => {
     if (!session.respondFn) return; // already resolved by button press
@@ -251,8 +272,7 @@ app.post('/api/hook/permission', (req, res) => {
       session._permissionTimeout = null;
     }
     const response = ButtonManager.buildHookResponse(decision, isChoice, question);
-    const newLayout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
-    broadcastLayout(newLayout);
+    broadcastSessionLayout(session);
 
     // Persist always-allow rules to settings.local.json (Claude Code hook can't do this)
     if (decision.suggestion?.rules?.length && session.cwd) {
@@ -273,6 +293,16 @@ app.post('/api/hook/permission', (req, res) => {
       error(`[claude←] FAILED res.json for session=${session.id}: ${e.message}`);
     }
   };
+});
+
+// --- Express Error Middleware ---
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, _next) => {
+  const status = err.status || err.statusCode || 500;
+  error(`[express] ${req.method} ${req.path}: ${err.message}`);
+  if (!res.headersSent) {
+    res.status(status).json({ error: status < 500 ? err.message : 'internal server error' });
+  }
 });
 
 // --- WebSocket ---
@@ -297,8 +327,7 @@ ws.onButtonPress = (slot, timestamp) => {
     const next = sm.cycleFocus();
     if (next) {
       log(`[btn] slot=11 → cycled to session=${next.name}`);
-      const layout = ButtonManager.layoutFor(next, sm.focusAgentId, sm.getAgentCount(next.id));
-      broadcastLayout({ ...layout, focusSwitched: true });
+      broadcastSessionLayout(next, { focusSwitched: true });
     } else {
       log(`[btn] slot=11 → no sessions to cycle`);
     }
@@ -311,8 +340,7 @@ ws.onButtonPress = (slot, timestamp) => {
     const focus = sm.focusSessionId ? sm.get(sm.focusSessionId) : null;
     log(`[btn] slot=12 → agent=${agent?.type || 'ROOT'} session=${focus?.name || 'none'}`);
     if (focus) {
-      const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
-      broadcastLayout({ ...layout, focusSwitched: true });
+      broadcastSessionLayout(focus, { focusSwitched: true });
     }
     return;
   }
@@ -337,8 +365,7 @@ ws.onButtonPress = (slot, timestamp) => {
   // multiSelect toggle — update layout without resolving
   if (decision.type === 'toggle') {
     log(`[btn] slot=${slot} → multiSelect toggle index=${decision.index}`);
-    const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
-    broadcastLayout(layout);
+    broadcastSessionLayout(focus);
     return;
   }
 
@@ -352,8 +379,7 @@ ws.onAgentFocus = (agentId) => {
   const focus = sm.focusSessionId ? sm.get(sm.focusSessionId) : null;
   if (!focus) return;
   sm.setAgentFocus(agentId);
-  const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
-  broadcastLayout({ ...layout, focusSwitched: true });
+  broadcastSessionLayout(focus, { focusSwitched: true });
 };
 
 ws.onSessionFocus = (sessionId) => {
@@ -363,8 +389,7 @@ ws.onSessionFocus = (sessionId) => {
   sm.setFocus(sessionId);
   sm.setAgentFocus(null);
   log(`[ws] SESSION_FOCUS → session=${session.name}`);
-  const layout = ButtonManager.layoutFor(session, sm.focusAgentId, sm.getAgentCount(session.id));
-  broadcastLayout({ ...layout, focusSwitched: true });
+  broadcastSessionLayout(session, { focusSwitched: true });
 };
 
 // --- Session Cleanup ---
@@ -380,7 +405,8 @@ const pruneInterval = setInterval(() => {
 // --- Session Sync (poll Claude Code disk state) ---
 
 let _emptyTicks = 0;
-const AUTO_SHUTDOWN_TICKS = parseInt(process.env.CLAUDE_DJ_SHUTDOWN_TICKS, 10) || 10; // 10 × 30s = 5 min
+const _shutdownEnv = parseInt(process.env.CLAUDE_DJ_SHUTDOWN_TICKS, 10);
+const AUTO_SHUTDOWN_TICKS = Number.isNaN(_shutdownEnv) ? 10 : _shutdownEnv; // 10 × 30s = 5 min
 
 const syncInterval = setInterval(() => {
   const { pruned, alive } = sm.syncFromDisk();

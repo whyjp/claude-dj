@@ -259,7 +259,7 @@ export class SessionManager {
 
   /** Cycle focus to next session (all sessions, not just waiting). Returns the newly focused session or null. */
   cycleFocus() {
-    const all = [...this.sessions.values()];
+    const all = [...this.sessions.values()].sort((a, b) => a.startedAt - b.startedAt);
     if (all.length === 0) return null;
     if (all.length === 1) {
       this.focusSessionId = all[0].id;
@@ -357,13 +357,18 @@ export class SessionManager {
   }
 
   toJSON() {
-    return [...this.sessions.values()].map(({ respondFn, _permissionTimeout, agents, ...rest }) => ({
-      ...rest,
-      prompt: rest.prompt?.selected instanceof Set
-        ? { ...rest.prompt, selected: [...rest.prompt.selected] }
-        : rest.prompt,
-      agents: [...agents.values()],
-    }));
+    return [...this.sessions.values()].map(({ respondFn, _permissionTimeout, agents, ...rest }) => {
+      // Generic Set→Array conversion for all prompt fields (not just .selected)
+      let prompt = rest.prompt;
+      if (prompt) {
+        const converted = {};
+        for (const [k, v] of Object.entries(prompt)) {
+          converted[k] = v instanceof Set ? [...v] : v;
+        }
+        prompt = converted;
+      }
+      return { ...rest, prompt, agents: [...agents.values()] };
+    });
   }
 }
 
