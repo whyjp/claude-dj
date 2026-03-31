@@ -312,6 +312,9 @@ const pruneInterval = setInterval(() => {
 
 // --- Session Sync (poll Claude Code disk state) ---
 
+let _emptyTicks = 0;
+const AUTO_SHUTDOWN_TICKS = parseInt(process.env.CLAUDE_DJ_SHUTDOWN_TICKS, 10) || 10; // 10 × 30s = 5 min
+
 const syncInterval = setInterval(() => {
   const { pruned, alive } = sm.syncFromDisk();
   if (pruned.length > 0) {
@@ -323,6 +326,19 @@ const syncInterval = setInterval(() => {
     }
     log(`[claude-dj] Synced: removed ${pruned.length} dead session(s): ${pruned.join(', ')}`);
     ws.broadcast({ type: 'SESSION_DISCONNECTED', sessionIds: pruned, reason: 'process_exit' });
+  }
+
+  // Auto-shutdown: no sessions + no WS clients for AUTO_SHUTDOWN_TICKS consecutive checks
+  if (sm.sessionCount === 0 && ws.clients.size === 0) {
+    _emptyTicks++;
+    if (_emptyTicks >= AUTO_SHUTDOWN_TICKS) {
+      log(`[claude-dj] No sessions or clients for ${_emptyTicks * 30}s — shutting down`);
+      clearInterval(pruneInterval);
+      clearInterval(syncInterval);
+      server.close(() => process.exit(0));
+    }
+  } else {
+    _emptyTicks = 0;
   }
 }, 30000); // check every 30s
 

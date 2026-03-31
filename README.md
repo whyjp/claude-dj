@@ -336,6 +336,7 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 | `CLAUDE_DJ_URL` | `http://localhost:39200` | Hook → Bridge URL |
 | `CLAUDE_DJ_BUTTON_TIMEOUT` | `60000` (60s) | Permission button timeout (ms) |
 | `CLAUDE_DJ_IDLE_TIMEOUT` | `300000` (5min) | Session prune timeout (ms) |
+| `CLAUDE_DJ_SHUTDOWN_TICKS` | `10` (5min) | Empty ticks (×30s) before auto-shutdown |
 | `CLAUDE_DJ_DEBUG` | off | Set `1` to enable file logging |
 
 ## Debugging
