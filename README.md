@@ -106,8 +106,8 @@ This is not a cosmetic change. `AskUserQuestion` is a Claude Code built-in tool 
        │                                                      │
        │                                                      ▼ WebSocket broadcast
        │                                               ┌─────────────┐
-       │                                               │  Virtual DJ  │
-       │                                               │  (browser)   │
+       │                                               │  Virtual DJ │
+       │                                               │  (browser)  │
        │                                               │             │
        │                                               │ [Refactor]  │
        │                                               │ [Rewrite ]  │
@@ -182,31 +182,31 @@ Each subagent has independent state tracking. Permission requests from subagents
 ### System Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Claude Code Process                          │
-│                                                                     │
-│  Model ──→ Tool Call ──→ Hook System ──→ hooks/*.js (child process) │
-│    ▲                                         │                      │
+┌──────────────────────────────────────────────────────────────────────┐
+│                        Claude Code Process                           │
+│                                                                      │
+│  Model ──→ Tool Call ──→ Hook System ──→ hooks/*.js (child process)  │
+│    ▲                                         │                       │
 │    │                                         │ stdin: JSON event     │
 │    │                                         │ stdout: JSON response │
-│    │                                         ▼                      │
+│    │                                         ▼                       │
 │    │  ◀── stdout (blocking) ───────── permission.js ────────┐       │
 │    │  ◀── exit 0 (fire-and-forget) ── notify.js ────────┐   │       │
-│    │                                   stop.js ─────┐   │   │       │
+│    │                                   stop.js ──────┐   │   │       │
 │    │                                   postToolUse ──┤   │   │       │
 │    │                                   subagent*.js ─┤   │   │       │
 │    │                                   userPrompt.js ┤   │   │       │
 │    │                                                 │   │   │       │
 └────│─────────────────────────────────────────────────│───│───│───────┘
      │                                                 │   │   │
-     │    ┌────────── HTTP (localhost:39200) ───────────┘   │   │
-     │    │    POST /api/hook/notify (async) ◀─────────────┘   │
-     │    │    POST /api/hook/permission (BLOCKING) ◀──────────┘
+     │    ┌────────── HTTP (localhost:39200) ──────────┘   │   │
+     │    │    POST /api/hook/notify (async) ◀────────────┘   │
+     │    │    POST /api/hook/permission (BLOCKING) ◀─────────┘
      │    │    POST /api/hook/stop (async)
      │    │    POST /api/hook/subagent* (async)
      │    │    GET  /api/events/:sid (poll)
      │    ▼
-     │  ┌─────────────────────────────────────────────────────┐
+     │  ┌──────────────────────────────────────────────────────┐
      │  │              Bridge Server (Express + WS)            │
      │  │                                                      │
      │  │  SessionManager ──→ state machine, focus, prune      │
@@ -222,27 +222,27 @@ Each subagent has independent state tracking. Permission requests from subagents
      │              ┌──────────┴──────────┐
      │              ▼                     ▼
      │  ┌───────────────────┐  ┌─────────────────────────┐
-     │  │  Virtual DJ        │  │  Ulanzi Translator      │
-     │  │  (Browser)         │  │  Plugin (Phase 3)       │
-     │  │                    │  │                         │
+     │  │  Virtual DJ       │  │  Ulanzi Translator      │
+     │  │  (Browser)        │  │  Plugin (Phase 3)       │
+     │  │                   │  │                         │
      │  │  ← LAYOUT (JSON)  │  │  ← LAYOUT → render PNG  │
      │  │  ← ALL_DIM        │  │  ← ALL_DIM              │
      │  │  ← WELCOME        │  │  → BUTTON_PRESS         │
      │  │  → BUTTON_PRESS   │  │                         │
      │  │  → AGENT_FOCUS    │  │  Bridge WS ↔ Ulanzi WS  │
      │  │  → CLIENT_READY   │  └────────────┬────────────┘
-     │  │                    │               │
-     │  │  Miniview (PiP)    │    WebSocket (ws://127.0.0.1:3906)
+     │  │                   │               │
+     │  │  Miniview (PiP)   │    WebSocket (ws://127.0.0.1:3906)
      │  └───────────────────┘    Ulanzi SDK JSON protocol
      │                                       │
      │                           ┌───────────▼───────────┐
-     │                           │  UlanziStudio App      │
-     │                           │  (host, manages D200)  │
+     │                           │  UlanziStudio App     │
+     │                           │  (host, manages D200) │
      │                           └───────────┬───────────┘
      │                                       │ USB HID
      │                           ┌───────────▼───────────┐
-     │                           │  Ulanzi D200 Hardware  │
-     │                           │  13 LCD keys + encoder │
+     │                           │  Ulanzi D200 Hardware │
+     │                           │  13 LCD keys + encoder│
      │                           └───────────────────────┘
      │
      └── HTTP response flows back through permission.js stdout to Claude
