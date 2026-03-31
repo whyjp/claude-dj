@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
+import { spawn } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BRIDGE_URL = process.env.CLAUDE_DJ_URL || 'http://localhost:39200';
 
 try {
@@ -12,6 +16,11 @@ try {
     signal: AbortSignal.timeout(5000),
   });
 } catch (e) {
-  // ignore — async hook
+  // Bridge down — try to start it
+  if (e?.cause?.code === 'ECONNREFUSED' || e?.name === 'TimeoutError') {
+    spawn(process.execPath, [path.join(__dirname, 'boot-bridge.js')], {
+      detached: true, stdio: 'ignore',
+    }).unref();
+  }
 }
 process.exit(0);
