@@ -130,15 +130,8 @@
   - [ ] Remove `_persistAlwaysAllowRules()` function
   - [ ] Test: verify rules applied by Claude Code on next tool call
 
-### 8. Leverage PreToolUse permission decisions
-- **Current:** PreToolUse is async notify-only
-- **Potential:** Return `permissionDecision: 'allow'` for trusted tools → skip permission dialog
-- **Use case:** Auto-approve Read/Glob/Grep in specific directories
-- **Implementation:**
-  - [ ] Make PreToolUse hook blocking (not async) with fast timeout (2s)
-  - [ ] Add configurable auto-approve rules in bridge settings
-  - [ ] Return `{hookSpecificOutput: {hookEventName: 'PreToolUse', permissionDecision: 'allow'}}` for matching rules
-  - [ ] Fallback: `permissionDecision: 'ask'` for unknown tools
+### 8. ~~Leverage PreToolUse permission decisions~~ — REMOVED
+- **Reason:** Claude Code's internal auto-mode classifier (LLM-based) and permission rules already handle auto-approval. Auto-approved tools never fire PermissionRequest, so they never reach the deck. A bridge-side rule engine would be redundant.
 
 ### 9. Inject `additionalContext` from D200 actions — FUTURE FEATURE
 - **Current:** Button presses only resolve permission — no context to model
