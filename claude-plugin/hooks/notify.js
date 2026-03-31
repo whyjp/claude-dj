@@ -19,7 +19,7 @@ try {
   // Bridge down — try to start it
   if (e?.cause?.code === 'ECONNREFUSED' || e?.name === 'TimeoutError') {
     spawn(process.execPath, [path.join(__dirname, 'boot-bridge.js')], {
-      detached: true, stdio: 'ignore',
+      detached: true, stdio: 'ignore', windowsHide: true,
     }).unref();
   }
 }

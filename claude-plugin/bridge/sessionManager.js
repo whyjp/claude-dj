@@ -363,7 +363,9 @@ function _isPidAlive(pid) {
   try {
     process.kill(pid, 0); // signal 0 = check existence only
     return true;
-  } catch {
+  } catch (e) {
+    // EPERM means process exists but we lack permission (common on Windows)
+    if (e.code === 'EPERM') return true;
     return false;
   }
 }

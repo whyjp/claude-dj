@@ -15,7 +15,7 @@ try {
 
 if (!running) {
   spawn(process.execPath, [path.join(__dirname, 'boot-bridge.js')], {
-    detached: true, stdio: 'ignore',
+    detached: true, stdio: 'ignore', windowsHide: true,
   }).unref();
 }
 

@@ -9,12 +9,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pluginRoot = path.join(__dirname, '..');
 
 if (!existsSync(path.join(pluginRoot, 'node_modules', 'express'))) {
-  execSync('npm install --omit=dev', { cwd: pluginRoot, stdio: 'ignore', timeout: 60000 });
+  execSync('npm install --omit=dev', { cwd: pluginRoot, stdio: 'ignore', timeout: 60000, shell: true });
 }
 
 const child = spawn(process.execPath, [path.join(pluginRoot, 'bridge', 'server.js')], {
   detached: true,
   stdio: 'ignore',
+  windowsHide: true,
   env: { ...process.env },
 });
 child.unref();
