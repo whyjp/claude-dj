@@ -980,9 +980,14 @@ footer {
       </div>
     </div>
 
-    <div style="margin-top:1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
-      <p style="font-size:11px;color:var(--muted);" data-i18n="qs.manual">Local dev (live code):</p>
-      <div style="background:var(--bg);border:1px solid var(--bd);padding:.5rem 1rem;font-size:11px;color:var(--white);white-space:pre;overflow-x:auto;flex:1;min-width:300px;">git clone https://github.com/whyjp/claude-dj.git && cd claude-dj && npm install && claude --plugin-dir claude-plugin</div>
+    <div style="margin-top:2rem;">
+      <p class="label" data-i18n="qs.manual">Manual Install (git clone)</p>
+      <div style="background:var(--bg);border:1px solid var(--bd);padding:1rem 1.25rem;font-size:11px;color:var(--white);white-space:pre;line-height:2.2;overflow-x:auto;"><span style="color:var(--muted);"># 1.</span> git clone https://github.com/whyjp/claude-dj.git && cd claude-dj
+<span style="color:var(--muted);"># 2.</span> npm install
+<span style="color:var(--muted);"># 3.</span> node claude-plugin/bridge/server.js <span style="color:var(--muted);">          # start bridge</span>
+<span style="color:var(--muted);"># 4.</span> npx claude-dj install <span style="color:var(--muted);">                      # register hooks + skills</span>
+<span style="color:var(--muted);"># 5.</span> claude <span style="color:var(--muted);">                                     # launch Claude Code</span>
+<span style="color:var(--muted);"># 6.</span> npx claude-dj status <span style="color:var(--muted);">                       # verify installation</span></div>
     </div>
 
     <div style="margin-top:1.5rem;text-align:center;">
@@ -1183,7 +1188,7 @@ const TRANSLATIONS = {
   'qs.s3.c1':             { en: 'hooks + skills auto-loaded', ko: 'hooks + skills 자동 로드' },
   'qs.s3.c2':             { en: 'all permissions/choices → deck buttons', ko: '모든 권한/선택 → 덱 버튼으로' },
   'qs.s3.note':           { en: 'No terminal focus, no typing — just press the button.', ko: '터미널 포커스 없이, 타이핑 없이, 버튼만 누르면 된다.' },
-  'qs.manual':            { en: 'Manual install (git clone):', ko: '수동 설치 (git clone):' },
+  'qs.manual':            { en: 'Manual Install (git clone)', ko: '수동 설치 (git clone)' },
   'qs.ghBtn':             { en: 'View on GitHub &nearr;',  ko: 'GitHub에서 자세히 보기 &nearr;' },
 
   'footer.copy':          { en: 'Claude DJ — Code in terminal, decisions on deck · v0.2.2 · 88 tests · 2026', ko: 'Claude DJ — 코드는 터미널에, 결정은 덱에서 · v0.2.2 · 88 tests · 2026' },
