@@ -21,8 +21,8 @@ This single install registers **hooks + skills** automatically.
 
 | Auto-configured | Details |
 |----------------|---------|
-| **Hooks** | PermissionRequest(blocking), PreToolUse/PostToolUse(notify), Stop(choice parsing), SubagentStart/Stop, UserPromptSubmit, SessionStart(auto-start bridge) |
-| **Skills** | choice-format — instructs Claude to emit all choices via AskUserQuestion |
+| **Hooks (17)** | SessionStart/End, PermissionRequest(blocking), PreToolUse/PostToolUse, PostToolUseFailure, Stop/StopFailure, SubagentStart/Stop, UserPromptSubmit, TaskCreated/Completed, PreCompact/PostCompact, TeammateIdle, Notification |
+| **Skills (4)** | choice-format (AskUserQuestion for all choices), bridge-start, bridge-stop, bridge-restart |
 
 ### 2. Start the Bridge
 
@@ -284,6 +284,48 @@ Each subagent has independent state tracking. Permission requests from subagents
 
 **The critical path:** `PermissionRequest` hook is the only **synchronous** segment. The hook script (`permission.js`) makes an HTTP POST and **blocks** until the bridge responds (button pressed) or 60s timeout. All other hooks are fire-and-forget.
 
+### Sequence Diagram — Permission (Blocking)
+
+```
+ Claude Code         permission.js        Bridge Server       Virtual DJ (WS)       User
+     │                    │                    │                    │                  │
+     │ ── stdin JSON ──►  │                    │                    │                  │
+     │  (PermissionRequest)│                    │                    │                  │
+     │                    │ ── POST /api/hook ─►│                    │                  │
+     │                    │    /permission      │                    │                  │
+     │                    │    (HTTP blocks)    │                    │                  │
+     │                    │                    │ ── LAYOUT (JSON) ──►│                  │
+     │                    │                    │  state: WAITING_*   │                  │
+     │                    │                    │  buttons rendered   │  ◄── sees buttons │
+     │                    │                    │                    │                  │
+     │                    │                    │                    │ ◄── BUTTON_PRESS ─┤
+     │                    │                    │ ◄── BUTTON_PRESS ──┤   (user taps)    │
+     │                    │                    │    { slot: N }      │                  │
+     │                    │                    │                    │                  │
+     │                    │                    │  resolvePress()     │                  │
+     │                    │ ◄── HTTP 200 ──────┤  { behavior, input }│                  │
+     │                    │  { decision }       │                    │                  │
+     │ ◄── stdout JSON ──┤                    │                    │                  │
+     │  (hook response)   │                    │ ── LAYOUT (JSON) ──►│                  │
+     │                    │                    │  state: PROCESSING  │                  │
+     │  continues...      │  (process exits)   │                    │                  │
+```
+
+### Sequence Diagram — Notify (Fire-and-Forget)
+
+```
+ Claude Code          notify.js          Bridge Server       Virtual DJ (WS)
+     │                    │                    │                    │
+     │ ── stdin JSON ──►  │                    │                    │
+     │  (PreToolUse)      │                    │                    │
+     │                    │ ── POST /api/hook ─►│                    │
+     │                    │    /notify          │                    │
+     │                    │                    │ ── LAYOUT (JSON) ──►│
+     │ ◄── exit 0 ────── │                    │  (wave animation)   │
+     │  (non-blocking)    │                    │                    │
+     │  continues...      │                    │                    │
+```
+
 **D200 hardware note:** The D200 connects via USB to the UlanziStudio desktop app, not directly to the bridge. A translator plugin (Phase 3) bridges the two WebSocket protocols. See `docs/todo/d200-integration-architecture.md` for details.
 
 ### Why a Separate Bridge Process?
@@ -307,17 +349,29 @@ Claude Code hooks are **short-lived child processes** — each hook invocation s
 claude-plugin/
 ├─ plugin.json                   Plugin metadata
 ├─ hooks/
-│  ├─ hooks.json                 8 hook definitions (auto-discovered by Claude Code)
+│  ├─ hooks.json                 17 hook definitions (auto-discovered by Claude Code)
 │  ├─ sessionStart.js            SessionStart → auto-start bridge + display dashboard URL
+│  ├─ sessionEnd.js              SessionEnd → notify bridge (async)
+│  ├─ boot-bridge.js             Bridge bootstrap: install deps, spawn detached
 │  ├─ permission.js              PermissionRequest → HTTP POST (blocking)
 │  ├─ notify.js                  PreToolUse → HTTP POST (async)
 │  ├─ postToolUse.js             PostToolUse → HTTP POST (async)
+│  ├─ postToolUseFailure.js      PostToolUseFailure → HTTP POST (async)
 │  ├─ stop.js                    Stop → HTTP POST (async, choice parsing)
+│  ├─ stopFailure.js             StopFailure → HTTP POST (async)
+│  ├─ choiceParser.js            Shared choice-parsing logic for stop hooks
 │  ├─ subagentStart.js           SubagentStart → HTTP POST (async)
 │  ├─ subagentStop.js            SubagentStop → HTTP POST (async)
-│  └─ userPrompt.js              UserPromptSubmit → GET events (poll)
+│  ├─ userPrompt.js              UserPromptSubmit → GET events (poll)
+│  ├─ taskCreated.js             TaskCreated/TaskCompleted → HTTP POST (async)
+│  ├─ compact.js                 PreCompact/PostCompact → HTTP POST (async)
+│  ├─ teammateIdle.js            TeammateIdle → HTTP POST (async)
+│  └─ notification.js            Notification → HTTP POST (async)
 └─ skills/
-   └─ choice-format/SKILL.md     Injected into Claude: "use AskUserQuestion for all choices"
+   ├─ choice-format/SKILL.md     Injected into Claude: "use AskUserQuestion for all choices"
+   ├─ bridge-start/SKILL.md      Start the bridge manually
+   ├─ bridge-stop/SKILL.md       Stop the running bridge
+   └─ bridge-restart/SKILL.md    Restart the bridge (stop + start)
 ```
 
 ## Deck Layout
@@ -357,8 +411,14 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 - **Miniview mode** — Pop-out deck as always-on-top PiP window (`▣` button or `?view=mini`), with agent tab bar for root/subagent switching
 - **Plugin packaging** — `.claude-plugin/plugin.json` with portable `${CLAUDE_PLUGIN_ROOT}` paths
 - **Bridge auto-start** — SessionStart hook spawns the bridge if not running, displays dashboard URL
+- **Bridge version-mismatch auto-restart** — After plugin update, detects stale bridge and restarts with the new version
+- **Bridge slash commands** — `/bridge-start`, `/bridge-stop`, `/bridge-restart` skills for manual bridge control
 - **Bridge auto-shutdown** — Graceful shutdown after 5 minutes with no sessions or clients
+- **Tool error red pulse** — Tool errors (`PostToolUseFailure`, `StopFailure`) display as red pulse on slots 0-9
 - **Session auto-cleanup** — Idle sessions pruned after 5 minutes
+- **Smart session naming** — Session names resolved from disk PID files, indexed defaults (`session[0]`, `session[1]`, ...)
+- **Native permission rules** — `updatedPermissions` in hook responses for persistent allow/deny rules
+- **Task & compact tracking** — TaskCreated/Completed, PreCompact/PostCompact hooks logged to bridge
 - **Debug logging** — `--debug` flag enables file logging to `logs/bridge.log` with structured levels (INFO/WARN/ERROR)
 
 ## Configuration
@@ -401,7 +461,7 @@ Log levels:
 
 ```bash
 npm install                            # install dependencies
-npm test                               # run all tests (220+)
+npm test                               # run all tests (223)
 node claude-plugin/bridge/server.js    # start bridge
 npm run debug                          # start bridge with file logging
 npm run stop                           # stop running bridge

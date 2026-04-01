@@ -21,8 +21,8 @@ Claude Code 세션에서:
 
 | 자동 설정 항목 | 상세 내용 |
 |----------------|---------|
-| **Hooks** | PermissionRequest(blocking), PreToolUse/PostToolUse(notify), Stop(choice parsing), SubagentStart/Stop, UserPromptSubmit, SessionStart(auto-start bridge) |
-| **Skills** | choice-format — Claude가 모든 선택지를 AskUserQuestion을 통해 출력하도록 지시 |
+| **Hooks (17)** | SessionStart/End, PermissionRequest(blocking), PreToolUse/PostToolUse, PostToolUseFailure, Stop/StopFailure, SubagentStart/Stop, UserPromptSubmit, TaskCreated/Completed, PreCompact/PostCompact, TeammateIdle, Notification |
+| **Skills (4)** | choice-format (모든 선택지를 AskUserQuestion으로 출력), bridge-start, bridge-stop, bridge-restart |
 
 ### 2. Bridge 시작
 
@@ -284,6 +284,48 @@ Claude Code는 부모의 `session_id`를 공유하는 서브에이전트(Explore
 
 **핵심 경로:** `PermissionRequest` hook이 유일한 **동기** 세그먼트입니다. hook 스크립트(`permission.js`)가 HTTP POST를 만들고 bridge가 응답(버튼 누름)하거나 60초 타임아웃까지 **블로킹**합니다. 다른 모든 hook은 fire-and-forget입니다.
 
+### 시퀀스 다이어그램 — Permission (Blocking)
+
+```
+ Claude Code         permission.js        Bridge Server       Virtual DJ (WS)       User
+     │                    │                    │                    │                  │
+     │ ── stdin JSON ──►  │                    │                    │                  │
+     │  (PermissionRequest)│                    │                    │                  │
+     │                    │ ── POST /api/hook ─►│                    │                  │
+     │                    │    /permission      │                    │                  │
+     │                    │    (HTTP blocks)    │                    │                  │
+     │                    │                    │ ── LAYOUT (JSON) ──►│                  │
+     │                    │                    │  state: WAITING_*   │                  │
+     │                    │                    │  buttons rendered   │  ◄── sees buttons │
+     │                    │                    │                    │                  │
+     │                    │                    │                    │ ◄── BUTTON_PRESS ─┤
+     │                    │                    │ ◄── BUTTON_PRESS ──┤   (user taps)    │
+     │                    │                    │    { slot: N }      │                  │
+     │                    │                    │                    │                  │
+     │                    │                    │  resolvePress()     │                  │
+     │                    │ ◄── HTTP 200 ──────┤  { behavior, input }│                  │
+     │                    │  { decision }       │                    │                  │
+     │ ◄── stdout JSON ──┤                    │                    │                  │
+     │  (hook response)   │                    │ ── LAYOUT (JSON) ──►│                  │
+     │                    │                    │  state: PROCESSING  │                  │
+     │  continues...      │  (process exits)   │                    │                  │
+```
+
+### 시퀀스 다이어그램 — Notify (Fire-and-Forget)
+
+```
+ Claude Code          notify.js          Bridge Server       Virtual DJ (WS)
+     │                    │                    │                    │
+     │ ── stdin JSON ──►  │                    │                    │
+     │  (PreToolUse)      │                    │                    │
+     │                    │ ── POST /api/hook ─►│                    │
+     │                    │    /notify          │                    │
+     │                    │                    │ ── LAYOUT (JSON) ──►│
+     │ ◄── exit 0 ────── │                    │  (wave animation)   │
+     │  (non-blocking)    │                    │                    │
+     │  continues...      │                    │                    │
+```
+
 **D200 하드웨어 참고:** D200은 bridge에 직접 연결되지 않고 USB로 UlanziStudio 데스크탑 앱에 연결됩니다. 번역 플러그인(Phase 3)이 두 WebSocket 프로토콜을 연결합니다. 자세한 내용은 `docs/todo/d200-integration-architecture.md`를 참고하세요.
 
 ### 별도 Bridge 프로세스가 필요한 이유
@@ -307,17 +349,29 @@ Claude Code hook은 **단기 child process**입니다 — 각 hook 호출은 `no
 claude-plugin/
 ├─ plugin.json                   플러그인 메타데이터
 ├─ hooks/
-│  ├─ hooks.json                 8개 hook 정의 (Claude Code가 자동 발견)
+│  ├─ hooks.json                 17개 hook 정의 (Claude Code가 자동 발견)
 │  ├─ sessionStart.js            SessionStart → bridge 자동 시작 + 대시보드 URL 표시
+│  ├─ sessionEnd.js              SessionEnd → bridge에 알림 (async)
+│  ├─ boot-bridge.js             Bridge 부트스트랩: 의존성 설치, detached spawn
 │  ├─ permission.js              PermissionRequest → HTTP POST (blocking)
 │  ├─ notify.js                  PreToolUse → HTTP POST (async)
 │  ├─ postToolUse.js             PostToolUse → HTTP POST (async)
+│  ├─ postToolUseFailure.js      PostToolUseFailure → HTTP POST (async)
 │  ├─ stop.js                    Stop → HTTP POST (async, choice parsing)
+│  ├─ stopFailure.js             StopFailure → HTTP POST (async)
+│  ├─ choiceParser.js            Stop hook 공유 선택지 파싱 로직
 │  ├─ subagentStart.js           SubagentStart → HTTP POST (async)
 │  ├─ subagentStop.js            SubagentStop → HTTP POST (async)
-│  └─ userPrompt.js              UserPromptSubmit → GET events (poll)
+│  ├─ userPrompt.js              UserPromptSubmit → GET events (poll)
+│  ├─ taskCreated.js             TaskCreated/TaskCompleted → HTTP POST (async)
+│  ├─ compact.js                 PreCompact/PostCompact → HTTP POST (async)
+│  ├─ teammateIdle.js            TeammateIdle → HTTP POST (async)
+│  └─ notification.js            Notification → HTTP POST (async)
 └─ skills/
-   └─ choice-format/SKILL.md     Claude에 주입: "모든 선택지에 AskUserQuestion 사용"
+   ├─ choice-format/SKILL.md     Claude에 주입: "모든 선택지에 AskUserQuestion 사용"
+   ├─ bridge-start/SKILL.md      Bridge 수동 시작
+   ├─ bridge-stop/SKILL.md       실행 중인 Bridge 중지
+   └─ bridge-restart/SKILL.md    Bridge 재시작 (중지 + 시작)
 ```
 
 ## 덱 레이아웃
@@ -357,8 +411,14 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 - **Miniview 모드** — 덱을 항상 최상단 PiP 창으로 팝아웃 (`▣` 버튼 또는 `?view=mini`), 루트/서브에이전트 전환을 위한 에이전트 탭 바 포함
 - **플러그인 패키징** — 이동 가능한 `${CLAUDE_PLUGIN_ROOT}` 경로를 사용하는 `.claude-plugin/plugin.json`
 - **Bridge 자동 시작** — SessionStart hook이 실행 중이 아니면 bridge를 spawn하고 대시보드 URL을 표시합니다
+- **Bridge 버전 불일치 자동 재시작** — 플러그인 업데이트 후 오래된 bridge를 감지하고 새 버전으로 재시작
+- **Bridge 슬래시 커맨드** — `/bridge-start`, `/bridge-stop`, `/bridge-restart` skill로 수동 bridge 제어
 - **Bridge 자동 종료** — 세션이나 클라이언트가 없으면 5분 후 정상 종료
+- **도구 오류 빨간 펄스** — 도구 오류(`PostToolUseFailure`, `StopFailure`)가 슬롯 0-9에 빨간 펄스로 표시
 - **세션 자동 정리** — 유휴 세션이 5분 후 정리됩니다
+- **스마트 세션 이름** — 디스크 PID 파일에서 세션 이름 확인, 인덱스 기본값 (`session[0]`, `session[1]`, ...)
+- **네이티브 권한 규칙** — hook 응답의 `updatedPermissions`로 영구적 허용/거부 규칙
+- **작업 & 컴팩트 추적** — TaskCreated/Completed, PreCompact/PostCompact hook이 bridge에 로깅
 - **디버그 로깅** — `--debug` 플래그로 구조화된 레벨(INFO/WARN/ERROR)과 함께 `logs/bridge.log`에 파일 로깅 활성화
 
 ## 설정
@@ -401,7 +461,7 @@ grep "slot=0" logs/bridge.log
 
 ```bash
 npm install                            # 의존성 설치
-npm test                               # 모든 테스트 실행 (220+)
+npm test                               # 모든 테스트 실행 (223)
 node claude-plugin/bridge/server.js    # bridge 시작
 npm run debug                          # 파일 로깅과 함께 bridge 시작
 npm run stop                           # 실행 중인 bridge 중지

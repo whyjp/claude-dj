@@ -21,8 +21,8 @@
 
 | 自动配置项 | 详情 |
 |----------------|---------|
-| **Hooks** | PermissionRequest(blocking), PreToolUse/PostToolUse(notify), Stop(choice parsing), SubagentStart/Stop, UserPromptSubmit, SessionStart(auto-start bridge) |
-| **Skills** | choice-format — 指示 Claude 通过 AskUserQuestion 输出所有选项 |
+| **Hooks (17)** | SessionStart/End, PermissionRequest(blocking), PreToolUse/PostToolUse, PostToolUseFailure, Stop/StopFailure, SubagentStart/Stop, UserPromptSubmit, TaskCreated/Completed, PreCompact/PostCompact, TeammateIdle, Notification |
+| **Skills (4)** | choice-format（通过 AskUserQuestion 输出所有选项）, bridge-start, bridge-stop, bridge-restart |
 
 ### 2. 启动 Bridge
 
@@ -282,6 +282,48 @@ Claude Code 会生成共享父会话 `session_id` 的子代理（Explore、Plan 
 | UlanziStudio ↔ D200 | USB HID | proprietary | 双向 | — |
 | Bridge → Claude | HTTP response | 与 Hook→Bridge 相同的连接 | Bridge → Hook script → stdout → Claude | 解除阻塞请求 |
 
+### 时序图 — Permission（Blocking）
+
+```
+ Claude Code         permission.js        Bridge Server       Virtual DJ (WS)       User
+     │                    │                    │                    │                  │
+     │ ── stdin JSON ──►  │                    │                    │                  │
+     │  (PermissionRequest)│                    │                    │                  │
+     │                    │ ── POST /api/hook ─►│                    │                  │
+     │                    │    /permission      │                    │                  │
+     │                    │    (HTTP blocks)    │                    │                  │
+     │                    │                    │ ── LAYOUT (JSON) ──►│                  │
+     │                    │                    │  state: WAITING_*   │                  │
+     │                    │                    │  buttons rendered   │  ◄── sees buttons │
+     │                    │                    │                    │                  │
+     │                    │                    │                    │ ◄── BUTTON_PRESS ─┤
+     │                    │                    │ ◄── BUTTON_PRESS ──┤   (user taps)    │
+     │                    │                    │    { slot: N }      │                  │
+     │                    │                    │                    │                  │
+     │                    │                    │  resolvePress()     │                  │
+     │                    │ ◄── HTTP 200 ──────┤  { behavior, input }│                  │
+     │                    │  { decision }       │                    │                  │
+     │ ◄── stdout JSON ──┤                    │                    │                  │
+     │  (hook response)   │                    │ ── LAYOUT (JSON) ──►│                  │
+     │                    │                    │  state: PROCESSING  │                  │
+     │  continues...      │  (process exits)   │                    │                  │
+```
+
+### 时序图 — Notify（Fire-and-Forget）
+
+```
+ Claude Code          notify.js          Bridge Server       Virtual DJ (WS)
+     │                    │                    │                    │
+     │ ── stdin JSON ──►  │                    │                    │
+     │  (PreToolUse)      │                    │                    │
+     │                    │ ── POST /api/hook ─►│                    │
+     │                    │    /notify          │                    │
+     │                    │                    │ ── LAYOUT (JSON) ──►│
+     │ ◄── exit 0 ────── │                    │  (wave animation)   │
+     │  (non-blocking)    │                    │                    │
+     │  continues...      │                    │                    │
+```
+
 **关键路径：** `PermissionRequest` hook 是唯一的**同步**段。hook 脚本（`permission.js`）发出 HTTP POST 并**阻塞**，直到 Bridge 响应（按钮按下）或 60 秒超时。所有其他 hook 均为 fire-and-forget。
 
 **D200 硬件说明：** D200 通过 USB 连接到 UlanziStudio 桌面应用，而不是直接连接到 Bridge。翻译插件（Phase 3）桥接两个 WebSocket 协议。详情请参阅 `docs/todo/d200-integration-architecture.md`。
@@ -307,17 +349,29 @@ Claude Code hook 是**短生命周期的子进程** — 每次 hook 调用都会
 claude-plugin/
 ├─ plugin.json                   插件元数据
 ├─ hooks/
-│  ├─ hooks.json                 8 个 hook 定义（由 Claude Code 自动发现）
+│  ├─ hooks.json                 17 个 hook 定义（由 Claude Code 自动发现）
 │  ├─ sessionStart.js            SessionStart → 自动启动 Bridge + 显示控制台 URL
+│  ├─ sessionEnd.js              SessionEnd → 通知 Bridge（async）
+│  ├─ boot-bridge.js             Bridge 引导：安装依赖，detached 启动
 │  ├─ permission.js              PermissionRequest → HTTP POST（blocking）
 │  ├─ notify.js                  PreToolUse → HTTP POST（async）
 │  ├─ postToolUse.js             PostToolUse → HTTP POST（async）
+│  ├─ postToolUseFailure.js      PostToolUseFailure → HTTP POST（async）
 │  ├─ stop.js                    Stop → HTTP POST（async，选项解析）
+│  ├─ stopFailure.js             StopFailure → HTTP POST（async）
+│  ├─ choiceParser.js            Stop hook 共享的选项解析逻辑
 │  ├─ subagentStart.js           SubagentStart → HTTP POST（async）
 │  ├─ subagentStop.js            SubagentStop → HTTP POST（async）
-│  └─ userPrompt.js              UserPromptSubmit → GET events（poll）
+│  ├─ userPrompt.js              UserPromptSubmit → GET events（poll）
+│  ├─ taskCreated.js             TaskCreated/TaskCompleted → HTTP POST（async）
+│  ├─ compact.js                 PreCompact/PostCompact → HTTP POST（async）
+│  ├─ teammateIdle.js            TeammateIdle → HTTP POST（async）
+│  └─ notification.js            Notification → HTTP POST（async）
 └─ skills/
-   └─ choice-format/SKILL.md     注入 Claude："所有选项使用 AskUserQuestion"
+   ├─ choice-format/SKILL.md     注入 Claude："所有选项使用 AskUserQuestion"
+   ├─ bridge-start/SKILL.md      手动启动 Bridge
+   ├─ bridge-stop/SKILL.md       停止运行中的 Bridge
+   └─ bridge-restart/SKILL.md    重启 Bridge（停止 + 启动）
 ```
 
 ## Deck 布局
@@ -357,8 +411,14 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 - **Miniview 模式** — 将 Deck 弹出为始终置顶的 PiP 窗口（`▣` 按钮或 `?view=mini`），含根/子代理切换标签栏
 - **插件打包** — 使用可移植 `${CLAUDE_PLUGIN_ROOT}` 路径的 `.claude-plugin/plugin.json`
 - **Bridge 自动启动** — SessionStart hook 在未运行时 spawn Bridge，并显示控制台 URL
+- **Bridge 版本不匹配自动重启** — 插件更新后检测过时的 Bridge 并使用新版本重启
+- **Bridge 斜杠命令** — `/bridge-start`、`/bridge-stop`、`/bridge-restart` skill 用于手动 Bridge 控制
 - **Bridge 自动关闭** — 无会话或客户端时 5 分钟后优雅关闭
+- **工具错误红色脉冲** — 工具错误（`PostToolUseFailure`、`StopFailure`）在槽位 0-9 显示红色脉冲
 - **会话自动清理** — 空闲会话在 5 分钟后被清理
+- **智能会话命名** — 从磁盘 PID 文件解析会话名称，索引默认值（`session[0]`、`session[1]`、...）
+- **原生权限规则** — hook 响应中的 `updatedPermissions` 用于持久化允许/拒绝规则
+- **任务与压缩追踪** — TaskCreated/Completed、PreCompact/PostCompact hook 记录到 Bridge 日志
 - **调试日志** — `--debug` 标志启用文件日志，输出到 `logs/bridge.log`，含结构化级别（INFO/WARN/ERROR）
 
 ## 配置
@@ -401,7 +461,7 @@ grep "slot=0" logs/bridge.log
 
 ```bash
 npm install                            # 安装依赖
-npm test                               # 运行所有测试（220+）
+npm test                               # 运行所有测试（223）
 node claude-plugin/bridge/server.js    # 启动 Bridge
 npm run debug                          # 启动 Bridge 并开启文件日志
 npm run stop                           # 停止运行中的 Bridge
