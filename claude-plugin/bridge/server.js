@@ -374,8 +374,11 @@ app.post('/api/hook/permission', (req, res) => {
 
   broadcastSessionLayout(session);
 
-  // Detect hook process killed by Claude Code (connection drop)
-  req.on('close', () => {
+  // Detect hook process killed by Claude Code (connection drop).
+  // Use res.on('close') — req.on('close') fires on request-body-consumed in Node ≥18,
+  // even when the TCP connection is still alive, causing immediate false-positive cleanup.
+  res.on('close', () => {
+    if (res.writableFinished) return; // response was sent successfully — not a disconnect
     if (!session.respondFn) return; // already resolved
     log(`[hook/permission] connection closed by client — session=${session.id} tool=${input.tool_name}`);
     session.respondFn = null;

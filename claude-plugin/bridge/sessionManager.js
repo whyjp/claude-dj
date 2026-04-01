@@ -336,7 +336,10 @@ export class SessionManager {
         p.question = nextQ.question;
         p.multiSelect = nextQ.multiSelect;
         p.selected = new Set();
-        p.choices = nextQ.options;
+        p.choices = nextQ.options.map((o, i) => ({
+          index: i + 1,
+          label: o.label || o.description || `Option ${i + 1}`,
+        }));
         return 'next_question';
       }
       // Last question — build combined answer and resolve

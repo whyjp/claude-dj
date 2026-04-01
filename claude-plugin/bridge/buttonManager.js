@@ -81,10 +81,11 @@ export class ButtonManager {
       const choices = prompt.choices || [];
 
       if (prompt.multiSelect) {
-        // Slot 9 = Submit — resolve with all selected indices
+        // Slot 9 = Submit — resolve with all selected labels (comma-separated)
         if (slot === 9) {
           const selected = [...(prompt.selected || [])].sort((a, b) => a - b);
-          return { type: 'choice', value: selected.join(',') || '1' };
+          const labels = selected.map(idx => choices.find(c => c.index === idx)?.label || String(idx));
+          return { type: 'choice', value: labels.join(', ') || choices[0]?.label || '' };
         }
         // Slots 0-8 = toggle selection
         if (slot >= 0 && slot < choices.length && slot < 9) {
@@ -100,7 +101,7 @@ export class ButtonManager {
       }
 
       if (slot >= 0 && slot < choices.length) {
-        return { type: 'choice', value: String(choices[slot].index) };
+        return { type: 'choice', value: choices[slot].label };
       }
       return null;
     }
