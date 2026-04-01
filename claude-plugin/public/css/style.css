@@ -400,7 +400,7 @@ main {
 /* ── LOG CHILD ROW ── */
 .log-tabs-child {
   background: var(--surf); border-bottom: 1px solid var(--bd);
-  padding-left: 8px;
+  padding-left: 8px; min-height: 26px;
 }
 .log-tabs-child .log-tab {
   color: var(--purple); font-size: 9px;
@@ -517,8 +517,7 @@ body.mini .mini-agent-bar {
   cursor: pointer; transition: color .15s; flex-shrink: 0;
 }
 .mini-agent-bar .ma-expand:hover { color: var(--white); }
-body.mini .mini-agent-bar.mini-child-bar:empty { display: none; }
-body.mini .mini-agent-bar.mini-child-bar { background: var(--bg3, #1a1a24); padding-left: 18px; }
+body.mini .mini-agent-bar.mini-child-bar { background: var(--bg3, #1a1a24); padding-left: 18px; min-height: 26px; }
 
 /* ── HEADER MINI TOGGLE ── */
 .btn-mini {
