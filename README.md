@@ -93,11 +93,11 @@ The user must find the terminal, type a number, and press Enter. With multiple s
 
 ### The Solution: Skill Injection
 
-Claude DJ installs a **`choice-format` skill** (`skills/choice-format/SKILL.md`) that is automatically loaded into every Claude Code session. This skill modifies Claude's behavior at the model level:
+Claude DJ installs a **`choice-format` skill** (`skills/choice-format/SKILL.md`) that is automatically loaded into every Claude Code session. The skill's core premise: **the user controls the session via a button deck and cannot type responses.** Every user decision must go through `AskUserQuestion` — there is no other way for the user to respond.
 
-**Before (default Claude):** Claude writes numbered lists as plain text in the conversation transcript.
+**Before (default Claude):** Claude writes numbered lists as plain text or asks "shall I proceed?" — expecting the user to type a reply.
 
-**After (with skill):** Claude uses the `AskUserQuestion` tool for every decision point — confirmations, approach selections, parameter choices, and any fork in the workflow.
+**After (with skill):** Claude calls `AskUserQuestion` with button options before ending any message that expects a response. No exceptions, no text-only questions.
 
 This is not a cosmetic change. `AskUserQuestion` is a Claude Code built-in tool that triggers the `PermissionRequest` hook — the same hook system used for file write and shell command approvals. By instructing Claude to route all choices through this tool, every decision becomes a **structured, interceptable event** that the deck can render as physical buttons.
 
@@ -111,7 +111,7 @@ This is not a cosmetic change. `AskUserQuestion` is a Claude Code built-in tool 
        ▼
   AskUserQuestion tool call
        │  tool_name: "AskUserQuestion"
-       │  tool_input: { questions: [{ question, options: [{label, description}] }] }
+       │  tool_input: { questions: [{ question, options: ["Refactor", "Rewrite", "Patch"] }] }
        │
        ▼
   PermissionRequest hook ──→ hooks/permission.js ──→ POST /api/hook/permission
@@ -149,20 +149,37 @@ This is not a cosmetic change. `AskUserQuestion` is a Claude Code built-in tool 
   Claude receives answer "1" → continues with "Refactor the module"
 ```
 
-### What Changes at the Claude Level
+### What the Skill Changes
 
-The `choice-format` skill causes three behavioral shifts in Claude:
+The `choice-format` skill enforces a simple 3-step workflow:
 
-1. **Structured output** — Instead of free-form numbered lists, Claude emits `AskUserQuestion` tool calls with typed `options` arrays. Each option has a `label` (button text) and `description` (context).
+1. **Write** your explanation, plan, or analysis as normal text
+2. **Ask yourself**: "Am I expecting the user to react?"
+3. **If yes** → call `AskUserQuestion` with options before the message ends
 
-2. **Blocking interaction** — `AskUserQuestion` triggers a `PermissionRequest` hook, which is the only hook type that **blocks Claude's execution** until a response arrives. This creates a true pause-and-wait interaction, unlike text choices which Claude writes and immediately continues.
+This produces two interaction patterns:
 
-3. **Choice vs Confirmation** — The skill distinguishes two interaction patterns:
+| Pattern | When | Options | Example |
+|---------|------|---------|---------|
+| **Choice** | 2-4 genuinely different paths | `["Refactor", "Rewrite", "Patch"]` | Multiple approaches to a problem |
+| **Confirmation** | Approve/reject a plan just stated | `["Proceed", "Different approach"]` | Plan approval after explanation |
 
-   - **Real choice** (multiple genuinely different paths): 2-4 distinct options, e.g. "Refactor" / "Rewrite" / "Patch"
-   - **Confirmation** (plan approval): Claude states its plan as text, then asks with exactly 2 options: "Proceed" / "Different approach"
+**Constraints:** Labels max 30 chars, max 10 options per question. Confirmations always exactly 2 options. Korean sessions use localized labels (e.g. `["진행", "다른 방향"]`).
 
-   This prevents a common anti-pattern where Claude presents a plan description *as* a choice option (e.g. "modify X and apply Y" as option 1, "also apply to Z" as option 2). Plan descriptions are not choices — they should be stated as text followed by a yes/no confirmation.
+**Common mistakes the skill prevents** — these ALL require `AskUserQuestion`, never bare text:
+
+| Text question | → AskUserQuestion |
+|---|---|
+| "shall I proceed?" / "진행할까요?" | `["Proceed", "Different approach"]` |
+| "should I commit?" / "커밋할까요?" | `["Commit", "Not yet"]` |
+| "which approach?" / "어떤 방향?" | `["Option A", "Option B"]` |
+| Numbered lists (1. X / 2. Y) | `["X", "Y"]` |
+
+Plan descriptions are not choices — state the plan as text, then confirm with yes/no.
+
+### Why AskUserQuestion?
+
+`AskUserQuestion` triggers a `PermissionRequest` hook, which is the only hook type that **blocks Claude's execution** until a response arrives. This creates a true pause-and-wait interaction, unlike text choices which Claude writes and immediately continues.
 
 ### Two Choice Paths
 

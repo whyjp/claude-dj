@@ -93,11 +93,11 @@ Which approach should we take?
 
 ### 解决方案：Skill 注入
 
-Claude DJ 安装了一个 **`choice-format` skill**（`skills/choice-format/SKILL.md`），它会自动加载到每个 Claude Code 会话中。该 skill 在模型层面修改 Claude 的行为：
+Claude DJ 安装了一个 **`choice-format` skill**（`skills/choice-format/SKILL.md`），它会自动加载到每个 Claude Code 会话中。该 skill 的核心前提：**用户通过按钮 Deck 控制会话，无法输入文字回复。** 每个用户决策都必须通过 `AskUserQuestion` — 用户没有其他方式进行回复。
 
-**之前（默认 Claude）：** Claude 在对话记录中将编号列表以纯文本形式写入。
+**之前（默认 Claude）：** Claude 将编号列表以纯文本形式写入，或者询问"要继续吗？"— 期望用户输入文字回复。
 
-**之后（应用 skill）：** Claude 在每个决策节点 — 确认、方案选择、参数选择以及工作流中的任何分支点 — 都使用 `AskUserQuestion` 工具。
+**之后（应用 skill）：** Claude 在结束任何期望回复的消息之前，调用 `AskUserQuestion` 并提供按钮选项。没有例外，没有纯文本提问。
 
 这不是表面上的变化。`AskUserQuestion` 是 Claude Code 的内置工具，会触发 `PermissionRequest` hook — 与文件写入和 Shell 命令审批使用的相同 hook 系统。通过指示 Claude 将所有选项路由经过此工具，每个决策都成为 Deck 可以渲染为物理按钮的**结构化、可拦截的事件**。
 
@@ -111,7 +111,7 @@ Claude DJ 安装了一个 **`choice-format` skill**（`skills/choice-format/SKIL
        ▼
   AskUserQuestion tool call
        │  tool_name: "AskUserQuestion"
-       │  tool_input: { questions: [{ question, options: [{label, description}] }] }
+       │  tool_input: { questions: [{ question, options: ["Refactor", "Rewrite", "Patch"] }] }
        │
        ▼
   PermissionRequest hook ──→ hooks/permission.js ──→ POST /api/hook/permission
@@ -149,20 +149,37 @@ Claude DJ 安装了一个 **`choice-format` skill**（`skills/choice-format/SKIL
   Claude receives answer "1" → continues with "Refactor the module"
 ```
 
-### Claude 层面的变化
+### Skill 改变了什么
 
-`choice-format` skill 使 Claude 产生三种行为转变：
+`choice-format` skill 强制执行一个简单的 3 步工作流：
 
-1. **结构化输出** — 不再使用自由格式的编号列表，Claude 生成带有类型化 `options` 数组的 `AskUserQuestion` 工具调用。每个选项包含 `label`（按钮文本）和 `description`（上下文说明）。
+1. **编写**你的说明、计划或分析，以普通文本形式
+2. **自问**："我是否期望用户做出反应？"
+3. **如果是** → 在消息结束前调用 `AskUserQuestion` 并提供选项
 
-2. **阻塞式交互** — `AskUserQuestion` 触发 `PermissionRequest` hook，这是唯一**阻塞 Claude 执行**直到响应到达的 hook 类型。这创造了真正的暂停等待交互，不同于文本选项——Claude 写完后会立即继续执行。
+这产生两种交互模式：
 
-3. **选择与确认的区分** — skill 区分两种交互模式：
+| 模式 | 何时使用 | 选项 | 示例 |
+|------|---------|------|------|
+| **选择** | 2-4 条真正不同的路径 | `["Refactor", "Rewrite", "Patch"]` | 问题的多种解决方案 |
+| **确认** | 批准/拒绝刚才陈述的计划 | `["Proceed", "Different approach"]` | 说明后的计划批准 |
 
-   - **真实选择**（多条真正不同的路径）：2-4 个不同选项，例如 "Refactor" / "Rewrite" / "Patch"
-   - **确认**（计划批准）：Claude 以文本陈述其计划，然后用恰好 2 个选项提问："Proceed" / "Different approach"
+**约束条件：** 标签最长 30 字符，每个问题最多 10 个选项。确认始终恰好 2 个选项。韩语会话使用本地化标签（例如 `["진행", "다른 방향"]`）。
 
-   这防止了一种常见的反模式——Claude 将计划描述作为选项呈现（例如，选项 1 是"修改 X 并应用 Y"，选项 2 是"同时应用到 Z"）。计划描述不是选项——应以文本陈述，随后跟一个是/否确认。
+**skill 防止的常见错误** — 以下情况都必须使用 `AskUserQuestion`，绝不使用纯文本：
+
+| 文本提问 | → AskUserQuestion |
+|---|---|
+| "shall I proceed?" / "진행할까요?" | `["Proceed", "Different approach"]` |
+| "should I commit?" / "커밋할까요?" | `["Commit", "Not yet"]` |
+| "which approach?" / "어떤 방향?" | `["Option A", "Option B"]` |
+| 编号列表 (1. X / 2. Y) | `["X", "Y"]` |
+
+计划描述不是选项 — 以文本陈述计划，然后用是/否确认。
+
+### 为什么使用 AskUserQuestion？
+
+`AskUserQuestion` 触发 `PermissionRequest` hook，这是唯一**阻塞 Claude 执行**直到响应到达的 hook 类型。这创造了真正的暂停等待交互，不同于文本选项——Claude 写完后会立即继续执行。
 
 ### 两种选项路径
 
