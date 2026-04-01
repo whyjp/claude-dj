@@ -5,6 +5,7 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -56,5 +57,20 @@ try {
     console.log(`  ✓ claude-plugin/public/js/app.js`);
   }
 } catch { console.log(`  ✗ claude-plugin/public/js/app.js (skipped)`); }
+
+// Also sync package.json to the installed plugin path (so bridge reports correct version)
+try {
+  const installedPluginsPath = path.join(os.homedir(), '.claude', 'plugins', 'installed_plugins.json');
+  const installed = JSON.parse(readFileSync(installedPluginsPath, 'utf8'));
+  const entry = Object.entries(installed.plugins || {}).find(([k]) => k.startsWith('claude-dj'));
+  if (entry) {
+    const installPath = entry[1][0].installPath;
+    const installedPkgPath = path.join(installPath, 'package.json');
+    const data = JSON.parse(readFileSync(installedPkgPath, 'utf8'));
+    data.version = version;
+    writeFileSync(installedPkgPath, JSON.stringify(data, null, 2) + '\n');
+    console.log(`  ✓ installed package.json (${installPath})`);
+  }
+} catch { /* installed path not found — skip */ }
 
 console.log(`[claude-dj] Done — version ${version}`);
