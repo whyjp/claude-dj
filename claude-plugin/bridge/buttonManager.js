@@ -19,11 +19,12 @@ export class ButtonManager {
       agentCount,
     };
 
-    // When viewing a specific agent, use that agent's state for the preset.
-    // When root is focused but the permission came from an agent, show processing.
-    const effectiveState = focusedAgent
-      ? focusedAgent.state
-      : (session._permissionAgentId ? 'PROCESSING' : session.state);
+    // Pending blocking decisions (WAITING_*) always take priority over agent view state.
+    // This ensures approve/deny/choice buttons are always visible regardless of which
+    // agent is focused — critical when user navigates away and returns to a waiting session.
+    const effectiveState = (session.state === 'WAITING_BINARY' || session.state === 'WAITING_CHOICE' || session.state === 'WAITING_RESPONSE')
+      ? session.state
+      : (focusedAgent ? focusedAgent.state : session.state);
 
     // Include recent tool error for info display (auto-clears after 5s)
     if (session.lastToolError) {
