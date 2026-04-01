@@ -1,6 +1,6 @@
 {
   "name": "claude-dj",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Control Claude Code with physical buttons or browser — no terminal focus needed",
   "author": {
     "name": "whyjp"

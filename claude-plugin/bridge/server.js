@@ -342,12 +342,17 @@ app.post('/api/hook/permission', (req, res) => {
   log(`[hook/permission] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
 
   // Auto-deny previous pending permission to prevent orphaned HTTP responses.
-  // Safe: Node.js is single-threaded, so this completes before handlePermission overwrites state.
+  // Transition state to PROCESSING BEFORE calling prevRespondFn — mirrors resolveWaiting pattern —
+  // so the broadcastSessionLayout inside prevRespondFn doesn't flash stale WAITING_* buttons on deck.
   const existing = sm.get(input.session_id);
   if (existing?.respondFn) {
     warn(`[hook/permission] auto-denying previous pending permission for session=${input.session_id}`);
     const prevRespondFn = existing.respondFn;
-    existing.respondFn = null; // nullify first to prevent double-call
+    existing.respondFn = null;
+    existing.state = 'PROCESSING';
+    existing.prompt = null;
+    existing.waitingSince = null;
+    existing._permissionAgentId = null;
     prevRespondFn({ type: 'binary', value: 'deny' });
   }
   if (existing?._permissionTimeout) {
