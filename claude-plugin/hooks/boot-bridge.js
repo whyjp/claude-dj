@@ -25,8 +25,8 @@ const bridgeEnv = {
 };
 
 if (!existsSync(path.join(pluginRoot, 'node_modules', 'express'))) {
-  execFileSync(process.execPath, [process.env.npm_execpath || 'npm', 'install', '--omit=dev'], {
-    cwd: pluginRoot, stdio: 'ignore', timeout: 60000, env: bridgeEnv,
+  execFileSync('npm', ['install', '--omit=dev'], {
+    cwd: pluginRoot, stdio: 'ignore', timeout: 60000, env: bridgeEnv, shell: true,
   });
 }
 
