@@ -40,4 +40,6 @@ try {
 } catch {
   // Bridge down — no events to inject
 }
-process.exit(0);
+// Natural exit — process.exit(0) omitted intentionally.
+// Calling process.exit() while AbortSignal.timeout handles are closing
+// triggers a libuv assertion crash on Windows (UV_HANDLE_CLOSING).
