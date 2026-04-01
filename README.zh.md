@@ -284,44 +284,47 @@ Claude Code 会生成共享父会话 `session_id` 的子代理（Explore、Plan 
 
 ### 时序图 — Permission（Blocking）
 
-```
- Claude Code         permission.js        Bridge Server       Virtual DJ (WS)       User
-     │                    │                    │                    │                  │
-     │ ── stdin JSON ──►  │                    │                    │                  │
-     │  (PermissionRequest)│                    │                    │                  │
-     │                    │ ── POST /api/hook ─►│                    │                  │
-     │                    │    /permission      │                    │                  │
-     │                    │    (HTTP blocks)    │                    │                  │
-     │                    │                    │ ── LAYOUT (JSON) ──►│                  │
-     │                    │                    │  state: WAITING_*   │                  │
-     │                    │                    │  buttons rendered   │  ◄── sees buttons │
-     │                    │                    │                    │                  │
-     │                    │                    │                    │ ◄── BUTTON_PRESS ─┤
-     │                    │                    │ ◄── BUTTON_PRESS ──┤   (user taps)    │
-     │                    │                    │    { slot: N }      │                  │
-     │                    │                    │                    │                  │
-     │                    │                    │  resolvePress()     │                  │
-     │                    │ ◄── HTTP 200 ──────┤  { behavior, input }│                  │
-     │                    │  { decision }       │                    │                  │
-     │ ◄── stdout JSON ──┤                    │                    │                  │
-     │  (hook response)   │                    │ ── LAYOUT (JSON) ──►│                  │
-     │                    │                    │  state: PROCESSING  │                  │
-     │  continues...      │  (process exits)   │                    │                  │
+```mermaid
+sequenceDiagram
+    participant CC as Claude Code
+    participant PH as permission.js
+    participant BS as Bridge Server
+    participant VD as Virtual DJ
+    participant U as User
+
+    CC->>PH: stdin JSON (PermissionRequest)
+    PH->>BS: POST /api/hook/permission
+    Note over PH: HTTP blocks until<br/>response or 60s timeout
+
+    BS->>VD: WS LAYOUT (state: WAITING_*)
+    VD->>U: Render choice/permission buttons
+
+    U->>VD: Tap button
+    VD->>BS: WS BUTTON_PRESS { slot: N }
+    BS->>BS: resolvePress()
+    BS->>PH: HTTP 200 { behavior, updatedInput }
+    BS->>VD: WS LAYOUT (state: PROCESSING)
+
+    PH->>CC: stdout JSON { decision }
+    Note over PH: Process exits
+    Note over CC: Continues execution
 ```
 
 ### 时序图 — Notify（Fire-and-Forget）
 
-```
- Claude Code          notify.js          Bridge Server       Virtual DJ (WS)
-     │                    │                    │                    │
-     │ ── stdin JSON ──►  │                    │                    │
-     │  (PreToolUse)      │                    │                    │
-     │                    │ ── POST /api/hook ─►│                    │
-     │                    │    /notify          │                    │
-     │                    │                    │ ── LAYOUT (JSON) ──►│
-     │ ◄── exit 0 ────── │                    │  (wave animation)   │
-     │  (non-blocking)    │                    │                    │
-     │  continues...      │                    │                    │
+```mermaid
+sequenceDiagram
+    participant CC as Claude Code
+    participant NH as notify.js
+    participant BS as Bridge Server
+    participant VD as Virtual DJ
+
+    CC->>NH: stdin JSON (PreToolUse)
+    NH->>BS: POST /api/hook/notify
+    NH->>CC: exit 0 (non-blocking)
+    Note over CC: Continues immediately
+
+    BS->>VD: WS LAYOUT (wave animation)
 ```
 
 **关键路径：** `PermissionRequest` hook 是唯一的**同步**段。hook 脚本（`permission.js`）发出 HTTP POST 并**阻塞**，直到 Bridge 响应（按钮按下）或 60 秒超时。所有其他 hook 均为 fire-and-forget。

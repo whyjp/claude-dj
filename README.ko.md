@@ -286,44 +286,47 @@ Claude Code는 부모의 `session_id`를 공유하는 서브에이전트(Explore
 
 ### 시퀀스 다이어그램 — Permission (Blocking)
 
-```
- Claude Code         permission.js        Bridge Server       Virtual DJ (WS)       User
-     │                    │                    │                    │                  │
-     │ ── stdin JSON ──►  │                    │                    │                  │
-     │  (PermissionRequest)│                    │                    │                  │
-     │                    │ ── POST /api/hook ─►│                    │                  │
-     │                    │    /permission      │                    │                  │
-     │                    │    (HTTP blocks)    │                    │                  │
-     │                    │                    │ ── LAYOUT (JSON) ──►│                  │
-     │                    │                    │  state: WAITING_*   │                  │
-     │                    │                    │  buttons rendered   │  ◄── sees buttons │
-     │                    │                    │                    │                  │
-     │                    │                    │                    │ ◄── BUTTON_PRESS ─┤
-     │                    │                    │ ◄── BUTTON_PRESS ──┤   (user taps)    │
-     │                    │                    │    { slot: N }      │                  │
-     │                    │                    │                    │                  │
-     │                    │                    │  resolvePress()     │                  │
-     │                    │ ◄── HTTP 200 ──────┤  { behavior, input }│                  │
-     │                    │  { decision }       │                    │                  │
-     │ ◄── stdout JSON ──┤                    │                    │                  │
-     │  (hook response)   │                    │ ── LAYOUT (JSON) ──►│                  │
-     │                    │                    │  state: PROCESSING  │                  │
-     │  continues...      │  (process exits)   │                    │                  │
+```mermaid
+sequenceDiagram
+    participant CC as Claude Code
+    participant PH as permission.js
+    participant BS as Bridge Server
+    participant VD as Virtual DJ
+    participant U as User
+
+    CC->>PH: stdin JSON (PermissionRequest)
+    PH->>BS: POST /api/hook/permission
+    Note over PH: HTTP blocks until<br/>response or 60s timeout
+
+    BS->>VD: WS LAYOUT (state: WAITING_*)
+    VD->>U: Render choice/permission buttons
+
+    U->>VD: Tap button
+    VD->>BS: WS BUTTON_PRESS { slot: N }
+    BS->>BS: resolvePress()
+    BS->>PH: HTTP 200 { behavior, updatedInput }
+    BS->>VD: WS LAYOUT (state: PROCESSING)
+
+    PH->>CC: stdout JSON { decision }
+    Note over PH: Process exits
+    Note over CC: Continues execution
 ```
 
 ### 시퀀스 다이어그램 — Notify (Fire-and-Forget)
 
-```
- Claude Code          notify.js          Bridge Server       Virtual DJ (WS)
-     │                    │                    │                    │
-     │ ── stdin JSON ──►  │                    │                    │
-     │  (PreToolUse)      │                    │                    │
-     │                    │ ── POST /api/hook ─►│                    │
-     │                    │    /notify          │                    │
-     │                    │                    │ ── LAYOUT (JSON) ──►│
-     │ ◄── exit 0 ────── │                    │  (wave animation)   │
-     │  (non-blocking)    │                    │                    │
-     │  continues...      │                    │                    │
+```mermaid
+sequenceDiagram
+    participant CC as Claude Code
+    participant NH as notify.js
+    participant BS as Bridge Server
+    participant VD as Virtual DJ
+
+    CC->>NH: stdin JSON (PreToolUse)
+    NH->>BS: POST /api/hook/notify
+    NH->>CC: exit 0 (non-blocking)
+    Note over CC: Continues immediately
+
+    BS->>VD: WS LAYOUT (wave animation)
 ```
 
 **D200 하드웨어 참고:** D200은 bridge에 직접 연결되지 않고 USB로 UlanziStudio 데스크탑 앱에 연결됩니다. 번역 플러그인(Phase 3)이 두 WebSocket 프로토콜을 연결합니다. 자세한 내용은 `docs/todo/d200-integration-architecture.md`를 참고하세요.

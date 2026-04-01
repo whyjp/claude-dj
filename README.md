@@ -286,44 +286,47 @@ Each subagent has independent state tracking. Permission requests from subagents
 
 ### Sequence Diagram — Permission (Blocking)
 
-```
- Claude Code         permission.js        Bridge Server       Virtual DJ (WS)       User
-     │                    │                    │                    │                  │
-     │ ── stdin JSON ──►  │                    │                    │                  │
-     │  (PermissionRequest)│                    │                    │                  │
-     │                    │ ── POST /api/hook ─►│                    │                  │
-     │                    │    /permission      │                    │                  │
-     │                    │    (HTTP blocks)    │                    │                  │
-     │                    │                    │ ── LAYOUT (JSON) ──►│                  │
-     │                    │                    │  state: WAITING_*   │                  │
-     │                    │                    │  buttons rendered   │  ◄── sees buttons │
-     │                    │                    │                    │                  │
-     │                    │                    │                    │ ◄── BUTTON_PRESS ─┤
-     │                    │                    │ ◄── BUTTON_PRESS ──┤   (user taps)    │
-     │                    │                    │    { slot: N }      │                  │
-     │                    │                    │                    │                  │
-     │                    │                    │  resolvePress()     │                  │
-     │                    │ ◄── HTTP 200 ──────┤  { behavior, input }│                  │
-     │                    │  { decision }       │                    │                  │
-     │ ◄── stdout JSON ──┤                    │                    │                  │
-     │  (hook response)   │                    │ ── LAYOUT (JSON) ──►│                  │
-     │                    │                    │  state: PROCESSING  │                  │
-     │  continues...      │  (process exits)   │                    │                  │
+```mermaid
+sequenceDiagram
+    participant CC as Claude Code
+    participant PH as permission.js
+    participant BS as Bridge Server
+    participant VD as Virtual DJ
+    participant U as User
+
+    CC->>PH: stdin JSON (PermissionRequest)
+    PH->>BS: POST /api/hook/permission
+    Note over PH: HTTP blocks until<br/>response or 60s timeout
+
+    BS->>VD: WS LAYOUT (state: WAITING_*)
+    VD->>U: Render choice/permission buttons
+
+    U->>VD: Tap button
+    VD->>BS: WS BUTTON_PRESS { slot: N }
+    BS->>BS: resolvePress()
+    BS->>PH: HTTP 200 { behavior, updatedInput }
+    BS->>VD: WS LAYOUT (state: PROCESSING)
+
+    PH->>CC: stdout JSON { decision }
+    Note over PH: Process exits
+    Note over CC: Continues execution
 ```
 
 ### Sequence Diagram — Notify (Fire-and-Forget)
 
-```
- Claude Code          notify.js          Bridge Server       Virtual DJ (WS)
-     │                    │                    │                    │
-     │ ── stdin JSON ──►  │                    │                    │
-     │  (PreToolUse)      │                    │                    │
-     │                    │ ── POST /api/hook ─►│                    │
-     │                    │    /notify          │                    │
-     │                    │                    │ ── LAYOUT (JSON) ──►│
-     │ ◄── exit 0 ────── │                    │  (wave animation)   │
-     │  (non-blocking)    │                    │                    │
-     │  continues...      │                    │                    │
+```mermaid
+sequenceDiagram
+    participant CC as Claude Code
+    participant NH as notify.js
+    participant BS as Bridge Server
+    participant VD as Virtual DJ
+
+    CC->>NH: stdin JSON (PreToolUse)
+    NH->>BS: POST /api/hook/notify
+    NH->>CC: exit 0 (non-blocking)
+    Note over CC: Continues immediately
+
+    BS->>VD: WS LAYOUT (wave animation)
 ```
 
 **D200 hardware note:** The D200 connects via USB to the UlanziStudio desktop app, not directly to the bridge. A translator plugin (Phase 3) bridges the two WebSocket protocols. See `docs/todo/d200-integration-architecture.md` for details.
