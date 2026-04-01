@@ -9,12 +9,26 @@ const port = process.env.CLAUDE_DJ_PORT || 39200;
 const url = `http://localhost:${port}`;
 
 let running = false;
+let stale = false;
 try {
   const res = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(1500) });
-  running = res.ok;
+  if (res.ok) {
+    const health = await res.json();
+    const pkg = JSON.parse(readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+    if (health.version === pkg.version) {
+      running = true;
+    } else {
+      stale = true; // Bridge running but version mismatch — restart it
+    }
+  }
 } catch {}
 
 if (!running) {
+  if (stale) {
+    // Kill stale bridge before starting fresh
+    try { await fetch(`${url}/api/shutdown`, { method: 'POST', signal: AbortSignal.timeout(1000) }); } catch {}
+    await new Promise(r => setTimeout(r, 800));
+  }
   spawn(process.execPath, [path.join(__dirname, 'boot-bridge.js')], {
     detached: true, stdio: 'ignore', windowsHide: true,
   }).unref();
