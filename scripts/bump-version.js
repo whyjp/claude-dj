@@ -30,6 +30,7 @@ console.log(`[claude-dj] Syncing version: ${version}`);
 // Files to update (JSON files with "version" field)
 const jsonFiles = [
   'package.json',
+  'claude-plugin/package.json',
   'claude-plugin/plugin.json',
   '.claude-plugin/plugin.json',
   '.claude-plugin/marketplace.json',
