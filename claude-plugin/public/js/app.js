@@ -8,13 +8,16 @@
 import { initGrid, onPress, renderLayout, renderAllDim, setConnectionOverlay, updateMiniAgentTabs } from './d200-renderer.js';
 import { initDashboard, log, updateWsStatus, clearLog, updateSession, dimAllSessions, disconnectSessions, setSessions, switchLogSession } from './dashboard.js';
 
-let VERSION = '0.3.2';
+let VERSION = '0.3.3';
 const WS_PATH = '/ws';
 const RECONNECT_DELAY = 3000;
 
 let _ws = null;
 let _reconnectTimer = null;
 let _manualDisconnect = false;
+let _sessions = [];
+let _focusSessionId = null;
+let _focusAgentId = null;
 
 // ── Bootstrap ────────────────────────────────────────────────
 
@@ -165,17 +168,17 @@ function _handleMessage(msg) {
     case 'WELCOME':
       if (msg.version) { VERSION = msg.version; _updateAboutVersion(); }
       log('sys', `Bridge v${msg.version || '?'} — ${(msg.sessions || []).length} session(s)`);
-      if (msg.sessions) setSessions(msg.sessions);
-      if (msg.sessions && msg.sessions.length > 0) {
-        const first = msg.sessions[0];
-        updateMiniAgentTabs(first.agents || [], null, _sendAgentFocus);
-      }
+      if (msg.sessions) { _sessions = msg.sessions; setSessions(msg.sessions); }
+      updateMiniAgentTabs(_sessions, _focusSessionId, _focusAgentId, [], _sendSessionFocus, _sendAgentFocus);
       break;
 
     case 'LAYOUT':
       renderLayout(msg);
       updateSession(msg);
-      updateMiniAgentTabs(msg.agents || [], msg.agent?.agentId || null, _sendAgentFocus);
+      _focusSessionId = sid;
+      _focusAgentId = msg.agent?.agentId || null;
+      { const cached = _sessions.find(s => s.id === sid); if (cached) cached.agents = msg.agents || []; }
+      updateMiniAgentTabs(_sessions, _focusSessionId, _focusAgentId, msg.agents || [], _sendSessionFocus, _sendAgentFocus);
       if (msg.focusSwitched && sid) {
         switchLogSession(sid, msg.agent?.agentId || null);
       }
@@ -184,7 +187,7 @@ function _handleMessage(msg) {
     case 'ALL_DIM':
       renderAllDim();
       dimAllSessions();
-      updateMiniAgentTabs([], null, _sendAgentFocus);
+      updateMiniAgentTabs(_sessions, _focusSessionId, null, [], _sendSessionFocus, _sendAgentFocus);
       break;
 
     case 'SESSION_DISCONNECTED':
@@ -193,7 +196,7 @@ function _handleMessage(msg) {
       break;
 
     case 'SESSIONS_UPDATE':
-      if (msg.sessions) setSessions(msg.sessions);
+      if (msg.sessions) { _sessions = msg.sessions; setSessions(msg.sessions); }
       break;
 
     default:
@@ -293,6 +296,10 @@ async function _openMiniPopup() {
   const top = (screen.height - MINI_HEIGHT) / 2;
   window.open(miniUrl, 'claude-dj-mini',
     `popup,width=${MINI_WIDTH},height=${MINI_HEIGHT},left=${left},top=${top}`);
+}
+
+function _sendSessionFocus(sessionId) {
+  _sendJson({ type: 'SESSION_FOCUS', sessionId });
 }
 
 function _sendAgentFocus(agentId) {

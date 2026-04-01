@@ -8,6 +8,7 @@ export class WsServer {
     this.clients = new Set();
     this.onButtonPress = null;
     this.onAgentFocus = null;
+    this.onSessionFocus = null;
     this.onClientReady = null;
   }
 
@@ -74,6 +75,9 @@ export class WsServer {
       }
       case 'AGENT_FOCUS':
         if (this.onAgentFocus) this.onAgentFocus(msg.agentId || null);
+        break;
+      case 'SESSION_FOCUS':
+        if (this.onSessionFocus) this.onSessionFocus(msg.sessionId || null);
         break;
       default:
         log(`[ws] unknown message type: ${msg.type}`);
