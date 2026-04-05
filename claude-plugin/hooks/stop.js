@@ -64,19 +64,40 @@ async function main() {
       return;
     }
 
-    // Parse transcript for choices (display-only fallback)
+    // Parse transcript for choices
     let choices = null;
     if (parsed.transcript_path) {
       choices = parseChoices(parsed.transcript_path);
     }
 
-    // Send stop event to bridge — deck shows "awaiting input" notification
-    // No long-poll or button interaction; user responds in terminal
-    const payload = { ...parsed, _djChoices: choices };
+    if (choices && choices.length > 0) {
+      // Proxy mode: send choices to bridge and hold HTTP open.
+      // Bridge creates interactive WAITING_CHOICE on deck; user presses a button.
+      // Bridge returns { selectedChoice: "label" } → we block the stop and inject selection.
+      const payload = { ...parsed, _djChoices: choices };
+      const resp = await fetch(`${BRIDGE_URL}/api/hook/stop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(120000), // 2 min for user interaction
+      });
+      const result = await resp.json();
+      if (result.selectedChoice) {
+        process.stdout.write(JSON.stringify({
+          decision: 'block',
+          reason: `User selected: ${result.selectedChoice}`,
+        }));
+        return;
+      }
+      // No selection (timeout/dismiss) — fall through to normal stop
+      return;
+    }
+
+    // No choices — fire-and-forget stop notification
     await fetch(`${BRIDGE_URL}/api/hook/stop`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(parsed),
       signal: AbortSignal.timeout(5000),
     });
   } catch (e) {

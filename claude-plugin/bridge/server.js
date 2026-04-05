@@ -222,14 +222,46 @@ app.post('/api/hook/stop', (req, res, next) => { try {
   const sessionId = input.session_id;
 
   if (choices && choices.length > 0) {
-    // Choices detected in transcript — show "waiting for input" on deck (display-only, no interaction)
-    const session = sm.handleStopWithChoices(input, choices);
+    // Proxy mode: hold HTTP open, create interactive WAITING_CHOICE on deck.
+    // When user presses a button, respondFn fires and returns the selected choice.
+    // The stop hook then outputs decision:"block" so Claude receives the selection.
+    const session = sm.handleStopChoiceProxy(input, choices);
+    sm.setFocus(session.id);
+
+    const labels = session.prompt.choices.map((c) => `${c.index}:${c.label}`).join(', ');
+    log(`[deck←] stop-proxy ${session.prompt.choices.length} buttons → [${labels}]`);
+
     broadcastSessionLayout(session);
-  } else {
-    // No choices — go to IDLE (dismiss if session exists, ignore if not)
-    sm.dismissSession(sessionId);
-    ws.broadcast({ type: 'ALL_DIM' });
+
+    // Handle client disconnect (stop hook killed by Claude Code)
+    res.on('close', () => {
+      if (res.writableFinished) return;
+      if (!session.respondFn) return;
+      log(`[hook/stop] proxy connection closed by client — session=${session.id}`);
+      session.respondFn = null;
+      session.state = 'IDLE';
+      session.prompt = null;
+      session.waitingSince = null;
+      session.idleSince = Date.now();
+      broadcastSessionLayout(session);
+    });
+
+    session.respondFn = (decision) => {
+      broadcastSessionLayout(session);
+      try {
+        log(`[claude←] stop-proxy selected="${decision.value}" session=${session.name}`);
+        res.json({ ok: true, selectedChoice: decision.value });
+      } catch (e) {
+        error(`[claude←] stop-proxy FAILED res.json for session=${session.id}: ${e.message}`);
+      }
+    };
+    // Do NOT call res.json() — held open until button press
+    return;
   }
+
+  // No choices — go to IDLE (dismiss if session exists, ignore if not)
+  sm.dismissSession(sessionId);
+  ws.broadcast({ type: 'ALL_DIM' });
 
   res.json({ ok: true });
 } catch (e) { next(e); }

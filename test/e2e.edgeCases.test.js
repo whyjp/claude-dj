@@ -195,33 +195,41 @@ describe('E2E Edge Cases: Hook → Bridge → WebSocket', () => {
     ws.close();
   });
 
-  // --- Button press on WAITING_RESPONSE ---
+  // --- Stop proxy: choices detected → interactive WAITING_CHOICE ---
 
-  it('button press on WAITING_RESPONSE session is silently ignored', async () => {
+  it('stop proxy creates WAITING_CHOICE and resolves on button press', async () => {
     const ws = await connectWs(wsUrl);
     const msgs = collectMessages(ws);
     await waitMs(100);
 
-    // Create a WAITING_RESPONSE session via stop with choices
-    await postJSON('/api/hook/stop', {
-      session_id: 'edge-response-1',
+    // POST stop with choices — HTTP held open (proxy mode)
+    const stopPromise = postJSON('/api/hook/stop', {
+      session_id: 'edge-proxy-1',
+      cwd: '/tmp/proxy',
       hook_event_name: 'Stop',
       stop_hook_active: false,
       _djChoices: [{ index: '1', label: 'Refactor' }, { index: '2', label: 'Rewrite' }],
     });
 
-    await waitMs(100);
-    const awaitLayout = msgs.find((m) => m.preset === 'awaiting_input');
-    assert.ok(awaitLayout, 'should show awaiting_input');
+    // Wait for choice layout on deck
+    await new Promise((resolve) => {
+      const check = setInterval(() => {
+        if (msgs.some((m) => m.preset === 'choice')) { clearInterval(check); resolve(); }
+      }, 50);
+    });
 
-    // Press button — should be ignored
-    ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 0, timestamp: Date.now() }));
-    await waitMs(200);
-
-    // Verify status: session should still be WAITING_RESPONSE
+    // Verify WAITING_CHOICE state
     const status = await getJSON('/api/status');
-    const session = status.body.sessions.find((s) => s.id === 'edge-response-1');
-    assert.equal(session.state, 'WAITING_RESPONSE');
+    const session = status.body.sessions.find((s) => s.id === 'edge-proxy-1');
+    assert.equal(session.state, 'WAITING_CHOICE');
+
+    // Press button slot 0 → select "Refactor"
+    ws.send(JSON.stringify({ type: 'BUTTON_PRESS', slot: 0, timestamp: Date.now() }));
+
+    // HTTP should now resolve with selectedChoice
+    const result = await stopPromise;
+    assert.equal(result.body.ok, true);
+    assert.equal(result.body.selectedChoice, 'Refactor');
 
     ws.close();
   });

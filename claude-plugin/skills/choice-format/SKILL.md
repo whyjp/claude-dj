@@ -19,18 +19,50 @@ No exceptions. No text-only questions. No numbered lists for the user to pick fr
 2. Before ending, ask yourself: "Am I expecting the user to react?"
 3. If yes → call `AskUserQuestion` with options
 
-## Two Patterns
+## Patterns That MUST Use AskUserQuestion
 
-**Choice** (2-4 genuinely different paths):
+### Choice (2-4 genuinely different paths)
 ```
 AskUserQuestion: ["Refactor", "Rewrite", "Patch"]
 ```
 
-**Confirmation** (approve/reject a plan you just stated):
+### Confirmation (approve/reject a plan you just stated)
 ```
 AskUserQuestion: ["Proceed", "Different approach"]
-AskUserQuestion: ["진행", "다른 방향"]          # Korean session
+AskUserQuestion: ["진행", "다른 방향"]
 ```
+
+### Plan/Approach Selection (multiple strategies or phases)
+When presenting plans, approaches, strategies, or implementation options:
+```
+# BAD — user cannot respond:
+P1. Incremental refactor
+P2. Full rewrite
+P3. Hybrid approach
+어떤 방향으로?
+
+# GOOD — user can press a button:
+[explain plans as text, then:]
+AskUserQuestion: ["P1: Incremental", "P2: Full rewrite", "P3: Hybrid"]
+```
+
+### Multi-Option Lists (features, tasks, priorities)
+When listing items for the user to pick from:
+```
+# BAD:
+a) Add caching
+b) Fix auth
+c) Update docs
+d) Refactor API
+
+# GOOD:
+AskUserQuestion: ["Add caching", "Fix auth", "Update docs", "Refactor API"]
+```
+
+### Superpowers / Plan Mode Outputs
+When ANY skill or workflow presents options (plan mode, superpowers, etc.),
+YOU must still wrap the final selection in AskUserQuestion. The deck cannot
+read text-only choices regardless of which skill generated them.
 
 Never put plan descriptions as choice options. State the plan as text, then confirm.
 
@@ -38,18 +70,31 @@ Never put plan descriptions as choice options. State the plan as text, then conf
 
 These ALL require AskUserQuestion — never write them as bare text:
 
-| Text question | → AskUserQuestion |
+| Text pattern | → AskUserQuestion |
 |---|---|
 | "shall I proceed?" / "진행할까요?" | `["Proceed", "Different approach"]` |
 | "should I commit?" / "커밋할까요?" | `["Commit", "Not yet"]` |
 | "what's next?" / "다음은?" | `["Task A", "Task B", "Task C"]` |
 | "sound good?" / "괜찮나요?" | `["Proceed", "Needs changes"]` |
-| "ready?" / "준비됐나요?" | `["Proceed", "Wait"]` |
 | "which approach?" / "어떤 방향?" | `["Option A", "Option B"]` |
 | Numbered lists (1. X / 2. Y) | `["X", "Y"]` |
+| Lettered lists (A. X / B. Y) | `["X", "Y"]` |
+| Plan options (P1 / P2 / P3) | `["P1: label", "P2: label"]` |
+| Phase selections (Phase 1 / Phase 2) | `["Phase 1: label", "Phase 2: label"]` |
+| Priority picks (High / Medium / Low) | `["High", "Medium", "Low"]` |
+
+## Self-Check
+
+Before sending ANY message, scan your output for these red flags:
+- Numbered or lettered list at the end → needs AskUserQuestion
+- Question mark at the end → needs AskUserQuestion
+- "which" / "어떤" / "어느" anywhere → needs AskUserQuestion
+- Multiple options described in text → needs AskUserQuestion
+
+If you find ANY of these, add AskUserQuestion BEFORE sending.
 
 ## Constraints
 
 - Labels: max 30 chars, max 10 options
 - Confirmations: always exactly 2 options
-- Choices: 2-4 options
+- Choices: 2-10 options (use up to 4 for simple selections)

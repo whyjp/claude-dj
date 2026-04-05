@@ -181,6 +181,38 @@ describe('ButtonManager', () => {
     assert.equal(layout.preset, 'awaiting_input');
   });
 
+  it('WAITING_RESPONSE with choices returns choice_hint layout', () => {
+    const session = {
+      id: 's1', name: 'test', state: 'WAITING_RESPONSE', agents: new Map(),
+      prompt: {
+        type: 'RESPONSE',
+        choices: [{ index: '1', label: 'Refactor' }, { index: '2', label: 'Rewrite' }],
+      },
+    };
+    const layout = ButtonManager.layoutFor(session);
+    assert.equal(layout.preset, 'choice_hint');
+    assert.equal(layout.choices.length, 2);
+    assert.equal(layout.choices[0].label, 'Refactor');
+  });
+
+  it('WAITING_RESPONSE without choices returns awaiting_input', () => {
+    const session = {
+      id: 's1', name: 'test', state: 'WAITING_RESPONSE', agents: new Map(),
+      prompt: { type: 'RESPONSE' },
+    };
+    const layout = ButtonManager.layoutFor(session);
+    assert.equal(layout.preset, 'awaiting_input');
+  });
+
+  it('WAITING_RESPONSE with empty choices returns awaiting_input', () => {
+    const session = {
+      id: 's1', name: 'test', state: 'WAITING_RESPONSE', agents: new Map(),
+      prompt: { type: 'RESPONSE', choices: [] },
+    };
+    const layout = ButtonManager.layoutFor(session);
+    assert.equal(layout.preset, 'awaiting_input');
+  });
+
   it('WAITING_RESPONSE button press returns null (no interaction)', () => {
     const result = ButtonManager.resolvePress(0, 'WAITING_RESPONSE', {});
     assert.equal(result, null);

@@ -281,6 +281,27 @@ export class SessionManager {
     return session;
   }
 
+  /**
+   * Proxy mode: stop hook detected choices → create interactive WAITING_CHOICE.
+   * The stop hook HTTP request stays open until user presses a button on the deck.
+   */
+  handleStopChoiceProxy(input, choices) {
+    const session = this.getOrCreate(input);
+    session.state = 'WAITING_CHOICE';
+    session.prompt = {
+      type: 'CHOICE',
+      question: '',
+      multiSelect: false,
+      selected: new Set(),
+      choices: choices.slice(0, 10).map((c, i) => ({
+        index: i + 1,
+        label: c.label,
+      })),
+    };
+    session.waitingSince = Date.now();
+    return session;
+  }
+
   /** Transition session to IDLE (after response timeout or explicit dismiss) */
   dismissSession(sessionId) {
     const session = this.sessions.get(sessionId);

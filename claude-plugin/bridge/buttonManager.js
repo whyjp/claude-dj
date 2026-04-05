@@ -61,6 +61,11 @@ export class ButtonManager {
         return { ...base, ...extra, preset: 'choice', choices };
       }
       case 'WAITING_RESPONSE':
+        // When stop hook detected choices in transcript, pass them as choice_hint
+        // so the deck can display them as visual labels (display-only, not interactive)
+        if (session.prompt?.choices?.length > 0) {
+          return { ...base, preset: 'choice_hint', choices: session.prompt.choices };
+        }
         return { ...base, preset: 'awaiting_input' };
       default:
         return { ...base, preset: 'idle' };

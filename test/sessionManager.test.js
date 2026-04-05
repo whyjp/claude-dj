@@ -412,6 +412,37 @@ describe('SessionManager', () => {
     assert.equal(sm.get('s1').prompt.choices.length, 10);
   });
 
+  it('handleStopChoiceProxy creates WAITING_CHOICE with interactive choices', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    const choices = [{ index: '1', label: 'Refactor' }, { index: '2', label: 'Rewrite' }];
+    sm.handleStopChoiceProxy({ session_id: 's1' }, choices);
+    const session = sm.get('s1');
+    assert.equal(session.state, 'WAITING_CHOICE');
+    assert.equal(session.prompt.type, 'CHOICE');
+    assert.equal(session.prompt.multiSelect, false);
+    assert.equal(session.prompt.choices.length, 2);
+    assert.equal(session.prompt.choices[0].label, 'Refactor');
+    assert.equal(session.prompt.choices[1].index, 2);
+  });
+
+  it('handleStopChoiceProxy caps at 10 choices', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    const choices = Array.from({ length: 15 }, (_, i) => ({ index: String(i + 1), label: `Opt ${i + 1}` }));
+    sm.handleStopChoiceProxy({ session_id: 's1' }, choices);
+    assert.equal(sm.get('s1').prompt.choices.length, 10);
+  });
+
+  it('handleStopChoiceProxy resolveWaiting works like permission flow', () => {
+    sm.getOrCreate({ session_id: 's1', cwd: '/a' });
+    const choices = [{ index: '1', label: 'A' }, { index: '2', label: 'B' }];
+    sm.handleStopChoiceProxy({ session_id: 's1' }, choices);
+    let resolved = null;
+    sm.get('s1').respondFn = (decision) => { resolved = decision; };
+    sm.resolveWaiting('s1', { type: 'choice', value: 'A' });
+    assert.equal(resolved.value, 'A');
+    assert.equal(sm.get('s1').state, 'PROCESSING');
+  });
+
   it('getOrCreate with missing cwd defaults to unknown', () => {
     const session = sm.getOrCreate({ session_id: 'nocwd' });
     assert.ok(session.name.includes('unknown'));
