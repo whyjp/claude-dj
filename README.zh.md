@@ -183,14 +183,14 @@ Claude DJ 安装了一个 **`choice-format` skill**（`skills/choice-format/SKIL
 
 ### 两种选项路径
 
-Claude DJ 支持两种不同的选项机制：
+Claude DJ 支持两种不同的选项机制，**两者均为交互式**：
 
 | 路径 | 触发条件 | 状态 | 响应方式 |
 |------|---------|-------|-----------------|
 | **AskUserQuestion**（主要） | `tool_name: "AskUserQuestion"` 的 `PermissionRequest` hook | `WAITING_CHOICE` | 携带 `updatedInput.answer` 的阻塞 HTTP 响应 |
-| **记录解析**（通知） | `Stop` hook 解析最后一条助手消息中的编号列表 | `WAITING_RESPONSE` | 仅展示 — Deck 显示"等待输入"指示器 |
+| **Stop hook 代理**（后备） | `Stop` hook 检测最后一条助手消息中的编号/字母列表 | `WAITING_CHOICE` | 阻塞 HTTP 响应 → `decision: "block"` + 用户选择 |
 
-**AskUserQuestion 路径**是主要机制 — 实时、阻塞，并保证响应传递。**记录解析路径**是当 Claude 无视 skill 以文本写入选项时的纯展示通知。Deck 显示"等待输入"指示器告知用户 Claude 在等待，但交互发生在终端中。Stop hook 无法将用户轮次注入回 Claude，因此该路径有意设计为非交互式。
+**AskUserQuestion 路径**是主要机制 — `choice-format` skill 指示 Claude 对所有选项使用它。**Stop hook 代理**是当 Claude 无视 skill 以文本输出选项时（如计划模式输出、第三方 skill 格式化）的安全网。Stop hook 通过 regex/fence 解析检测选项后，保持 HTTP 请求开启，同时在 Deck 上显示交互式按钮。用户按下按钮后，stop hook 返回 `decision: "block"` 及选择结果，Claude 接收后继续执行。
 
 ### 跨会话焦点管理
 
@@ -344,6 +344,45 @@ sequenceDiagram
     BS->>VD: WS LAYOUT (wave animation)
 ```
 
+### 时序图 — Stop Hook 代理（文本选项 → 交互式按钮）
+
+当 Claude 未调用 `AskUserQuestion` 而以文本输出选项时，stop hook 检测到这些选项并通过 Deck 将其代理为交互式按钮。
+
+```mermaid
+sequenceDiagram
+    participant CC as Claude Code
+    participant SH as stop.js
+    participant BS as Bridge Server
+    participant VD as Virtual DJ
+    participant U as User
+
+    CC->>SH: stdin JSON (Stop)
+    SH->>SH: parseChoices(transcript)<br/>检测编号/字母列表
+
+    SH->>BS: POST /api/hook/stop<br/>{ _djChoices: [{label:"Refactor"}, ...] }
+    Note over SH: HTTP 阻塞（代理模式）<br/>最长 120 秒超时
+
+    BS->>BS: handleStopChoiceProxy()<br/>state → WAITING_CHOICE
+    BS->>VD: WS LAYOUT { preset: "choice", choices }
+    VD->>U: 渲染选项按钮
+
+    U->>VD: 点击 "Refactor" 按钮
+    VD->>BS: WS BUTTON_PRESS { slot: 0 }
+    BS->>BS: resolvePress() → "Refactor"
+    BS->>SH: HTTP 200 { selectedChoice: "Refactor" }
+    BS->>VD: WS LAYOUT (state: PROCESSING)
+
+    SH->>CC: stdout JSON<br/>{ decision: "block",<br/>  reason: "User selected: Refactor" }
+    Note over SH: 进程退出
+    Note over CC: 接收选择结果，<br/>以 "Refactor" 继续执行
+```
+
+**与 permission 路径的关键区别：** Stop hook 使用 `decision: "block"` 阻止 Claude 停止。Claude Code 将被阻止的 stop 视为新的用户消息 — `reason` 字段成为 Claude 读取并处理的输入。这有效地将 stop hook 转变为**选项代理**，将文本选项转换为交互式 Deck 按钮。
+
+**选项检测：** `choiceParser.js` 模块扫描转录中最后一条助手消息：
+1. **Fence 选项** — `[claude-dj-choices]...[/claude-dj-choices]` 块（最高优先级）
+2. **Regex 后备** — 最后 800 个字符中的编号（`1. X`）或字母（`A. X`）列表，在 15 行窗口内聚簇（避免章节标题的误报）
+
 **关键路径：** `PermissionRequest` hook 是唯一的**同步**段。hook 脚本（`permission.js`）发出 HTTP POST 并**阻塞**，直到 Bridge 响应（按钮按下）或 60 秒超时。所有其他 hook 均为 fire-and-forget。
 
 **D200 硬件说明：** D200 通过 USB 连接到 UlanziStudio 桌面应用，而不是直接连接到 Bridge。翻译插件（Phase 3）桥接两个 WebSocket 协议。详情请参阅 `docs/todo/d200-integration-architecture.md`。
@@ -377,7 +416,7 @@ claude-plugin/
 │  ├─ notify.js                  PreToolUse → HTTP POST（async）
 │  ├─ postToolUse.js             PostToolUse → HTTP POST（async）
 │  ├─ postToolUseFailure.js      PostToolUseFailure → HTTP POST（async）
-│  ├─ stop.js                    Stop → HTTP POST（async，选项解析）
+│  ├─ stop.js                    Stop → 选项代理（blocking）或 async 通知
 │  ├─ stopFailure.js             StopFailure → HTTP POST（async）
 │  ├─ choiceParser.js            Stop hook 共享的选项解析逻辑
 │  ├─ subagentStart.js           SubagentStart → HTTP POST（async）
@@ -409,7 +448,7 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 | WAITING_BINARY | 0=Approve, 1=Always/Deny, 2=Deny | 会话名称 | 代理类型或 ROOT |
 | WAITING_CHOICE | 0..N = 选项按钮 | 会话名称 | 代理类型或 ROOT |
 | WAITING_CHOICE (multiSelect) | ☐/☑ 切换（0-8）+ ✔ Done（9） | 会话名称 | 代理类型或 ROOT |
-| WAITING_RESPONSE | ⏳ 等待输入（仅展示） | 会话名称 | 代理类型或 ROOT |
+| WAITING_RESPONSE | ⏳ 等待输入（检测到选项时 choice_hint） | 会话名称 | 代理类型或 ROOT |
 
 ## 功能特性
 
@@ -425,7 +464,8 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 - **多选切换+提交** — `multiSelect` 问题显示 ☐/☑ 切换按钮（槽位 0-8）+ ✔ Done（槽位 9），实时验证
 - **跨会话焦点** — WAITING_CHOICE/BINARY 会话自动优先，处理事件被过滤
 - **子代理追踪** — 树形视图展示，每个代理独立状态，槽位 12 循环切换
-- **等待输入通知** — Claude 以文本选项停止时，Deck 显示 ⏳ 指示器
+- **Stop hook 选项代理** — Claude 未使用 `AskUserQuestion` 而以文本输出选项时，stop hook 检测并通过 `decision: "block"` 代理创建交互式 Deck 按钮
+- **Choice hint 显示** — 代理不可用时，检测到的选项的视觉后备显示
 - **多会话管理** — 槽位 11 循环根会话，权限时自动切换焦点
 - **延迟加入同步** — 新客户端立即接收当前 Deck 状态
 - **Miniview 模式** — 将 Deck 弹出为始终置顶的 PiP 窗口（`▣` 按钮或 `?view=mini`），含根/子代理切换标签栏
