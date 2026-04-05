@@ -183,14 +183,14 @@ Plan descriptions are not choices — state the plan as text, then confirm with 
 
 ### Two Choice Paths
 
-Claude DJ supports two distinct choice mechanisms:
+Claude DJ supports two distinct choice mechanisms, **both interactive**:
 
 | Path | Trigger | State | Response Method |
 |------|---------|-------|-----------------|
 | **AskUserQuestion** (primary) | `PermissionRequest` hook with `tool_name: "AskUserQuestion"` | `WAITING_CHOICE` | Blocking HTTP response with `updatedInput.answer` |
-| **Transcript parsing** (notification) | `Stop` hook parses last assistant message for numbered lists | `WAITING_RESPONSE` | Display-only — deck shows "awaiting input" indicator |
+| **Stop hook proxy** (fallback) | `Stop` hook parses last assistant message for numbered/lettered lists | `WAITING_CHOICE` | Blocking HTTP response → `decision: "block"` with user selection |
 
-The **AskUserQuestion path** is the primary mechanism — it's real-time, blocking, and guaranteed to deliver the response. The **transcript parsing path** is a display-only notification for when Claude writes choices as text despite the skill. The deck shows an "awaiting input" indicator so the user knows Claude is waiting, but interaction happens in the terminal. Stop hooks cannot inject user turns back to Claude, so this path is intentionally non-interactive.
+The **AskUserQuestion path** is the primary mechanism — the `choice-format` skill instructs Claude to use it for all choices. The **stop hook proxy** is the safety net for when Claude writes choices as text despite the skill (e.g. plan mode outputs, third-party skill formatting). The stop hook detects choices via regex/fence parsing, then holds the HTTP request open while the deck displays interactive buttons. When the user presses a button, the stop hook returns `decision: "block"` with the selection, which Claude receives and continues with.
 
 ### Cross-Session Focus Management
 
@@ -346,6 +346,45 @@ sequenceDiagram
     BS->>VD: WS LAYOUT (wave animation)
 ```
 
+### Sequence Diagram — Stop Hook Proxy (Text Choices → Interactive Buttons)
+
+When Claude outputs choices as text without calling `AskUserQuestion`, the stop hook detects them and proxies them through the deck as interactive buttons.
+
+```mermaid
+sequenceDiagram
+    participant CC as Claude Code
+    participant SH as stop.js
+    participant BS as Bridge Server
+    participant VD as Virtual DJ
+    participant U as User
+
+    CC->>SH: stdin JSON (Stop)
+    SH->>SH: parseChoices(transcript)<br/>detects numbered/lettered list
+
+    SH->>BS: POST /api/hook/stop<br/>{ _djChoices: [{label:"Refactor"}, ...] }
+    Note over SH: HTTP blocks (proxy mode)<br/>up to 120s timeout
+
+    BS->>BS: handleStopChoiceProxy()<br/>state → WAITING_CHOICE
+    BS->>VD: WS LAYOUT { preset: "choice", choices }
+    VD->>U: Render choice buttons
+
+    U->>VD: Tap "Refactor" button
+    VD->>BS: WS BUTTON_PRESS { slot: 0 }
+    BS->>BS: resolvePress() → "Refactor"
+    BS->>SH: HTTP 200 { selectedChoice: "Refactor" }
+    BS->>VD: WS LAYOUT (state: PROCESSING)
+
+    SH->>CC: stdout JSON<br/>{ decision: "block",<br/>  reason: "User selected: Refactor" }
+    Note over SH: Process exits
+    Note over CC: Receives selection,<br/>continues with "Refactor"
+```
+
+**Key difference from the permission path:** The stop hook uses `decision: "block"` to prevent Claude from stopping. Claude Code treats blocked stops as a new user message — the `reason` field becomes input that Claude reads and acts on. This effectively turns the stop hook into a **choice proxy** that converts text-based choices into interactive deck buttons.
+
+**Choice detection:** The `choiceParser.js` module scans the last assistant message in the transcript for:
+1. **Fenced choices** — `[claude-dj-choices]...[/claude-dj-choices]` blocks (highest priority)
+2. **Regex fallback** — Numbered (`1. X`) or lettered (`A. X`) lists in the last 800 characters, clustered within a 15-line window (avoids false positives from section headers)
+
 **D200 hardware note:** The D200 connects via USB to the UlanziStudio desktop app, not directly to the bridge. A translator plugin (Phase 3) bridges the two WebSocket protocols. See `docs/todo/d200-integration-architecture.md` for details.
 
 ### Why a Separate Bridge Process?
@@ -377,7 +416,7 @@ claude-plugin/
 │  ├─ notify.js                  PreToolUse → HTTP POST (async)
 │  ├─ postToolUse.js             PostToolUse → HTTP POST (async)
 │  ├─ postToolUseFailure.js      PostToolUseFailure → HTTP POST (async)
-│  ├─ stop.js                    Stop → HTTP POST (async, choice parsing)
+│  ├─ stop.js                    Stop → choice proxy (blocking) or async notify
 │  ├─ stopFailure.js             StopFailure → HTTP POST (async)
 │  ├─ choiceParser.js            Shared choice-parsing logic for stop hooks
 │  ├─ subagentStart.js           SubagentStart → HTTP POST (async)
@@ -409,7 +448,7 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 | WAITING_BINARY | 0=Approve, 1=Always/Deny, 2=Deny | Session name | Agent type or ROOT |
 | WAITING_CHOICE | 0..N = choice buttons | Session name | Agent type or ROOT |
 | WAITING_CHOICE (multiSelect) | ☐/☑ toggle (0-8) + ✔ Done (9) | Session name | Agent type or ROOT |
-| WAITING_RESPONSE | ⏳ Awaiting input (display-only) | Session name | Agent type or ROOT |
+| WAITING_RESPONSE | ⏳ Awaiting input (choice_hint if choices detected) | Session name | Agent type or ROOT |
 
 ## Features
 
@@ -425,7 +464,8 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 - **Multi-select toggle+submit** — `multiSelect` questions show ☐/☑ toggle buttons (slots 0-8) + ✔ Done (slot 9), live verified
 - **Cross-session focus** — WAITING_CHOICE/BINARY sessions auto-prioritized, processing events filtered
 - **Subagent tracking** — Tree-view display, independent state per agent, slot 12 cycling
-- **Awaiting input notification** — When Claude stops with text choices, deck shows ⏳ indicator
+- **Stop hook choice proxy** — When Claude outputs text choices without `AskUserQuestion`, the stop hook detects them and creates interactive deck buttons via `decision: "block"` proxy
+- **Choice hint display** — Fallback visual indicator when choices are detected but proxy is unavailable
 - **Multi-session management** — Slot 11 cycles root sessions, focus auto-switches on permission
 - **Late-join sync** — New clients receive current deck state immediately
 - **Miniview mode** — Pop-out deck as always-on-top PiP window (`▣` button or `?view=mini`), with agent tab bar for root/subagent switching
