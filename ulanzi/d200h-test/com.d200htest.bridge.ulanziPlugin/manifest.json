@@ -1,0 +1,27 @@
+{
+  "Author": "d200h-test",
+  "Name": "D200H Bridge",
+  "Description": "D200H test harness — translates Ulanzi WS protocol to Bridge protocol",
+  "Icon": "resources/icon.png",
+  "Version": "0.1.0",
+  "UUID": "com.d200htest.bridge",
+  "Type": "JavaScript",
+  "CodePath": "plugin/app.js",
+  "Actions": [
+    {
+      "Name": "Bridge Slot",
+      "Icon": "resources/idle.png",
+      "UUID": "com.d200htest.bridge.slot",
+      "States": [
+        { "Name": "IDLE",   "Image": "resources/idle.png" },
+        { "Name": "ACTIVE", "Image": "resources/active.png" }
+      ],
+      "Controllers": ["Keypad"],
+      "Devices": []
+    }
+  ],
+  "OS": [
+    { "Platform": "windows", "MinimumVersion": "10" },
+    { "Platform": "mac",     "MinimumVersion": "10.11" }
+  ]
+}

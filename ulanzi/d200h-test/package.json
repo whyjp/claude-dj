@@ -1,0 +1,16 @@
+{
+  "name": "d200h-test",
+  "version": "0.1.0",
+  "description": "D200H programmable deck test harness",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "node com.d200htest.bridge.ulanziPlugin/plugin/app.js",
+    "bridge": "node bridge/server.js",
+    "sim": "node ../UlanziDeckPlugin-SDK/UlanziDeckSimulator/app.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "ws": "^8.18.2"
+  }
+}
