@@ -19,7 +19,6 @@
 
 import UlanziApi from './plugin-common-node/index.js';
 import { parseInputEvent, parseSlot } from './core/eventParser.js';
-import { transition, getStateIndex } from './core/stateMachine.js';
 import { applyRender } from './adapters/ulanziOutputAdapter.js';
 import { BridgeWsAdapter } from './adapters/bridgeWsAdapter.js';
 import { mapLayout, toInternalSlot } from './core/layoutMapper.js';
@@ -47,8 +46,7 @@ bridge.onLayout((layout) => {
     // entry.slot은 D200H 열-우선 슬롯이므로 직접 조회
     const cmd = cmdBySlot.get(entry.slot);
     if (cmd) {
-      applyRender({ context, stateIndex: cmd.stateIndex, text: cmd.text }, $UD);
-      entry.state = cmd.stateIndex === 0 ? 'IDLE' : 'ACTIVE';
+      applyRender({ context, iconKey: cmd.iconKey, text: cmd.text }, $UD);
     }
   }
 });
@@ -64,8 +62,9 @@ $UD.onAdd((msg) => {
   if (!keyStates.has(context)) {
     // parseSlot은 "col_row" → col×GRID_COLS+row = D200H 열-우선 슬롯을 반환
     const d200hSlot = parseSlot(msg.key) ?? 0;
-    keyStates.set(context, { state: 'IDLE', context, slot: d200hSlot });
-    applyRender({ context, stateIndex: getStateIndex('IDLE') }, $UD);
+    keyStates.set(context, { context, slot: d200hSlot });
+    // 초기 상태는 Bridge LAYOUT이 내려올 때까지 dim(idle) 유지
+    applyRender({ context, iconKey: 'idle' }, $UD);
   }
   console.log(`[deck-plugin] key added: d200hSlot=${parseSlot(msg.key)} context=${context}`);
 });
@@ -86,15 +85,11 @@ function handleInput(msg) {
   // event.slot = D200H 열-우선 슬롯
   console.log(`[deck-plugin] INPUT: d200hSlot=${event.slot} event=${event.event} context=${event.context}`);
 
+  // run(클릭) 이벤트만 Bridge로 전달 — 로컬 상태 변경 없음
+  // 모든 시각적 상태는 Bridge의 LAYOUT 메시지로만 결정됨
   if (event.event === 'run') {
     const entry = keyStates.get(event.context);
     if (entry) {
-      const nextState = transition(entry.state, event.event);
-      entry.state = nextState;
-      const stateIndex = getStateIndex(nextState);
-      applyRender({ context: event.context, stateIndex }, $UD);
-      console.log(`[deck-plugin] STATE: ${event.context} → ${nextState} (idx=${stateIndex})`);
-
       // D200H 열-우선 슬롯 → Bridge 행-우선 슬롯으로 변환 후 전송
       const djSlot = toInternalSlot(event.slot);
       console.log(`[deck-plugin] PRESS: d200hSlot=${event.slot} → djSlot=${djSlot}`);
