@@ -4,7 +4,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { log, warn, error } from './logger.js';
+import { log, warn, error, getRecentLogs } from './logger.js';
 import { SessionManager } from './sessionManager.js';
 import { ButtonManager } from './buttonManager.js';
 import { WsServer } from './wsServer.js';
@@ -93,6 +93,11 @@ app.get('/api/status', (req, res) => {
     sessions: sm.toJSON(),
     clients: { total: ws.clientCount },
   });
+});
+
+app.get('/api/logs', (req, res) => {
+  const n = Math.min(parseInt(req.query.n) || 50, 200);
+  res.json(getRecentLogs(n));
 });
 
 app.get('/api/deck-state', (req, res) => {

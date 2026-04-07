@@ -24,6 +24,14 @@ const MAX_LOG_SIZE = 10 * 1024 * 1024; // 10MB
 
 let _stream = null;
 
+// Ring buffer for /api/logs endpoint
+const LOG_RING_SIZE = 200;
+const _ring = [];
+
+export function getRecentLogs(n = 50) {
+  return _ring.slice(-Math.min(n, LOG_RING_SIZE));
+}
+
 function _rotateIfNeeded() {
   try {
     const stat = fs.statSync(LOG_FILE);
@@ -56,6 +64,8 @@ function _fmt(level, args) {
 }
 
 function _write(line) {
+  _ring.push(line);
+  if (_ring.length > LOG_RING_SIZE) _ring.shift();
   if (_stream) _stream.write(line + '\n');
 }
 
