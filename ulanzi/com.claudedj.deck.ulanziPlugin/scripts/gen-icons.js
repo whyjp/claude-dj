@@ -527,21 +527,67 @@ function makeApprove() {
   return px;
 }
 
-// always — 파랑 자물쇠
+/**
+ * always — "Everything OK" 이모지 캐릭터 (🙆 스타일)
+ * 양손을 머리 위로 올려 동그라미를 만드는 포즈.
+ * 파랑 배경 + 노란 얼굴 + 웃는 표정 + 양팔 호 형태
+ */
 function makeAlways() {
   const px = fill(...C.bgBlue);
   roundRect(px, 8, 8, 64, 64, 10, C.blueDim);
-  // 자물쇠 몸통
-  roundRect(px, 20, 38, 52, 62, 5, C.blue);
-  // 고리
-  for (let y = 18; y <= 40; y++) {
-    for (let x = 20; x <= 52; x++) {
-      const dx = x-36, dy = y-32;
-      const r2 = dx*dx+dy*dy;
-      if (r2 >= 100 && r2 <= 196) setPixel(px, x, y, C.blue);
-    }
+
+  const FACE    = [255, 220, 80, 255];
+  const OUTLINE = [180, 140, 20, 255];
+  const EYE     = [20,  20,  30, 255];
+  const MOUTH   = [180, 80,  40, 255];
+  const BODY    = C.blue;
+  const ARM     = C.blue;
+
+  // 몸통 (작은 타원)
+  for (let y = 46; y <= 60; y++) {
+    const w = Math.round(10 * Math.sqrt(1 - ((y - 53) / 7) ** 2));
+    for (let x = 36 - w; x <= 36 + w; x++) setPixel(px, x, y, BODY);
   }
-  circle(px, 36, 50, 5, C.bgBlue);
+
+  // 왼팔 — 머리 위로 호 그리기 (왼쪽)
+  for (let a = 200; a <= 310; a += 5) {
+    const rad = a * Math.PI / 180;
+    const x = Math.round(36 + 22 * Math.cos(rad));
+    const y = Math.round(28 + 18 * Math.sin(rad));
+    circle(px, x, y, 2, ARM);
+  }
+  // 오른팔 — 머리 위로 호 그리기 (오른쪽)
+  for (let a = 230; a <= 340; a += 5) {
+    const rad = a * Math.PI / 180;
+    const x = Math.round(36 + 22 * Math.cos(Math.PI - (a - 270) * Math.PI / 180));
+    const y = Math.round(28 + 18 * Math.sin(Math.PI - (a - 270) * Math.PI / 180));
+    circle(px, x, y, 2, ARM);
+  }
+
+  // 얼굴
+  circle(px, 36, 30, 14, OUTLINE);
+  circle(px, 36, 30, 12, FACE);
+
+  // 눈 (웃는 눈 — 호)
+  for (let a = 0; a <= 180; a += 20) {
+    const rad = a * Math.PI / 180;
+    setPixel(px, Math.round(29 + 4 * Math.cos(rad)), Math.round(26 - 2 * Math.sin(rad)), EYE);
+    setPixel(px, Math.round(43 + 4 * Math.cos(rad)), Math.round(26 - 2 * Math.sin(rad)), EYE);
+  }
+
+  // 웃는 입
+  for (let a = 0; a <= 180; a += 15) {
+    const rad = a * Math.PI / 180;
+    const x = Math.round(36 + 6 * Math.cos(rad));
+    const y = Math.round(34 + 3 * Math.sin(rad));
+    setPixel(px, x, y, MOUTH);
+    setPixel(px, x, y + 1, MOUTH);
+  }
+
+  // 양손 끝 (작은 원)
+  circle(px, 14, 18, 3, FACE);
+  circle(px, 58, 18, 3, FACE);
+
   return px;
 }
 
