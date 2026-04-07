@@ -3,9 +3,11 @@
 D200H 실기기 소유자 전용 UlanziStudio 플러그인.  
 claude-dj Bridge ↔ Ulanzi D200H 하드웨어 간 양방향 번역 레이어.
 
-> **이 플러그인은 UlanziStudio가 직접 Node.js로 실행합니다.**  
-> `npm install`로 의존성을 설치해야 하며, 실행은 UlanziStudio가 담당합니다.  
-> 별도로 `npm start`를 실행하지 않아도 됩니다.
+> **실행 주체: UlanziStudio**  
+> UlanziStudio가 `manifest.json`의 `"CodePath": "plugin/app.js"`를 읽고  
+> `node plugin/app.js <address> <port> <language>` 를 직접 실행합니다.  
+> **`npm start`는 없습니다. UlanziStudio 재시작 = 플러그인 재시작입니다.**  
+> 단, `npm install`은 반드시 수동으로 실행해야 합니다 (UlanziStudio가 하지 않음).
 
 ---
 
@@ -86,16 +88,24 @@ DS = Deck Slot (com.claudedj.deck.slot)
 
 ---
 
-## 업데이트 (소스 변경 후)
+## 개발 중 수정 → 반영 절차
 
-소스 코드가 변경된 경우 아래 절차를 따릅니다.
+플러그인 코드를 수정할 때마다 아래 3단계가 필요합니다.  
+**UlanziStudio가 `plugin/app.js`를 직접 실행하므로, 파일을 설치 경로에 복사해야만 반영됩니다.**
 
-### UlanziStudio가 실행 중일 때
+```
+소스 수정 → 설치 경로 복사 → (npm install) → UlanziStudio 재시작
+```
 
-UlanziStudio가 `plugin/` 폴더를 잠그므로 **UlanziStudio를 먼저 종료**해야 합니다.
+### 전체 절차 (plugin/*.js 또는 package.json 변경 시)
+
+> **반드시 UlanziStudio를 먼저 종료하세요.**  
+> UlanziStudio 실행 중에는 `plugin/` 폴더가 잠겨 복사가 실패합니다.
 
 ```powershell
-# 1. UlanziStudio 종료 확인 후 실행
+# Step 1: UlanziStudio 종료 확인
+
+# Step 2: 소스 → 설치 경로 복사
 $src  = "D:\github\claude-dj\ulanzi\com.claudedj.deck.ulanziPlugin"
 $dest = "$env:APPDATA\Ulanzi\UlanziDeck\Plugins\com.claudedj.deck.ulanziPlugin"
 
@@ -109,34 +119,62 @@ Get-ChildItem $src -Recurse |
     Copy-Item $_.FullName $target -Force
   }
 
-# 2. npm install (package.json이 변경된 경우만)
+# Step 3: npm install (package.json 변경 시 필수, 그 외에도 실행 권장)
 Set-Location "$dest\plugin"
 npm install --omit=dev
 
-# 3. UlanziStudio 재시작
+# Step 4: UlanziStudio 재시작 → 플러그인 자동 시작
+#   UlanziStudio가 내부적으로 실행:
+#   node plugin/app.js <address> <port> <language>
 ```
 
-### resources(아이콘)만 변경된 경우
+### resources(아이콘 PNG)만 변경된 경우
 
-UlanziStudio 실행 중에도 가능합니다:
+아이콘은 앱 실행 시 1회 로드하므로 **UlanziStudio 재시작은 필요**합니다.  
+단, 파일 복사는 실행 중에도 가능합니다:
 
 ```powershell
+# Step 1: 아이콘 재생성 (scripts/gen-icons.js 수정 후)
+Set-Location "D:\github\claude-dj\ulanzi\com.claudedj.deck.ulanziPlugin"
+node scripts/gen-icons.js
+
+# Step 2: 설치 경로에 복사 (실행 중 가능)
 $dest = "$env:APPDATA\Ulanzi\UlanziDeck\Plugins\com.claudedj.deck.ulanziPlugin"
-Copy-Item "D:\github\claude-dj\ulanzi\com.claudedj.deck.ulanziPlugin\resources\*" "$dest\resources\" -Force
+Copy-Item ".\resources\*" "$dest\resources\" -Force
+
+# Step 3: UlanziStudio 재시작
 ```
+
+### npm install이 필요한 경우
+
+| 상황 | npm install 필요 여부 |
+|---|---|
+| 최초 설치 | **필수** |
+| `package.json` 변경 (의존성 추가/변경) | **필수** |
+| `plugin/*.js` 코드만 변경 | 불필요 |
+| `resources/*.png` 아이콘만 변경 | 불필요 |
+| 설치 경로 삭제 후 재복사 | **필수** (node_modules 사라짐) |
 
 ---
 
 ## 실행 흐름
 
+### 누가 플러그인을 시작하는가?
+
+**UlanziStudio가 직접 실행합니다.** `npm start`는 없습니다.
+
 ```
 UlanziStudio 시작
-  └─ node plugin/app.js <address> <port> <language>  ← UlanziStudio가 자동 실행
+  └─ manifest.json 읽기: "CodePath": "plugin/app.js"
+  └─ node plugin/app.js 127.0.0.1 3906 en   ← UlanziStudio가 자동 실행
        ├─ UlanziStudio WS(:3906) 연결
        └─ Bridge WS(:39200) 연결
             ├─ CLIENT_READY 전송
             ├─ SYNC_REQUEST 전송 → Bridge가 현재 LAYOUT 응답
             └─ 이후 양방향 실시간 통신
+
+UlanziStudio 종료 → 플러그인 프로세스도 종료
+UlanziStudio 재시작 → 플러그인 프로세스도 재시작
 ```
 
 **Bridge가 모든 상태를 결정합니다.** 플러그인은 번역만 담당합니다:
@@ -197,3 +235,5 @@ Bridge 대시보드 → **Translator 탭** (`http://localhost:39200`)
 | Translator 탭 dot 꺼짐 | Bridge 미실행 또는 포트 불일치 | Bridge 시작, 포트 39200 확인 |
 | 버튼 위치 어긋남 | 버튼 배치 누락 | 20개 칸 전부 Deck Slot으로 채우기 |
 | 업데이트 후 변경 없음 | UlanziStudio가 파일 잠금 | UlanziStudio 종료 후 복사 |
+| 코드 수정 후 반영 안 됨 | 설치 경로 복사 누락 | 소스 → 설치 경로 복사 필수 |
+| npm install 후에도 오류 | 설치 경로가 아닌 소스에서 실행 | 설치 경로의 plugin/ 에서 npm install |

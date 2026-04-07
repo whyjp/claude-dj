@@ -37,10 +37,15 @@ function loadB64(filename) {
 const ICONS = {};
 
 const ICON_FILES = [
-  'idle', 'active', 'processing', 'awaiting',
+  'idle', 'active', 'awaiting',
+  // processing 3프레임 + 기본
+  'processing', 'processing-1', 'processing-2', 'processing-3',
   'approve', 'always', 'deny',
   'submit',
-  'session-count', 'session-switch', 'agent-switch',
+  // session-count: 기본(0) + 1~30
+  'session-count',
+  ...Array.from({ length: 30 }, (_, i) => `session-count-${i + 1}`),
+  'session-switch', 'agent-switch',
   'multi-on', 'multi-off',
   // 숫자 선택지
   ...Array.from({ length: 10 }, (_, i) => `choice-${i + 1}`),
@@ -74,6 +79,19 @@ export function applyRender(cmd, $UD) {
 
   console.log(`[output] render iconKey="${key}" text="${text}" ctx=${cmd.context.slice(-8)}`);
   $UD.setBaseDataIcon(cmd.context, imgData, text);
+}
+
+/**
+ * 동적 생성된 base64 PNG를 직접 LCD에 반영한다.
+ * iconRenderer.js에서 생성한 세션명/에이전트명 아이콘에 사용.
+ *
+ * @param {{ context: string, b64: string }} cmd
+ * @param {import('../plugin-common-node/libs/ulanziApi.js').default} $UD
+ */
+export function applyRenderRaw(cmd, $UD) {
+  if (!cmd || !cmd.context || !cmd.b64) return;
+  console.log(`[output] renderRaw ctx=${cmd.context.slice(-8)}`);
+  $UD.setBaseDataIcon(cmd.context, cmd.b64, '');
 }
 
 /**

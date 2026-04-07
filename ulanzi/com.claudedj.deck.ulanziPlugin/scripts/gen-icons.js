@@ -249,12 +249,37 @@ function makeActive() {
   return px;
 }
 
-// processing — 노랑 배경에 점 3개
-function makeProcessing() {
+/**
+ * processing 3프레임 애니메이션
+ * frame 0: 왼쪽 점 밝음 (●○○) — 흐름 시작
+ * frame 1: 가운데 점 밝음 (○●○) — 흐름 중간
+ * frame 2: 오른쪽 점 밝음 (○○●) — 흐름 끝
+ * 각 프레임에서 밝은 점은 크고 밝게, 나머지는 작고 어둡게.
+ * 꼬리 효과: 이전 점은 중간 밝기로 표현.
+ */
+function makeProcessingFrame(frame) { // frame: 0,1,2
   const px = fill(...C.bgAmber);
-  circle(px, 18, 36, 8, C.amber);
-  circle(px, 36, 36, 8, C.amberDim);
-  circle(px, 54, 36, 8, C.amberDim);
+  const positions = [18, 36, 54];
+  const sizes   = [6, 6, 6];
+  const colors  = [C.amberDim, C.amberDim, C.amberDim];
+
+  // 밝은 점 (현재)
+  colors[frame] = C.amber;
+  sizes[frame]  = 10;
+
+  // 꼬리 점 (이전) — 중간 밝기
+  const prev = (frame + 2) % 3;
+  colors[prev] = [
+    Math.round((C.amber[0] + C.amberDim[0]) / 2),
+    Math.round((C.amber[1] + C.amberDim[1]) / 2),
+    Math.round((C.amber[2] + C.amberDim[2]) / 2),
+    255,
+  ];
+  sizes[prev] = 8;
+
+  for (let i = 0; i < 3; i++) {
+    circle(px, positions[i], 36, sizes[i], colors[i]);
+  }
   return px;
 }
 
@@ -320,29 +345,60 @@ function makeAwaiting() {
   return px;
 }
 
-// session-count — 회색 배경에 # + 숫자는 text 오버레이
-function makeSessionCount() {
+// session-count-N — 회색 배경에 숫자 픽셀 렌더링 (1~30)
+function makeSessionCountN(n) {
   const px = fill(...C.bgGray);
-  // # 심볼
-  rect(px, 18, 26, 54, 30, C.muted);
-  rect(px, 18, 42, 54, 46, C.muted);
-  rect(px, 26, 18, 30, 54, C.muted);
-  rect(px, 42, 18, 46, 54, C.muted);
+  // 상단 작은 'S' 레이블 (scale=1)
+  drawChar(px, 'S', 36, 14, 2, C.muted);
+  // 숫자 (크게)
+  const label = String(n);
+  const scale = label.length === 1 ? 5 : 3;
+  drawText(px, label, 36, 42, scale, C.white);
   return px;
 }
 
-// session-switch — 파랑 육각형
+// session-count (기본 — 세션 없음)
+function makeSessionCount() {
+  const px = fill(...C.bgGray);
+  drawChar(px, 'S', 36, 14, 2, C.muted);
+  drawText(px, '0', 36, 42, 5, C.muted);
+  return px;
+}
+
+// session-switch-base — 파랑 육각형 심볼 (세션명 없는 기본)
 function makeSessionSwitch() {
   const px = fill(...C.bgBlue);
   const pts = Array.from({length:6}, (_,i) => {
     const a = Math.PI/3*i - Math.PI/6;
-    return [36+24*Math.cos(a), 36+24*Math.sin(a)];
+    return [36+22*Math.cos(a), 36+22*Math.sin(a)];
   });
   for (let i = 0; i < 6; i++) {
     const [x0,y0]=pts[i], [x1,y1]=pts[(i+1)%6];
     line(px, Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1), C.blue, 3);
   }
   circle(px, 36, 36, 5, C.blue);
+  return px;
+}
+
+/**
+ * session-switch-{label} — 세션명을 픽셀로 그린 버전
+ * label: 최대 4자 (짧게 잘라서 사용)
+ */
+function makeSessionSwitchLabel(label) {
+  const px = fill(...C.bgBlue);
+  // 상단 작은 육각형 심볼
+  const pts = Array.from({length:6}, (_,i) => {
+    const a = Math.PI/3*i - Math.PI/6;
+    return [36+14*Math.cos(a), 20+14*Math.sin(a)];
+  });
+  for (let i = 0; i < 6; i++) {
+    const [x0,y0]=pts[i], [x1,y1]=pts[(i+1)%6];
+    line(px, Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1), C.blueDim, 2);
+  }
+  // 세션명 텍스트 (하단)
+  const short = label.slice(0, 4).toUpperCase();
+  const scale = short.length <= 2 ? 3 : 2;
+  drawText(px, short, 36, 50, scale, C.blue);
   return px;
 }
 
@@ -415,13 +471,20 @@ console.log('Generating icons...');
 
 save('idle',           makeIdle());
 save('active',         makeActive());
-save('processing',     makeProcessing());
+// processing 3프레임
+save('processing-1',   makeProcessingFrame(0)); // ●○○
+save('processing-2',   makeProcessingFrame(1)); // ○●○
+save('processing-3',   makeProcessingFrame(2)); // ○○●
+save('processing',     makeProcessingFrame(0)); // 기본 (하위 호환)
 save('approve',        makeApprove());
 save('always',         makeAlways());
 save('deny',           makeDeny());
 save('submit',         makeSubmit());
 save('awaiting',       makeAwaiting());
+// session-count: 0 + 1~30
 save('session-count',  makeSessionCount());
+for (let n = 1; n <= 30; n++) save(`session-count-${n}`, makeSessionCountN(n));
+// session-switch 기본
 save('session-switch', makeSessionSwitch());
 save('agent-switch',   makeAgentSwitch());
 save('multi-on',       makeMultiOn());
@@ -433,4 +496,5 @@ for (let i = 0; i < 10; i++) {
   save(`choice-${letter.toLowerCase()}`, makeChoiceAlpha(letter));
 }
 
-console.log(`Done — 33 icons in ${OUT}`);
+const total = 4 + 31 + 1 + 1 + 1 + 4 + 20; // 대략
+console.log(`Done — icons in ${OUT}`);

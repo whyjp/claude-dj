@@ -127,8 +127,8 @@ export function mapLayout(layout) {
     }
 
     case 'processing': {
-      // 동적 슬롯(0~9)만 processing — 시스템 슬롯은 유지
-      const cmds = dynamicSlotsD200h('processing');
+      // processing-1 을 초기 프레임으로 — app.js 타이머가 1/2/3 순환
+      const cmds = dynamicSlotsD200h('processing-1');
       return [...cmds, ...systemCmds];
     }
 
@@ -226,25 +226,31 @@ function _makeSystemCmds(layout) {
   const agent = layout.agent;
   const agentCount = layout.agentCount ?? 0;
 
-  // 슬롯 10: 세션 수 표시
+  // 슬롯 10: 세션 수 — 숫자가 아이콘에 직접 렌더링된 PNG 사용
+  const countKey = (sessCount >= 1 && sessCount <= 30)
+    ? `session-count-${sessCount}`
+    : 'session-count';
   cmds.push({
     slot: toD200hSlot(DJ_SLOT_SESSION_COUNT),
-    iconKey: 'session-count',
-    text: String(sessCount),
+    iconKey: countKey,
   });
 
-  // 슬롯 11: 세션 전환 (세션 이름 표시)
+  // 슬롯 11: 세션 전환 — 세션명을 iconKey로 인코딩 (동적 생성)
+  // session-switch 기본 아이콘 사용, 세션명은 text로 전달 (런타임 동적 렌더링)
   cmds.push({
     slot: toD200hSlot(DJ_SLOT_SESSION_SWITCH),
     iconKey: 'session-switch',
-    text: sess?.name ? sess.name.slice(0, 8) : '—',
+    sessName: sess?.name ?? null, // app.js에서 동적 PNG 생성에 사용
   });
 
-  // 슬롯 12: 에이전트 전환 (에이전트 타입 표시)
+  // 슬롯 12: 에이전트 전환 — 동적 레이블
+  const agentLabel = agent
+    ? (agent.type ?? 'SUB').slice(0, 4)
+    : (agentCount > 0 ? `+${agentCount}` : 'ROOT');
   cmds.push({
     slot: toD200hSlot(DJ_SLOT_AGENT_SWITCH),
     iconKey: 'agent-switch',
-    text: agent ? (agent.type ?? 'SUB').slice(0, 6) : (agentCount > 0 ? `+${agentCount}` : 'ROOT'),
+    agentLabel,
   });
 
   return cmds;
