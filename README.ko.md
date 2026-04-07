@@ -384,6 +384,7 @@ sequenceDiagram
 **선택지 감지:** `choiceParser.js` 모듈이 트랜스크립트의 마지막 어시스턴트 메시지를 스캔합니다:
 1. **Fence 선택지** — `[claude-dj-choices]...[/claude-dj-choices]` 블록 (최우선)
 2. **Regex 폴백** — 마지막 800자에서 번호(`1. X`) 또는 문자(`A. X`) 목록, 15줄 윈도우 내 클러스터링 (섹션 헤더의 false positive 방지)
+3. **설명 필터** (regex 폴백 전용) — Regex 폴백 경로에서 em-dash(`—`), en-dash(`–`), 화살표(`→`) 구분자가 포함된 목록은 설명문으로 인식하여 건너뜁니다 (예: `"1. 캐시 — 만료됨"`은 필터링). AskUserQuestion 경로에는 영향 없음 — tool로 전송된 선택지는 내용에 관계없이 항상 표시됩니다.
 
 **D200H 하드웨어 참고:** D200H는 bridge에 직접 연결되지 않고 USB로 UlanziStudio 데스크탑 앱에 연결됩니다. 번역 플러그인(`ulanzi/com.claudedj.deck.ulanziPlugin`)이 두 WebSocket 프로토콜을 연결하며, 행 우선(row-major) Bridge 슬롯을 열 우선(column-major) UlanziStudio 슬롯으로 변환하고 동적 아이콘을 72×72 PNG 비트맵으로 렌더링합니다. 설정 및 개발에 대한 자세한 내용은 `ulanzi/com.claudedj.deck.ulanziPlugin/README.md`를 참고하세요.
 
@@ -419,6 +420,7 @@ claude-plugin/
 │  ├─ stop.js                    Stop → 선택지 프록시 (blocking) 또는 async 알림
 │  ├─ stopFailure.js             StopFailure → HTTP POST (async)
 │  ├─ choiceParser.js            Stop hook 공유 선택지 파싱 로직
+│  ├─ hookLogger.js              Hook용 파일 로거 (logs/hooks.log, 1MB 로테이션)
 │  ├─ subagentStart.js           SubagentStart → HTTP POST (async)
 │  ├─ subagentStop.js            SubagentStop → HTTP POST (async)
 │  ├─ userPrompt.js              UserPromptSubmit → GET events (poll)
@@ -480,7 +482,11 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 - **스마트 세션 이름** — 디스크 PID 파일에서 세션 이름 확인, 인덱스 기본값 (`session[0]`, `session[1]`, ...)
 - **네이티브 권한 규칙** — hook 응답의 `updatedPermissions`로 영구적 허용/거부 규칙
 - **작업 & 컴팩트 추적** — TaskCreated/Completed, PreCompact/PostCompact hook이 bridge에 로깅
-- **디버그 로깅** — `--debug` 플래그로 구조화된 레벨(INFO/WARN/ERROR)과 함께 `logs/bridge.log`에 파일 로깅 활성화
+- **설명 필터** — `—`/`–`/`→` 구분자가 포함된 번호 목록은 설명문으로 인식하여 선택지 감지에서 제외, false positive 버튼 방지
+- **디버그 API** — `GET /api/deck-state`로 현재 덱 레이아웃 JSON 반환; `GET /api/logs?n=50`으로 인메모리 링 버퍼(200개)에서 최근 bridge 로그 반환
+- **로컬 디버그 배포** — `node scripts/local-deploy.js`로 변경된 파일을 모든 캐시 플러그인 버전에 복사 (`CLAUDE_PLUGIN_ROOT`가 예상치 못한 캐시 버전을 가리키는 문제 해결)
+- **Task 및 Compact 추적** — TaskCreated/Completed, PreCompact/PostCompact hook이 bridge에 기록
+- **상시 파일 로깅** — Bridge(`logs/bridge.log`, 2MB), hooks(`logs/hooks.log`, 1MB), Ulanzi 플러그인(`logs/ulanzi-plugin.log`, 1MB) 모두 자동 로테이션으로 파일에 기록. `CLAUDE_DJ_DEBUG=1`로 상세 콘솔 출력 추가.
 
 ## 설정
 
@@ -491,38 +497,66 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 | `CLAUDE_DJ_BUTTON_TIMEOUT` | `60000` (60초) | 권한 버튼 타임아웃 (ms) |
 | `CLAUDE_DJ_IDLE_TIMEOUT` | `300000` (5분) | 세션 정리 타임아웃 (ms) |
 | `CLAUDE_DJ_SHUTDOWN_TICKS` | `10` (5분) | 자동 종료 전 빈 틱 수 (×30초) |
-| `CLAUDE_DJ_DEBUG` | off | 파일 로깅 활성화하려면 `1`로 설정 |
+| `CLAUDE_DJ_DEBUG` | off | 설정 시 상세 콘솔 출력 (파일 로깅은 항상 활성) |
 
 ## 디버깅
 
+### 로그 파일 (상시 활성)
+
+파일 로깅이 기본 활성화되며 자동 로테이션됩니다:
+
+| 컴포넌트 | 로그 파일 | 최대 크기 | 내용 |
+|-----------|----------|----------|----------|
+| Bridge | `logs/bridge.log` | 2MB | 모든 hook 이벤트, 버튼 누름, WebSocket 활동 |
+| Hooks | `logs/hooks.log` | 1MB | Permission/stop hook 입력, 응답, 에러 |
+| Ulanzi 플러그인 | `(plugin dir)/logs/ulanzi-plugin.log` | 1MB | 레이아웃 프리셋, 수신된 선택지, 버튼 매핑 |
+
 ```bash
-# 파일 로깅과 함께 시작
-./scripts/start-bridge.sh --debug       # Linux/macOS
-scripts\start-bridge.bat --debug        # Windows
-npm run debug                           # npm을 통해
-
-# 로그 파일 위치는 시작 시 출력됩니다:
-#   [claude-dj] Log file: D:\github\claude-dj\logs\bridge.log
-
-# 문제만 필터링 (WARN = dropped/ignored, ERROR = failures)
+# 문제만 필터링 (WARN = dropped/ignored, ERROR = 실패)
 grep -E "WARN|ERROR" logs/bridge.log
 
-# 버튼 누름 엔드투엔드 추적
+# 버튼 누름 end-to-end 추적
 grep "slot=0" logs/bridge.log
+
+# Hook 쪽 permission 데이터 확인
+cat logs/hooks.log | grep permission
 ```
 
-로그 레벨:
+### 디버그 API
+
+```bash
+# 실시간 로그 항목 (인메모리 링 버퍼, 최근 200개)
+curl http://localhost:39200/api/logs?n=20
+
+# 현재 덱 상태 (preset, choices, session)
+curl http://localhost:39200/api/deck-state
+
+# 세션 상태
+curl http://localhost:39200/api/status
+```
+
+### 로컬 디버그 배포
+
+`CLAUDE_PLUGIN_ROOT`는 최신이 아닌 임의의 캐시 플러그인 버전을 가리킬 수 있습니다. `local-deploy.js`를 사용하여 모든 캐시 버전에 한번에 변경사항을 복사하세요:
+
+```bash
+node scripts/local-deploy.js hooks/stop.js hooks/choiceParser.js   # 특정 파일
+node scripts/local-deploy.js                                        # 모든 hookable 파일
+```
+
+### 로그 레벨
+
 | 레벨 | 의미 | 예시 |
 |-------|---------|---------|
 | `INFO` | 정상 흐름 | `[ws] BUTTON_PRESS slot=0`, `[hook→claude] behavior=allow` |
-| `WARN` | 버튼 dropped/ignored | `[btn] dropped — no focused session`, `TIMEOUT` |
-| `ERROR` | 문제 발생 | `[hook→claude] FAILED res.json`, `respondFn threw` |
+| `WARN` | 버튼 드롭/무시 | `[btn] dropped — no focused session`, `TIMEOUT` |
+| `ERROR` | 오류 발생 | `[hook→claude] FAILED res.json`, `respondFn threw` |
 
 ## 개발
 
 ```bash
 npm install                            # 의존성 설치
-npm test                               # 모든 테스트 실행 (223)
+npm test                               # 모든 테스트 실행 (240)
 node claude-plugin/bridge/server.js    # bridge 시작
 npm run debug                          # 파일 로깅과 함께 bridge 시작
 npm run stop                           # 실행 중인 bridge 중지

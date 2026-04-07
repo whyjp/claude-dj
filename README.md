@@ -384,6 +384,7 @@ sequenceDiagram
 **Choice detection:** The `choiceParser.js` module scans the last assistant message in the transcript for:
 1. **Fenced choices** — `[claude-dj-choices]...[/claude-dj-choices]` blocks (highest priority)
 2. **Regex fallback** — Numbered (`1. X`) or lettered (`A. X`) lists in the last 800 characters, clustered within a 15-line window (avoids false positives from section headers)
+3. **Explanation filter** (regex fallback only) — In the regex fallback path, lists containing em-dash (`—`), en-dash (`–`), or arrow (`→`) separators are recognized as explanatory text and skipped (e.g. `"1. Cache — stale"` is filtered). This does NOT affect the AskUserQuestion path — choices sent via the tool are always displayed regardless of content.
 
 **D200H hardware note:** The D200H connects via USB to the UlanziStudio desktop app, not directly to the bridge. The translator plugin (`ulanzi/com.claudedj.deck.ulanziPlugin`) bridges the two WebSocket protocols — converting row-major Bridge slots to column-major UlanziStudio slots and rendering dynamic icons as 72×72 PNG bitmaps. See `ulanzi/com.claudedj.deck.ulanziPlugin/README.md` for setup and development.
 
@@ -419,6 +420,7 @@ claude-plugin/
 │  ├─ stop.js                    Stop → choice proxy (blocking) or async notify
 │  ├─ stopFailure.js             StopFailure → HTTP POST (async)
 │  ├─ choiceParser.js            Shared choice-parsing logic for stop hooks
+│  ├─ hookLogger.js              File logger for hooks (logs/hooks.log, 1MB rotation)
 │  ├─ subagentStart.js           SubagentStart → HTTP POST (async)
 │  ├─ subagentStop.js            SubagentStop → HTTP POST (async)
 │  ├─ userPrompt.js              UserPromptSubmit → GET events (poll)
@@ -479,8 +481,11 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 - **Session auto-cleanup** — Idle sessions pruned after 5 minutes
 - **Smart session naming** — Session names resolved from disk PID files, indexed defaults (`session[0]`, `session[1]`, ...)
 - **Native permission rules** — `updatedPermissions` in hook responses for persistent allow/deny rules
+- **Explanation filter** — Numbered lists with `—`/`–`/`→` separators are recognized as explanatory text and excluded from choice detection, preventing false-positive buttons
+- **Debug API** — `GET /api/deck-state` returns current deck layout as JSON; `GET /api/logs?n=50` returns recent bridge log entries from in-memory ring buffer (200 entries)
+- **Local debug deploy** — `node scripts/local-deploy.js` copies changed files to ALL cached plugin versions (works around `CLAUDE_PLUGIN_ROOT` pointing to unexpected cache versions)
 - **Task & compact tracking** — TaskCreated/Completed, PreCompact/PostCompact hooks logged to bridge
-- **Debug logging** — `--debug` flag enables file logging to `logs/bridge.log` with structured levels (INFO/WARN/ERROR)
+- **Always-on file logging** — Bridge (`logs/bridge.log`, 2MB), hooks (`logs/hooks.log`, 1MB), and Ulanzi plugin (`logs/ulanzi-plugin.log`, 1MB) all log to files with auto-rotation. `CLAUDE_DJ_DEBUG=1` adds verbose console output.
 
 ## Configuration
 
@@ -491,27 +496,55 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 | `CLAUDE_DJ_BUTTON_TIMEOUT` | `60000` (60s) | Permission button timeout (ms) |
 | `CLAUDE_DJ_IDLE_TIMEOUT` | `300000` (5min) | Session prune timeout (ms) |
 | `CLAUDE_DJ_SHUTDOWN_TICKS` | `10` (5min) | Empty ticks (×30s) before auto-shutdown |
-| `CLAUDE_DJ_DEBUG` | off | Set `1` to enable file logging |
+| `CLAUDE_DJ_DEBUG` | off | Set `1` for verbose console output (file logging is always on) |
 
 ## Debugging
 
+### Log Files (always-on)
+
+File logging is enabled by default with auto-rotation:
+
+| Component | Log file | Max size | Contents |
+|-----------|----------|----------|----------|
+| Bridge | `logs/bridge.log` | 2MB | All hook events, button presses, WebSocket activity |
+| Hooks | `logs/hooks.log` | 1MB | Permission/stop hook inputs, responses, errors |
+| Ulanzi plugin | `(plugin dir)/logs/ulanzi-plugin.log` | 1MB | Layout presets, choices received, button mapping |
+
 ```bash
-# Start with file logging
-./scripts/start-bridge.sh --debug       # Linux/macOS
-scripts\start-bridge.bat --debug        # Windows
-npm run debug                           # via npm
-
-# Log file location printed on startup:
-#   [claude-dj] Log file: D:\github\claude-dj\logs\bridge.log
-
 # Filter problems only (WARN = dropped/ignored, ERROR = failures)
 grep -E "WARN|ERROR" logs/bridge.log
 
 # Trace a button press end-to-end
 grep "slot=0" logs/bridge.log
+
+# Check hook-side permission data
+cat logs/hooks.log | grep permission
 ```
 
-Log levels:
+### Debug API
+
+```bash
+# Real-time log entries (in-memory ring buffer, last 200)
+curl http://localhost:39200/api/logs?n=20
+
+# Current deck state (preset, choices, session)
+curl http://localhost:39200/api/deck-state
+
+# Session status
+curl http://localhost:39200/api/status
+```
+
+### Local Debug Deploy
+
+`CLAUDE_PLUGIN_ROOT` may point to any cached plugin version, not the latest. Use `local-deploy.js` to copy changes to all cached versions at once:
+
+```bash
+node scripts/local-deploy.js hooks/stop.js hooks/choiceParser.js   # specific files
+node scripts/local-deploy.js                                        # all hookable files
+```
+
+### Log Levels
+
 | Level | Meaning | Example |
 |-------|---------|---------|
 | `INFO` | Normal flow | `[ws] BUTTON_PRESS slot=0`, `[hook→claude] behavior=allow` |
@@ -522,7 +555,7 @@ Log levels:
 
 ```bash
 npm install                            # install dependencies
-npm test                               # run all tests (223)
+npm test                               # run all tests (240)
 node claude-plugin/bridge/server.js    # start bridge
 npm run debug                          # start bridge with file logging
 npm run stop                           # stop running bridge

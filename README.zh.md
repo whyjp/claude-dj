@@ -382,6 +382,7 @@ sequenceDiagram
 **选项检测：** `choiceParser.js` 模块扫描转录中最后一条助手消息：
 1. **Fence 选项** — `[claude-dj-choices]...[/claude-dj-choices]` 块（最高优先级）
 2. **Regex 后备** — 最后 800 个字符中的编号（`1. X`）或字母（`A. X`）列表，在 15 行窗口内聚簇（避免章节标题的误报）
+3. **说明过滤器**（仅 regex 后备）— 在 regex 后备路径中，包含 em-dash（`—`）、en-dash（`–`）或箭头（`→`）分隔符的列表被识别为说明性文本并跳过（例如 `"1. 缓存 — 过期"` 被过滤）。这不影响 AskUserQuestion 路径——通过工具发送的选项始终显示，与内容无关。
 
 **关键路径：** `PermissionRequest` hook 是唯一的**同步**段。hook 脚本（`permission.js`）发出 HTTP POST 并**阻塞**，直到 Bridge 响应（按钮按下）或 60 秒超时。所有其他 hook 均为 fire-and-forget。
 
@@ -419,6 +420,7 @@ claude-plugin/
 │  ├─ stop.js                    Stop → 选项代理（blocking）或 async 通知
 │  ├─ stopFailure.js             StopFailure → HTTP POST（async）
 │  ├─ choiceParser.js            Stop hook 共享的选项解析逻辑
+│  ├─ hookLogger.js              Hook 文件日志器（logs/hooks.log，1MB 轮转）
 │  ├─ subagentStart.js           SubagentStart → HTTP POST（async）
 │  ├─ subagentStop.js            SubagentStop → HTTP POST（async）
 │  ├─ userPrompt.js              UserPromptSubmit → GET events（poll）
@@ -479,8 +481,11 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 - **会话自动清理** — 空闲会话在 5 分钟后被清理
 - **智能会话命名** — 从磁盘 PID 文件解析会话名称，索引默认值（`session[0]`、`session[1]`、...）
 - **原生权限规则** — hook 响应中的 `updatedPermissions` 用于持久化允许/拒绝规则
+- **说明过滤器** — 包含 `—`/`–`/`→` 分隔符的编号列表被识别为说明文本，从选项检测中排除，防止误报按钮
+- **调试 API** — `GET /api/deck-state` 返回当前 Deck 布局 JSON；`GET /api/logs?n=50` 从内存环形缓冲区（200 条）返回最近的 Bridge 日志
+- **本地调试部署** — `node scripts/local-deploy.js` 将变更文件复制到所有缓存插件版本（解决 `CLAUDE_PLUGIN_ROOT` 指向意外缓存版本的问题）
 - **任务与压缩追踪** — TaskCreated/Completed、PreCompact/PostCompact hook 记录到 Bridge 日志
-- **调试日志** — `--debug` 标志启用文件日志，输出到 `logs/bridge.log`，含结构化级别（INFO/WARN/ERROR）
+- **始终启用文件日志** — Bridge（`logs/bridge.log`，2MB）、hooks（`logs/hooks.log`，1MB）和 Ulanzi 插件（`logs/ulanzi-plugin.log`，1MB）均自动轮转记录到文件。`CLAUDE_DJ_DEBUG=1` 添加详细控制台输出。
 
 ## 配置
 
@@ -491,27 +496,55 @@ Row 2: [10:count] [11:session] [12:agent] [Info Display]
 | `CLAUDE_DJ_BUTTON_TIMEOUT` | `60000`（60 秒） | 权限按钮超时（ms） |
 | `CLAUDE_DJ_IDLE_TIMEOUT` | `300000`（5 分钟） | 会话清理超时（ms） |
 | `CLAUDE_DJ_SHUTDOWN_TICKS` | `10`（5 分钟） | 自动关闭前的空闲 tick 数（×30 秒） |
-| `CLAUDE_DJ_DEBUG` | 关闭 | 设为 `1` 启用文件日志 |
+| `CLAUDE_DJ_DEBUG` | 关闭 | 设为 `1` 启用详细控制台输出（文件日志始终启用） |
 
 ## 调试
 
+### 日志文件（始终启用）
+
+文件日志默认启用并自动轮转：
+
+| 组件 | 日志文件 | 最大大小 | 内容 |
+|-----------|----------|----------|----------|
+| Bridge | `logs/bridge.log` | 2MB | 所有 hook 事件、按钮按下、WebSocket 活动 |
+| Hooks | `logs/hooks.log` | 1MB | Permission/stop hook 输入、响应、错误 |
+| Ulanzi 插件 | `(plugin dir)/logs/ulanzi-plugin.log` | 1MB | 布局预设、接收的选项、按钮映射 |
+
 ```bash
-# 启动并开启文件日志
-./scripts/start-bridge.sh --debug       # Linux/macOS
-scripts\start-bridge.bat --debug        # Windows
-npm run debug                           # 通过 npm
-
-# 日志文件位置在启动时输出：
-#   [claude-dj] Log file: D:\github\claude-dj\logs\bridge.log
-
 # 仅过滤问题（WARN = dropped/ignored，ERROR = 失败）
 grep -E "WARN|ERROR" logs/bridge.log
 
 # 端到端追踪按钮按下
 grep "slot=0" logs/bridge.log
+
+# 检查 hook 侧 permission 数据
+cat logs/hooks.log | grep permission
 ```
 
-日志级别：
+### 调试 API
+
+```bash
+# 实时日志条目（内存环形缓冲区，最近 200 条）
+curl http://localhost:39200/api/logs?n=20
+
+# 当前 Deck 状态（preset、choices、session）
+curl http://localhost:39200/api/deck-state
+
+# 会话状态
+curl http://localhost:39200/api/status
+```
+
+### 本地调试部署
+
+`CLAUDE_PLUGIN_ROOT` 可能指向任意缓存插件版本，而非最新版本。使用 `local-deploy.js` 一次性将变更复制到所有缓存版本：
+
+```bash
+node scripts/local-deploy.js hooks/stop.js hooks/choiceParser.js   # 特定文件
+node scripts/local-deploy.js                                        # 所有可热部署文件
+```
+
+### 日志级别
+
 | 级别 | 含义 | 示例 |
 |-------|---------|---------|
 | `INFO` | 正常流程 | `[ws] BUTTON_PRESS slot=0`，`[hook→claude] behavior=allow` |
@@ -522,7 +555,7 @@ grep "slot=0" logs/bridge.log
 
 ```bash
 npm install                            # 安装依赖
-npm test                               # 运行所有测试（223）
+npm test                               # 运行所有测试（240）
 node claude-plugin/bridge/server.js    # 启动 Bridge
 npm run debug                          # 启动 Bridge 并开启文件日志
 npm run stop                           # 停止运行中的 Bridge
