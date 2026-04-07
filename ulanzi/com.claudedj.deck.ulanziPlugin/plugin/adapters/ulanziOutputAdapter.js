@@ -37,7 +37,7 @@ function loadB64(filename) {
 const ICONS = {};
 
 const ICON_FILES = [
-  'idle', 'active', 'awaiting',
+  'idle', 'active', 'awaiting', 'sleep',
   // idle 캐릭터 10프레임
   ...Array.from({ length: 10 }, (_, i) => `idle-char-${i}`),
   // processing 3프레임 + 기본

@@ -626,6 +626,21 @@ function makeAwaiting() {
   return px;
 }
 
+// sleep — 어두운 배경에 Z z z
+function makeSleep() {
+  const px = fill(5, 5, 10, 255);
+  const DIM = [40, 40, 70, 255];
+  const MID = [60, 60, 100, 255];
+  const BRT = [90, 90, 140, 255];
+  // 큰 Z (중앙 상단)
+  drawChar(px, 'Z', 28, 24, 4, BRT);
+  // 중간 z (오른쪽 중간)
+  drawChar(px, 'Z', 46, 38, 3, MID);
+  // 작은 z (오른쪽 하단)
+  drawChar(px, 'Z', 56, 50, 2, DIM);
+  return px;
+}
+
 // session-count-N — 회색 배경에 숫자 픽셀 렌더링 (1~30)
 function makeSessionCountN(n) {
   const px = fill(...C.bgGray);
@@ -764,6 +779,7 @@ save('always',         makeAlways());
 save('deny',           makeDeny());
 save('submit',         makeSubmit());
 save('awaiting',       makeAwaiting());
+save('sleep',          makeSleep());
 // session-count: 0 + 1~30
 save('session-count',  makeSessionCount());
 for (let n = 1; n <= 30; n++) save(`session-count-${n}`, makeSessionCountN(n));

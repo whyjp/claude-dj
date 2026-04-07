@@ -75,11 +75,19 @@ let _idleTimer = null;
 let _idleStep  = 0;  // IDLE_PATH 인덱스
 let _idleSlots = []; // 현재 idle 상태인 D200H 열-우선 슬롯 목록
 
+const IDLE_SLEEP_MS = 10 * 60 * 1000; // 10분 후 sleep 모드
+let _idleSleepTimer = null;
+let _isSleeping = false;
+
 function _startIdle(slots) {
   _idleSlots = slots;
   _idleStep  = 0;
+  _isSleeping = false;
+  if (_idleSleepTimer) clearTimeout(_idleSleepTimer);
+  _idleSleepTimer = setTimeout(() => _enterSleep(), IDLE_SLEEP_MS);
   if (_idleTimer) return;
   _idleTimer = setInterval(() => {
+    if (_isSleeping) return;
     _idleStep = (_idleStep + 1) % IDLE_PATH.length;
     _renderIdleFrame();
   }, 600); // 0.6초 간격 (10프레임 = 6초 1주기)
@@ -88,7 +96,24 @@ function _startIdle(slots) {
 
 function _stopIdle() {
   if (_idleTimer) { clearInterval(_idleTimer); _idleTimer = null; }
+  if (_idleSleepTimer) { clearTimeout(_idleSleepTimer); _idleSleepTimer = null; }
+  _isSleeping = false;
   _idleSlots = [];
+}
+
+function _enterSleep() {
+  if (_idleTimer) { clearInterval(_idleTimer); _idleTimer = null; }
+  _isSleeping = true;
+  // slot 0 (Bridge) → D200H slot에 sleep 아이콘, 나머지 idle(dim)
+  const sleepD200h = toD200hSlot(0);
+  for (const [context, entry] of keyStates.entries()) {
+    if (!_idleSlots.includes(entry.slot)) continue;
+    if (entry.slot === sleepD200h) {
+      applyRender({ context, iconKey: 'sleep' }, $UD);
+    } else {
+      applyRender({ context, iconKey: 'idle' }, $UD);
+    }
+  }
 }
 
 function _renderIdleFrame() {
