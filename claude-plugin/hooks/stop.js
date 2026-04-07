@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { parseFencedChoices, parseRegexChoices } from './choiceParser.js';
+import { hookLog } from './hookLogger.js';
 
 const BRIDGE_URL = (() => {
   const url = process.env.CLAUDE_DJ_URL || 'http://localhost:39200';
@@ -43,7 +44,11 @@ function parseChoices(transcriptPath) {
 
     if (!lastAssistant) return null;
 
-    return parseFencedChoices(lastAssistant) || parseRegexChoices(lastAssistant);
+    const fenced = parseFencedChoices(lastAssistant);
+    const regex = parseRegexChoices(lastAssistant);
+    const result = fenced || regex;
+    hookLog('stop', `choices=${result?.length ?? 0} fenced=${!!fenced} regex=${!!regex} tail=${JSON.stringify(lastAssistant.slice(-200))}`);
+    return result;
   } catch (e) {
     return null;
   }

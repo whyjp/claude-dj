@@ -391,7 +391,7 @@ function _persistAlwaysAllowRules(cwd, suggestion) {
 
 app.post('/api/hook/permission', (req, res) => {
   const input = req.body;
-  log(`[hook/permission] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name}`);
+  log(`[hook/permission] session=${input.session_id} tool=${input.tool_name} event=${input.hook_event_name} suggestions=${JSON.stringify(input.permission_suggestions ?? 'MISSING')}`);
 
   // Auto-deny previous pending permission to prevent orphaned HTTP responses.
   // Transition state to PROCESSING BEFORE calling prevRespondFn — mirrors resolveWaiting pattern —

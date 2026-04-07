@@ -17,10 +17,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LOG_DIR = path.join(__dirname, '..', 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'bridge.log');
 
-const DEBUG = !!(process.env.CLAUDE_DJ_DEBUG || process.env.DEBUG);
+// File logging is always enabled (was opt-in via DEBUG before)
+const VERBOSE = !!(process.env.CLAUDE_DJ_DEBUG || process.env.DEBUG);
 const JSON_FORMAT = process.env.CLAUDE_DJ_LOG_FORMAT === 'json';
 
-const MAX_LOG_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_LOG_SIZE = 2 * 1024 * 1024; // 2MB — auto-rotates
 
 let _stream = null;
 
@@ -45,13 +46,16 @@ function _rotateIfNeeded() {
   return false;
 }
 
-if (DEBUG) {
+// Always log to file (rotation keeps it small)
+try {
   fs.mkdirSync(LOG_DIR, { recursive: true });
   _rotateIfNeeded();
   _stream = fs.createWriteStream(LOG_FILE, { flags: 'a' });
   const ts = new Date().toISOString();
-  _stream.write(`\n${'='.repeat(60)}\n[${ts}] Bridge started (debug mode)\n${'='.repeat(60)}\n`);
-  console.log(`[claude-dj] Log file: ${LOG_FILE}`);
+  _stream.write(`\n${'='.repeat(60)}\n[${ts}] Bridge started\n${'='.repeat(60)}\n`);
+  if (VERBOSE) console.log(`[claude-dj] Log file: ${LOG_FILE}`);
+} catch (e) {
+  // If log dir is not writable, continue without file logging
 }
 
 function _fmt(level, args) {
