@@ -93,6 +93,25 @@ Before sending ANY message, scan your output for these red flags:
 
 If you find ANY of these, add AskUserQuestion BEFORE sending.
 
+## Fallback: Fenced Choices
+
+When `AskUserQuestion` is unavailable (e.g., inside plan mode, third-party skills, or workflows that bypass tool calls), wrap choices in a fence block so the stop hook can detect them reliably without regex guessing:
+
+```
+[claude-dj-choices]
+1. Refactor the module
+2. Rewrite from scratch
+3. Patch and move on
+[/claude-dj-choices]
+```
+
+**Priority order:**
+1. `AskUserQuestion` — always preferred (blocking, interactive)
+2. `[claude-dj-choices]` fence — fallback when tool calls are not possible (detected by stop hook with 100% accuracy)
+3. Bare numbered lists — last resort, detected by regex with heuristic filtering (may miss some patterns)
+
+If you are generating choices inside a plan, skill output, or any context where AskUserQuestion might not fire, **use the fence block**.
+
 ## Exception: Direct Input Override
 
 When another skill explicitly instructs you to **end a message without AskUserQuestion** (e.g., to trigger `WAITING_RESPONSE` / awaiting state on the deck), obey that skill for that specific step. Look for phrases like "Do NOT call AskUserQuestion" or "end your message without AskUserQuestion" — these are intentional overrides, not mistakes.
