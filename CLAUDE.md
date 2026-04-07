@@ -55,6 +55,19 @@ git push
 - `claude-plugin/public/js/app.js` (VERSION constant)
 - Installed plugin `package.json` (detected via `installed_plugins.json`)
 
+### Local debug deploy (use instead of manual cp)
+
+`CLAUDE_PLUGIN_ROOT` may point to ANY cached version, not just the latest in `installed_plugins.json`.
+**Always use `local-deploy.js`** — it copies to all cached versions + marketplace source:
+
+```bash
+# Deploy specific files
+node scripts/local-deploy.js hooks/choiceParser.js hooks/stop.js
+
+# Deploy all hookable files
+node scripts/local-deploy.js
+```
+
 ### What requires manual copy to installed path
 Everything NOT in the list above: `bridge/*.js`, `hooks/*.js`, `skills/**/*.md`, `public/js/` (except app.js), `public/css/`, `public/index.html`
 

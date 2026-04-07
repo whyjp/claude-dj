@@ -95,6 +95,13 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+app.get('/api/deck-state', (req, res) => {
+  const focus = sm.getFocusSession();
+  if (!focus) return res.json({ preset: 'none', session: null });
+  const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
+  res.json(layout);
+});
+
 app.get('/api/translator/status', (req, res) => {
   res.json({
     connected: ws.translatorConnected,

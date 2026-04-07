@@ -33,6 +33,18 @@ export function parseFencedChoices(text) {
 }
 
 /**
+ * Detect "explanation smell" — numbered lists that describe steps/reasons,
+ * not actionable choices.  Real choices are direct ("Yes", "Retry",
+ * "Refactor the module").  Explanations use em-dash/en-dash/arrow separators
+ * like "Topic — explanation" or "Step → result".
+ */
+const EXPLAIN_MARKER_RE = /\s[\u2014\u2013\u2192]\s/;
+function looksLikeExplanation(matches) {
+  // Check the full matched line (m[0]), not the truncated label
+  return matches.some((m) => EXPLAIN_MARKER_RE.test(m[0]));
+}
+
+/**
  * Fallback: regex-based choice detection (original logic).
  * Only scans the TAIL of the text (last 800 chars) to avoid matching
  * numbered section headers or task lists buried in longer responses.
@@ -71,6 +83,9 @@ export function parseRegexChoices(text) {
     // Check that all matches are within a 15-line window
     const span = matchLineNums[matchLineNums.length - 1] - matchLineNums[0];
     if (span > 15) continue;
+
+    // Filter out explanation-style lists (em-dash, arrows, long lines)
+    if (looksLikeExplanation(matches)) continue;
 
     return matches.slice(0, 10).map((m) => ({
       index: m[1],
