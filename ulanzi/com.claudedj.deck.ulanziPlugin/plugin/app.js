@@ -92,8 +92,7 @@ function _stopIdle() {
 }
 
 function _renderIdleFrame() {
-  // 현재 캐릭터 위치의 Bridge 슬롯 → D200H 슬롯
-  const { toD200hSlot } = _layoutMapperRef;
+  // toD200hSlot은 import로 직접 사용
   const charDjSlot  = IDLE_PATH[_idleStep];
   const charD200h   = toD200hSlot(charDjSlot);
   const charIconKey = `idle-char-${_idleStep}`;
@@ -107,9 +106,6 @@ function _renderIdleFrame() {
     }
   }
 }
-
-// layoutMapper의 toD200hSlot을 직접 사용
-_layoutMapperRef = { toD200hSlot };
 
 // ── Bridge 연결 ──────────────────────────────────────────────
 
