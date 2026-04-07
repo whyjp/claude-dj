@@ -1,0 +1,10 @@
+{
+  "name": "claude-dj-deck-plugin",
+  "version": "1.0.0",
+  "description": "claude-dj Deck plugin — translates Ulanzi D200H events to Bridge protocol",
+  "type": "module",
+  "main": "app.js",
+  "dependencies": {
+    "ws": "^8.18.2"
+  }
+}
