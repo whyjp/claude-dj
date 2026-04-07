@@ -22,7 +22,7 @@ import { parseInputEvent, parseSlot } from './core/eventParser.js';
 import { applyRender, applyRenderRaw } from './adapters/ulanziOutputAdapter.js';
 import { BridgeWsAdapter } from './adapters/bridgeWsAdapter.js';
 import { mapLayout, toInternalSlot, toD200hSlot } from './core/layoutMapper.js';
-import { makeSessionSwitchIcon, makeAgentSwitchIcon } from './core/iconRenderer.js';
+import { makeSessionSwitchIcon, makeAgentSwitchIcon, makeMultiIcon } from './core/iconRenderer.js';
 
 const PLUGIN_UUID = 'com.claudedj.deck';
 
@@ -148,6 +148,13 @@ bridge.onLayout((layout) => {
     // agent-switch: 에이전트 타입 동적 PNG 생성
     if (cmd.iconKey === 'agent-switch' && cmd.agentLabel) {
       const b64 = makeAgentSwitchIcon(cmd.agentLabel);
+      applyRenderRaw({ context, b64 }, $UD);
+      continue;
+    }
+
+    // multi-dynamic: 번호 + 레이블 + 선택 상태 동적 PNG 생성
+    if (cmd.iconKey === 'multi-dynamic') {
+      const b64 = makeMultiIcon(cmd.multiN, cmd.multiLabel, cmd.multiSelected);
       applyRenderRaw({ context, b64 }, $UD);
       continue;
     }

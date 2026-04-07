@@ -199,6 +199,89 @@ export function makeSessionSwitchIcon(name) {
   return makePng(px).toString('base64');
 }
 
+// choice 색상 10종 (gen-icons.js와 동일)
+const CHOICE_BG = [
+  [8,35,16],[35,28,5],[8,20,45],[22,12,40],
+  [35,18,5],[8,30,25],[30,8,25],[25,30,8],
+  [8,18,35],[30,22,8],
+].map(v => [...v, 255]);
+const CHOICE_FG = [
+  [39,255,110,255],[255,200,0,255],[68,170,255,255],[187,136,255,255],
+  [255,136,68,255],[68,255,204,255],[255,68,170,255],
+  [136,255,68,255],[68,170,255,255],[255,170,68,255],
+];
+
+/**
+ * multiSelect 아이콘 — 번호 + 레이블 + 선택 상태 동적 렌더링
+ *
+ * 레이아웃:
+ *   ┌──────────────────┐
+ *   │ [N]  ☑/☐        │  ← 상단: 번호(좌) + 체크박스(우)
+ *   │ label text       │  ← 하단: 선택지 텍스트 (2줄 자동 분할)
+ *   └──────────────────┘
+ *
+ * @param {number} n - 1-based 번호 (1~10)
+ * @param {string} label - 선택지 텍스트
+ * @param {boolean} selected - 선택 여부
+ * @returns {string} base64 PNG
+ */
+export function makeMultiIcon(n, label, selected) {
+  const idx = (n - 1) % 10;
+  const fg  = CHOICE_FG[idx];
+  const bg  = selected ? CHOICE_BG[idx] : [20, 20, 30, 255];
+  const dimFg = fg.map((v, i) => i < 3 ? Math.round(v * 0.4) : v);
+
+  const px = fill(...bg);
+
+  // 테두리 (선택 시 밝게, 미선택 시 어둡게)
+  const borderCol = selected ? fg : dimFg;
+  for (let t = 0; t < 2; t++) {
+    // 상단/하단 수평선
+    for (let x = 6+t; x <= 66-t; x++) {
+      setPixel(px, x, 6+t, borderCol);
+      setPixel(px, x, 66-t, borderCol);
+    }
+    // 좌/우 수직선
+    for (let y = 6+t; y <= 66-t; y++) {
+      setPixel(px, 6+t, y, borderCol);
+      setPixel(px, 66-t, y, borderCol);
+    }
+  }
+
+  // 상단 좌: 번호 (scale=2, 작게)
+  drawText(px, String(n), 18, 18, 2, selected ? fg : dimFg);
+
+  // 상단 우: 체크박스 심볼
+  if (selected) {
+    // ☑ 체크마크
+    line(px, 46, 22, 52, 30, fg, 2);
+    line(px, 52, 30, 62, 12, fg, 2);
+  } else {
+    // ☐ 빈 박스
+    for (let x = 46; x <= 62; x++) { setPixel(px, x, 12, dimFg); setPixel(px, x, 28, dimFg); }
+    for (let y = 12; y <= 28; y++) { setPixel(px, 46, y, dimFg); setPixel(px, 62, y, dimFg); }
+  }
+
+  // 구분선
+  for (let x = 10; x <= 62; x++) setPixel(px, x, 34, dimFg);
+
+  // 하단: 레이블 텍스트 (최대 8자, 넘으면 2줄)
+  const text = (label ?? '').slice(0, 14);
+  const textCol = selected ? [244, 244, 255, 255] : dimFg;
+  if (text.length <= 7) {
+    const scale = text.length <= 4 ? 2 : 1;
+    drawText(px, text.toUpperCase(), 36, 52, scale, textCol);
+  } else {
+    // 2줄 분할
+    const line1 = text.slice(0, 7).toUpperCase();
+    const line2 = text.slice(7, 14).toUpperCase();
+    drawText(px, line1, 36, 45, 1, textCol);
+    drawText(px, line2, 36, 58, 1, textCol);
+  }
+
+  return makePng(px).toString('base64');
+}
+
 /**
  * agent-switch 아이콘 — 에이전트 타입/상태 표시
  * @param {string} label - 표시할 텍스트 (ROOT, SUB, +N 등)
