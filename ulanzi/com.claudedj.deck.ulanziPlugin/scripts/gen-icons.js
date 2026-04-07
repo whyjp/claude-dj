@@ -233,10 +233,245 @@ function save(name, px) {
   console.log(`  ✓ ${name}.png`);
 }
 
-// idle — 어두운 배경에 작은 dim 원
+// idle — 어두운 배경에 작은 dim 원 (캐릭터 없는 빈 슬롯)
 function makeIdle() {
   const px = fill(...C.bg);
   circle(px, 36, 36, 6, C.dark);
+  return px;
+}
+
+// ── 이모지 캐릭터 픽셀 드로잉 헬퍼 ─────────────────────────
+
+/**
+ * 얼굴 기본형: 원형 머리 + 눈 2개
+ * @param {Uint8Array} px
+ * @param {number} cx 중심 x
+ * @param {number} cy 중심 y
+ * @param {number} r 머리 반지름
+ * @param {number[]} faceCol 얼굴 색
+ * @param {number[]} outlineCol 외곽선 색
+ */
+function drawFaceBase(px, cx, cy, r, faceCol, outlineCol) {
+  circle(px, cx, cy, r, outlineCol);
+  circle(px, cx, cy, r - 2, faceCol);
+}
+
+/** 눈 (기본 점) */
+function drawEyes(px, cx, cy, eyeCol) {
+  circle(px, cx - 7, cy - 4, 3, eyeCol);
+  circle(px, cx + 7, cy - 4, 3, eyeCol);
+}
+
+/** 웃는 입 (호) */
+function drawSmile(px, cx, cy, col) {
+  for (let a = 0; a <= 180; a += 10) {
+    const rad = a * Math.PI / 180;
+    const x = Math.round(cx + 8 * Math.cos(rad));
+    const y = Math.round(cy + 5 + 4 * Math.sin(rad));
+    circle(px, x, y, 1, col);
+  }
+}
+
+/** 크게 웃는 입 (큰 호) */
+function drawBigSmile(px, cx, cy, col) {
+  for (let a = 0; a <= 180; a += 8) {
+    const rad = a * Math.PI / 180;
+    const x = Math.round(cx + 10 * Math.cos(rad));
+    const y = Math.round(cy + 6 + 5 * Math.sin(rad));
+    circle(px, x, y, 2, col);
+  }
+}
+
+/** 슬픈 입 (뒤집힌 호) */
+function drawFrown(px, cx, cy, col) {
+  for (let a = 0; a <= 180; a += 10) {
+    const rad = a * Math.PI / 180;
+    const x = Math.round(cx + 8 * Math.cos(rad));
+    const y = Math.round(cy + 12 - 4 * Math.sin(rad));
+    circle(px, x, y, 1, col);
+  }
+}
+
+/** 놀란 입 (작은 원) */
+function drawSurprisedMouth(px, cx, cy, col) {
+  circle(px, cx, cy + 9, 4, col);
+  circle(px, cx, cy + 9, 2, [10, 10, 18, 255]);
+}
+
+/** 윙크 (한쪽 눈 선) */
+function drawWink(px, cx, cy, eyeCol) {
+  circle(px, cx - 7, cy - 4, 3, eyeCol);
+  line(px, cx + 4, cy - 4, cx + 10, cy - 4, eyeCol, 2);
+}
+
+/** 하트 눈 */
+function drawHeartEyes(px, cx, cy, col) {
+  // 왼쪽 하트
+  circle(px, cx - 9, cy - 5, 3, col);
+  circle(px, cx - 6, cy - 5, 3, col);
+  circle(px, cx - 7, cy - 2, 3, col);
+  // 오른쪽 하트
+  circle(px, cx + 4, cy - 5, 3, col);
+  circle(px, cx + 7, cy - 5, 3, col);
+  circle(px, cx + 6, cy - 2, 3, col);
+}
+
+/** 별 눈 (반짝) */
+function drawStarEyes(px, cx, cy, col) {
+  // 왼쪽 별
+  circle(px, cx - 7, cy - 4, 4, col);
+  setPixel(px, cx - 7, cy - 8, col); setPixel(px, cx - 7, cy, col);
+  setPixel(px, cx - 11, cy - 4, col); setPixel(px, cx - 3, cy - 4, col);
+  // 오른쪽 별
+  circle(px, cx + 7, cy - 4, 4, col);
+  setPixel(px, cx + 7, cy - 8, col); setPixel(px, cx + 7, cy, col);
+  setPixel(px, cx + 3, cy - 4, col); setPixel(px, cx + 11, cy - 4, col);
+}
+
+/** 땀 한 방울 */
+function drawSweat(px, cx, cy, col) {
+  circle(px, cx + 18, cy - 12, 3, col);
+  setPixel(px, cx + 18, cy - 16, col);
+}
+
+/** 작은 Z (졸림) */
+function drawZzz(px, cx, cy, col) {
+  drawText(px, 'Z', cx + 18, cy - 14, 2, col);
+}
+
+/** 이동 방향 화살표 (아래쪽 작은 삼각형) */
+function drawArrow(px, cx, cy, dir, col) {
+  // dir: 'r'=오른쪽, 'l'=왼쪽, 'd'=아래, 'u'=위
+  if (dir === 'r') {
+    for (let i = 0; i < 5; i++) {
+      for (let j = -i; j <= i; j++) setPixel(px, cx + 14 + i, cy + j, col);
+    }
+  } else if (dir === 'l') {
+    for (let i = 0; i < 5; i++) {
+      for (let j = -i; j <= i; j++) setPixel(px, cx - 14 - i, cy + j, col);
+    }
+  }
+}
+
+/**
+ * idle 캐릭터 프레임 생성
+ * pos: 0~9 (순환 경로상 위치)
+ * 각 위치별 표정/동작:
+ *   0: 기본 웃음 (출발)
+ *   1: 오른쪽 이동 중 (→ 화살표)
+ *   2: 오른쪽 이동 중
+ *   3: 오른쪽 이동 중
+ *   4: 끝 도착 (별 눈 반짝)
+ *   5: 아래 이동 (땀)
+ *   6: 왼쪽 이동 중 (← 화살표)
+ *   7: 왼쪽 이동 중
+ *   8: 왼쪽 이동 중
+ *   9: 하트 눈 (집에 돌아옴)
+ */
+function makeIdleChar(pos) {
+  // 배경: 매우 어두운 청록 계열
+  const BG  = [8, 12, 20, 255];
+  const FACE = [255, 220, 80, 255];   // 노란 얼굴
+  const OUTLINE = [180, 140, 20, 255];
+  const EYE  = [20, 20, 30, 255];
+  const MOUTH = [180, 80, 40, 255];
+  const ACCENT = [255, 255, 255, 255];
+  const RED  = [255, 80, 80, 255];
+  const BLUE_A = [100, 180, 255, 255];
+
+  const px = fill(...BG);
+  const cx = 36, cy = 36;
+
+  drawFaceBase(px, cx, cy, 22, FACE, OUTLINE);
+
+  switch (pos) {
+    case 0: // 기본 웃음 — 출발 대기
+      drawEyes(px, cx, cy, EYE);
+      drawSmile(px, cx, cy, MOUTH);
+      break;
+    case 1: // 오른쪽 이동 → (윙크 + 화살표)
+      drawWink(px, cx, cy, EYE);
+      drawSmile(px, cx, cy, MOUTH);
+      drawArrow(px, cx, cy, 'r', ACCENT);
+      break;
+    case 2: // 오른쪽 이동 중 (땀)
+      drawEyes(px, cx, cy, EYE);
+      drawSmile(px, cx, cy, MOUTH);
+      drawSweat(px, cx, cy, BLUE_A);
+      break;
+    case 3: // 오른쪽 이동 중 (눈 크게)
+      circle(px, cx - 7, cy - 4, 4, EYE);
+      circle(px, cx + 7, cy - 4, 4, EYE);
+      drawSmile(px, cx, cy, MOUTH);
+      drawArrow(px, cx, cy, 'r', ACCENT);
+      break;
+    case 4: // 끝 도착 — 별 눈 반짝
+      drawStarEyes(px, cx, cy, [255, 220, 0, 255]);
+      drawBigSmile(px, cx, cy, MOUTH);
+      break;
+    case 5: // 아래 이동 (졸린 눈 + Z)
+      // 반쯤 감긴 눈
+      rect(px, cx - 10, cy - 5, cx - 4, cy - 3, EYE);
+      rect(px, cx + 4, cy - 5, cx + 10, cy - 3, EYE);
+      drawFrown(px, cx, cy, MOUTH);
+      drawZzz(px, cx, cy, BLUE_A);
+      break;
+    case 6: // 왼쪽 이동 ← (윙크 반대)
+      drawWink(px, cx, cy, EYE);
+      drawSmile(px, cx, cy, MOUTH);
+      drawArrow(px, cx, cy, 'l', ACCENT);
+      break;
+    case 7: // 왼쪽 이동 중 (놀란 표정)
+      drawEyes(px, cx, cy, EYE);
+      drawSurprisedMouth(px, cx, cy, MOUTH);
+      break;
+    case 8: // 왼쪽 이동 중 (땀 + 화살표)
+      drawEyes(px, cx, cy, EYE);
+      drawSmile(px, cx, cy, MOUTH);
+      drawSweat(px, cx, cy, BLUE_A);
+      drawArrow(px, cx, cy, 'l', ACCENT);
+      break;
+    case 9: // 집 도착 — 하트 눈
+      drawHeartEyes(px, cx, cy, RED);
+      drawBigSmile(px, cx, cy, MOUTH);
+      break;
+  }
+  return px;
+}
+
+// ── multiSelect 아이콘 (번호 포함) ──────────────────────────
+
+/**
+ * multi-off-N: 선택 안 된 상태 — 어두운 배경에 번호
+ * multi-on-N:  선택된 상태 — 초록 배경에 체크 + 번호
+ */
+function makeMultiOff_N(n) {
+  const idx = (n - 1) % 10;
+  const px = fill(...C.bgGray);
+  // 어두운 테두리
+  roundRect(px, 6, 6, 66, 66, 10, C.muted);
+  // 번호 (우상단 작게)
+  drawText(px, String(n), 52, 20, 2, C.muted);
+  // 빈 체크박스 심볼 (중앙)
+  roundRect(px, 20, 28, 52, 52, 4, C.muted);
+  return px;
+}
+
+function makeMultiOn_N(n) {
+  const px = fill(...C.bgGreen);
+  // 밝은 테두리
+  roundRect(px, 6, 6, 66, 66, 10, C.greenDim);
+  for (let t = 0; t < 2; t++) {
+    rect(px, 6+t, 6+t, 66-t, 6+t+1, C.green);
+    rect(px, 6+t, 66-t-1, 66-t, 66-t, C.green);
+    rect(px, 6+t, 6+t, 6+t+1, 66-t, C.green);
+    rect(px, 66-t-1, 6+t, 66-t, 66-t, C.green);
+  }
+  // 번호 (우상단)
+  drawText(px, String(n), 52, 18, 2, C.white);
+  // 체크마크 (중앙)
+  line(px, 18, 40, 30, 54, C.green, 4);
+  line(px, 30, 54, 54, 24, C.green, 4);
   return px;
 }
 
@@ -470,6 +705,8 @@ function makeChoiceAlpha(letter) { // 'A'~'J'
 console.log('Generating icons...');
 
 save('idle',           makeIdle());
+// idle 캐릭터 10프레임 (순환 경로: 0→1→2→3→4→9→8→7→6→5→0)
+for (let i = 0; i < 10; i++) save(`idle-char-${i}`, makeIdleChar(i));
 save('active',         makeActive());
 // processing 3프레임
 save('processing-1',   makeProcessingFrame(0)); // ●○○
@@ -489,6 +726,9 @@ save('session-switch', makeSessionSwitch());
 save('agent-switch',   makeAgentSwitch());
 save('multi-on',       makeMultiOn());
 save('multi-off',      makeMultiOff());
+// multi-on/off 번호 포함 버전
+for (let n = 1; n <= 10; n++) save(`multi-off-${n}`, makeMultiOff_N(n));
+for (let n = 1; n <= 10; n++) save(`multi-on-${n}`,  makeMultiOn_N(n));
 
 for (let n = 1; n <= 10; n++) save(`choice-${n}`, makeChoiceNum(n));
 for (let i = 0; i < 10; i++) {

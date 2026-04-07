@@ -21,7 +21,7 @@ import UlanziApi from './plugin-common-node/index.js';
 import { parseInputEvent, parseSlot } from './core/eventParser.js';
 import { applyRender, applyRenderRaw } from './adapters/ulanziOutputAdapter.js';
 import { BridgeWsAdapter } from './adapters/bridgeWsAdapter.js';
-import { mapLayout, toInternalSlot } from './core/layoutMapper.js';
+import { mapLayout, toInternalSlot, toD200hSlot } from './core/layoutMapper.js';
 import { makeSessionSwitchIcon, makeAgentSwitchIcon } from './core/iconRenderer.js';
 
 const PLUGIN_UUID = 'com.claudedj.deck';
@@ -39,13 +39,12 @@ const keyStates = new Map();
 
 let _processingTimer = null;
 let _processingFrame = 0;
-// processing 대상 슬롯 목록 (D200H 열-우선)
-let _processingSlots = [];
+let _processingSlots = []; // D200H 열-우선 슬롯 목록
 
 function _startProcessing(slots) {
   _processingSlots = slots;
   _processingFrame = 0;
-  if (_processingTimer) return; // 이미 실행 중
+  if (_processingTimer) return;
   _processingTimer = setInterval(() => {
     _processingFrame = (_processingFrame + 1) % 3;
     const frameKey = `processing-${_processingFrame + 1}`;
@@ -54,16 +53,63 @@ function _startProcessing(slots) {
         applyRender({ context, iconKey: frameKey }, $UD);
       }
     }
-  }, 400); // 400ms 간격 (0.4초 × 3프레임 = 1.2초 주기)
+  }, 400);
 }
 
 function _stopProcessing() {
-  if (_processingTimer) {
-    clearInterval(_processingTimer);
-    _processingTimer = null;
-  }
+  if (_processingTimer) { clearInterval(_processingTimer); _processingTimer = null; }
   _processingSlots = [];
 }
+
+// ── Idle 캐릭터 애니메이션 ───────────────────────────────────
+//
+// 순환 경로 (Bridge 행-우선 슬롯):
+//   0→1→2→3→4 (row0 좌→우)
+//   9→8→7→6→5 (row1 우→좌)
+//   → 반복
+// 각 위치에서 idle-char-N 아이콘 표시, 나머지는 idle(dim)
+
+const IDLE_PATH = [0, 1, 2, 3, 4, 9, 8, 7, 6, 5]; // Bridge 행-우선 슬롯
+
+let _idleTimer = null;
+let _idleStep  = 0;  // IDLE_PATH 인덱스
+let _idleSlots = []; // 현재 idle 상태인 D200H 열-우선 슬롯 목록
+
+function _startIdle(slots) {
+  _idleSlots = slots;
+  _idleStep  = 0;
+  if (_idleTimer) return;
+  _idleTimer = setInterval(() => {
+    _idleStep = (_idleStep + 1) % IDLE_PATH.length;
+    _renderIdleFrame();
+  }, 600); // 0.6초 간격 (10프레임 = 6초 1주기)
+  _renderIdleFrame(); // 즉시 첫 프레임
+}
+
+function _stopIdle() {
+  if (_idleTimer) { clearInterval(_idleTimer); _idleTimer = null; }
+  _idleSlots = [];
+}
+
+function _renderIdleFrame() {
+  // 현재 캐릭터 위치의 Bridge 슬롯 → D200H 슬롯
+  const { toD200hSlot } = _layoutMapperRef;
+  const charDjSlot  = IDLE_PATH[_idleStep];
+  const charD200h   = toD200hSlot(charDjSlot);
+  const charIconKey = `idle-char-${_idleStep}`;
+
+  for (const [context, entry] of keyStates.entries()) {
+    if (!_idleSlots.includes(entry.slot)) continue;
+    if (entry.slot === charD200h) {
+      applyRender({ context, iconKey: charIconKey }, $UD);
+    } else {
+      applyRender({ context, iconKey: 'idle' }, $UD);
+    }
+  }
+}
+
+// layoutMapper의 toD200hSlot을 직접 사용
+_layoutMapperRef = { toD200hSlot };
 
 // ── Bridge 연결 ──────────────────────────────────────────────
 
@@ -73,14 +119,23 @@ bridge.onLayout((layout) => {
   const cmds = mapLayout(layout);
   const cmdBySlot = new Map(cmds.map(c => [c.slot, c]));
 
-  // processing 애니메이션 제어
+  // 애니메이션 제어 — preset에 따라 시작/정지
   if (layout.preset === 'processing') {
+    _stopIdle();
     const procSlots = cmds
       .filter(c => c.iconKey === 'processing-1' || c.iconKey === 'processing')
       .map(c => c.slot);
     _startProcessing(procSlots);
+  } else if (layout.preset === 'idle') {
+    _stopProcessing();
+    const idleSlots = cmds
+      .filter(c => c.iconKey === 'idle')
+      .map(c => c.slot);
+    _startIdle(idleSlots);
+    return; // idle 렌더링은 _renderIdleFrame이 담당
   } else {
     _stopProcessing();
+    _stopIdle();
   }
 
   for (const [context, entry] of keyStates.entries()) {
@@ -154,6 +209,7 @@ $UD.onRun(handleInput);
 
 $UD.onClose(() => {
   _stopProcessing();
+  _stopIdle();
   console.log('[deck-plugin] disconnected from UlanziStudio');
 });
 

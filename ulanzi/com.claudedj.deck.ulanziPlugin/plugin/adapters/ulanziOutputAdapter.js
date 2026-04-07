@@ -38,6 +38,8 @@ const ICONS = {};
 
 const ICON_FILES = [
   'idle', 'active', 'awaiting',
+  // idle 캐릭터 10프레임
+  ...Array.from({ length: 10 }, (_, i) => `idle-char-${i}`),
   // processing 3프레임 + 기본
   'processing', 'processing-1', 'processing-2', 'processing-3',
   'approve', 'always', 'deny',
@@ -47,6 +49,9 @@ const ICON_FILES = [
   ...Array.from({ length: 30 }, (_, i) => `session-count-${i + 1}`),
   'session-switch', 'agent-switch',
   'multi-on', 'multi-off',
+  // multi 번호 포함 버전
+  ...Array.from({ length: 10 }, (_, i) => `multi-off-${i + 1}`),
+  ...Array.from({ length: 10 }, (_, i) => `multi-on-${i + 1}`),
   // 숫자 선택지
   ...Array.from({ length: 10 }, (_, i) => `choice-${i + 1}`),
   // 알파벳 선택지

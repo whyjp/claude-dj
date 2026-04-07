@@ -173,8 +173,10 @@ export function mapLayout(layout) {
       const cmds = dynamicSlotsD200h('idle');
       choices.slice(0, 9).forEach((c, i) => {
         const selected = c.selected ?? false;
-        const label = (c.label ?? '').slice(0, 10);
-        _setCmd(cmds, toD200hSlot(i), selected ? 'multi-on' : 'multi-off', label);
+        const n = i + 1; // 1-based 번호
+        // 번호가 포함된 아이콘 사용 (multi-on-N / multi-off-N)
+        const iconKey = selected ? `multi-on-${n}` : `multi-off-${n}`;
+        _setCmd(cmds, toD200hSlot(i), iconKey);
       });
       // Bridge 슬롯 9 = Submit
       _setCmd(cmds, toD200hSlot(9), 'submit', 'Done');
