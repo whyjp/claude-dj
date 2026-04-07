@@ -479,14 +479,27 @@ ws.attach(server, config.wsPath);
 ws.onClientReady = (client) => {
   // Send full session list on connect
   ws.sendWelcome(client, sm.toJSON());
-  // Then send current focused layout
+  // Then send current focused layout (or ALL_DIM if no sessions)
+  _sendCurrentLayout(client);
+};
+
+ws.onSyncRequest = (client) => {
+  // translator 재연결 후 SYNC_REQUEST — 현재 상태 즉시 전송
+  _sendCurrentLayout(client);
+};
+
+function _sendCurrentLayout(client) {
   const focus = sm.getFocusSession();
   if (focus) {
     const layout = ButtonManager.layoutFor(focus, sm.focusAgentId, sm.getAgentCount(focus.id));
     const msg = JSON.stringify({ type: 'LAYOUT', sessionCount: sm.sessionCount, ...layout });
     if (client.readyState === 1) client.send(msg);
+  } else {
+    // 세션 없음 → ALL_DIM으로 모든 버튼 dim 처리
+    const msg = JSON.stringify({ type: 'ALL_DIM' });
+    if (client.readyState === 1) client.send(msg);
   }
-};
+}
 
 ws.onButtonPress = (slot, timestamp) => {
   // Slot 11: cycle focus to next session

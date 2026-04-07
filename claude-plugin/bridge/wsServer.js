@@ -15,6 +15,7 @@ export class WsServer {
     this.onAgentFocus = null;
     this.onSessionFocus = null;
     this.onClientReady = null;
+    this.onSyncRequest = null;
     // Translator 교환 로그 (최근 MAX_TRANSLATOR_LOG개)
     this._translatorLog = [];
   }
@@ -160,10 +161,10 @@ export class WsServer {
         break;
       }
       case 'SYNC_REQUEST':
-        // translator 재연결 후 최신 상태 요청 — 로그만 기록, 처리는 server.js onClientReady에서
         if (meta?.clientType === 'ulanzi-plugin') {
           this._logTranslator('in', msg, meta.clientType);
         }
+        if (this.onSyncRequest) this.onSyncRequest(ws);
         break;
       case 'AGENT_FOCUS':
         if (this.onAgentFocus) this.onAgentFocus(msg.agentId || null);
