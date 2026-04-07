@@ -16,6 +16,13 @@
  */
 
 import WebSocket from 'ws';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dir = dirname(fileURLToPath(import.meta.url));
+const _pkg = JSON.parse(readFileSync(join(__dir, '..', 'package.json'), 'utf8'));
+const PLUGIN_VERSION = _pkg.version;
 
 const DEFAULT_URL = 'ws://localhost:39200/ws';
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000]; // 지수 백오프
@@ -88,7 +95,7 @@ export class BridgeWsAdapter {
       this._connected = true;
 
       // CLIENT_READY 전송
-      this._send({ type: 'CLIENT_READY', clientType: 'ulanzi-plugin', version: '0.1.0' });
+      this._send({ type: 'CLIENT_READY', clientType: 'ulanzi-plugin', version: PLUGIN_VERSION });
 
       // 재연결 후 최신 상태 요청
       this._send({ type: 'SYNC_REQUEST' });
