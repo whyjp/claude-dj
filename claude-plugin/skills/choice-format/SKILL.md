@@ -93,6 +93,12 @@ Before sending ANY message, scan your output for these red flags:
 
 If you find ANY of these, add AskUserQuestion BEFORE sending.
 
+## Exception: Direct Input Override
+
+When another skill explicitly instructs you to **end a message without AskUserQuestion** (e.g., to trigger `WAITING_RESPONSE` / awaiting state on the deck), obey that skill for that specific step. Look for phrases like "Do NOT call AskUserQuestion" or "end your message without AskUserQuestion" — these are intentional overrides, not mistakes.
+
+This is necessary because some deck states (like awaiting) can only be reached when Claude's response ends without a pending AskUserQuestion. If you override this with AskUserQuestion, the state becomes `WAITING_CHOICE` instead and the intended behavior is broken.
+
 ## Constraints
 
 - Labels: max 30 chars, max 10 options
