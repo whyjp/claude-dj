@@ -581,10 +581,17 @@ ws.onSessionFocus = (sessionId) => {
 // --- Session Cleanup ---
 
 const pruneInterval = setInterval(() => {
-  const pruned = sm.pruneIdle(config.sessionIdleTimeout);
+  const { pruned, demoted } = sm.pruneIdle(config.sessionIdleTimeout);
   if (pruned.length > 0) {
     log(`[claude-dj] Pruned ${pruned.length} idle session(s): ${pruned.join(', ')}`);
     ws.broadcast({ type: 'SESSION_DISCONNECTED', sessionIds: pruned, reason: 'idle_timeout' });
+  }
+  for (const id of demoted) {
+    const session = sm.sessions.get(id);
+    if (session) {
+      log(`[claude-dj] Demoted awaiting→idle: ${session.name || id}`);
+      broadcastSessionLayout(session);
+    }
   }
 }, 60000); // check every minute
 

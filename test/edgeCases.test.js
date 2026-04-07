@@ -159,7 +159,7 @@ describe('SessionManager: edge cases', () => {
     s2.state = 'IDLE';
     s2.idleSince = Date.now();
 
-    const pruned = sm.pruneIdle(5000);
+    const { pruned } = sm.pruneIdle(5000);
     assert.deepEqual(pruned, ['s1']);
     assert.equal(sm.sessions.has('s2'), true);
   });

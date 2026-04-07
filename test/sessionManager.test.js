@@ -204,7 +204,7 @@ describe('SessionManager', () => {
     sm.handleNotify({ session_id: 's1', cwd: '/a', hook_event_name: 'PreToolUse', tool_name: 'Bash' });
     sm.dismissSession('s1'); // transition to IDLE
     sm.get('s1').idleSince = Date.now() - 600000;
-    const pruned = sm.pruneIdle(300000);
+    const { pruned } = sm.pruneIdle(300000);
     assert.deepEqual(pruned, ['s1']);
     assert.equal(sm.get('s1'), undefined);
   });
@@ -212,7 +212,7 @@ describe('SessionManager', () => {
   it('pruneIdle keeps sessions idle less than ttl', () => {
     sm.handleNotify({ session_id: 's1', cwd: '/a', hook_event_name: 'PreToolUse', tool_name: 'Bash' });
     sm.dismissSession('s1');
-    const pruned = sm.pruneIdle(300000);
+    const { pruned } = sm.pruneIdle(300000);
     assert.deepEqual(pruned, []);
     assert.ok(sm.get('s1'));
   });
@@ -220,7 +220,7 @@ describe('SessionManager', () => {
   it('pruneIdle does not remove WAITING sessions', () => {
     sm.handlePermission({ session_id: 's1', cwd: '/a', tool_name: 'Bash', tool_input: { command: 'ls' } });
     sm.get('s1').idleSince = Date.now() - 600000; // even if old
-    const pruned = sm.pruneIdle(300000);
+    const { pruned } = sm.pruneIdle(300000);
     assert.deepEqual(pruned, []);
   });
 

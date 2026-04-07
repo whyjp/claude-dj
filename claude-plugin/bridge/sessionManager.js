@@ -321,17 +321,25 @@ export class SessionManager {
     return session;
   }
 
-  /** Remove sessions that have been IDLE longer than ttlMs */
-  pruneIdle(ttlMs) {
+  /** Remove sessions that have been IDLE longer than ttlMs.
+   *  Also transitions WAITING_RESPONSE → IDLE after awaitingTtlMs (default 60s). */
+  pruneIdle(ttlMs, awaitingTtlMs = 60000) {
     const now = Date.now();
     const pruned = [];
+    const demoted = [];
     for (const [id, session] of this.sessions) {
       if (session.state === 'IDLE' && session.idleSince && (now - session.idleSince) > ttlMs) {
         this.sessions.delete(id);
         pruned.push(id);
+      } else if (session.state === 'WAITING_RESPONSE' && session.waitingSince && (now - session.waitingSince) > awaitingTtlMs) {
+        session.state = 'IDLE';
+        session.prompt = null;
+        session.waitingSince = null;
+        session.idleSince = Date.now();
+        demoted.push(id);
       }
     }
-    return pruned;
+    return { pruned, demoted };
   }
 
   resolveWaiting(sessionId, decision) {
