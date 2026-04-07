@@ -22,7 +22,7 @@ This single install registers **hooks + skills** automatically.
 | Auto-configured | Details |
 |----------------|---------|
 | **Hooks (17)** | SessionStart/End, PermissionRequest(blocking), PreToolUse/PostToolUse, PostToolUseFailure, Stop/StopFailure, SubagentStart/Stop, UserPromptSubmit, TaskCreated/Completed, PreCompact/PostCompact, TeammateIdle, Notification |
-| **Skills (4)** | choice-format (AskUserQuestion for all choices), bridge-start, bridge-stop, bridge-restart |
+| **Skills (5)** | choice-format (AskUserQuestion for all choices), bridge-start, bridge-stop, bridge-restart, dj-test (D200H feature test harness) |
 
 ### 2. Start the Bridge
 
@@ -260,7 +260,7 @@ Each subagent has independent state tracking. Permission requests from subagents
      │              ▼                     ▼
      │  ┌───────────────────┐  ┌─────────────────────────┐
      │  │  Virtual DJ       │  │  Ulanzi Translator      │
-     │  │  (Browser)        │  │  Plugin (Phase 3)       │
+     │  │  (Browser)        │  │  Plugin                 │
      │  │                   │  │                         │
      │  │  ← LAYOUT (JSON)  │  │  ← LAYOUT → render PNG  │
      │  │  ← ALL_DIM        │  │  ← ALL_DIM              │
@@ -274,12 +274,12 @@ Each subagent has independent state tracking. Permission requests from subagents
      │                                       │
      │                           ┌───────────▼───────────┐
      │                           │  UlanziStudio App     │
-     │                           │  (host, manages D200) │
+     │                           │  (host, manages D200H)│
      │                           └───────────┬───────────┘
      │                                       │ USB HID
      │                           ┌───────────▼───────────┐
-     │                           │  Ulanzi D200 Hardware │
-     │                           │  13 LCD keys + encoder│
+     │                           │  Ulanzi D200H         │
+     │                           │  20 LCD keys (5×4)    │
      │                           └───────────────────────┘
      │
      └── HTTP response flows back through permission.js stdout to Claude
@@ -293,10 +293,10 @@ Each subagent has independent state tracking. Permission requests from subagents
 | Hook → Bridge | HTTP REST | `fetch()` to localhost | Hook script → Bridge | **PermissionRequest: YES** (blocks until button/timeout) |
 | Bridge → Virtual DJ | WebSocket JSON | `ws://localhost:39200/ws` | Bridge → Browser | no (broadcast) |
 | Virtual DJ → Bridge | WebSocket JSON | same connection | Browser → Bridge | no (fire-and-forget) |
-| Bridge → Ulanzi Plugin | WebSocket JSON | `ws://localhost:39200/ws` | Bridge → Plugin | no (broadcast) |
-| Ulanzi Plugin → Bridge | WebSocket JSON | same connection | Plugin → Bridge | no (fire-and-forget) |
-| Plugin ↔ UlanziStudio | WebSocket JSON | `ws://127.0.0.1:3906` (Ulanzi SDK) | bidirectional | no |
-| UlanziStudio ↔ D200 | USB HID | proprietary | bidirectional | — |
+| Bridge → Ulanzi Translator | WebSocket JSON | `ws://localhost:39200/ws` | Bridge → Plugin | no (broadcast) |
+| Ulanzi Translator → Bridge | WebSocket JSON | same connection | Plugin → Bridge | no (fire-and-forget) |
+| Translator ↔ UlanziStudio | WebSocket JSON | `ws://127.0.0.1:3906` (Ulanzi SDK) | bidirectional | no |
+| UlanziStudio ↔ D200H | USB HID | proprietary | bidirectional | — |
 | Bridge → Claude | HTTP response | same connection as Hook→Bridge | Bridge → Hook script → stdout → Claude | resolves the blocking request |
 
 **The critical path:** `PermissionRequest` hook is the only **synchronous** segment. The hook script (`permission.js`) makes an HTTP POST and **blocks** until the bridge responds (button pressed) or 60s timeout. All other hooks are fire-and-forget.
@@ -385,7 +385,7 @@ sequenceDiagram
 1. **Fenced choices** — `[claude-dj-choices]...[/claude-dj-choices]` blocks (highest priority)
 2. **Regex fallback** — Numbered (`1. X`) or lettered (`A. X`) lists in the last 800 characters, clustered within a 15-line window (avoids false positives from section headers)
 
-**D200 hardware note:** The D200 connects via USB to the UlanziStudio desktop app, not directly to the bridge. A translator plugin (Phase 3) bridges the two WebSocket protocols. See `docs/todo/d200-integration-architecture.md` for details.
+**D200H hardware note:** The D200H connects via USB to the UlanziStudio desktop app, not directly to the bridge. The translator plugin (`ulanzi/com.claudedj.deck.ulanziPlugin`) bridges the two WebSocket protocols — converting row-major Bridge slots to column-major UlanziStudio slots and rendering dynamic icons as 72×72 PNG bitmaps. See `ulanzi/com.claudedj.deck.ulanziPlugin/README.md` for setup and development.
 
 ### Why a Separate Bridge Process?
 
@@ -430,7 +430,8 @@ claude-plugin/
    ├─ choice-format/SKILL.md     Injected into Claude: "use AskUserQuestion for all choices"
    ├─ bridge-start/SKILL.md      Start the bridge manually
    ├─ bridge-stop/SKILL.md       Stop the running bridge
-   └─ bridge-restart/SKILL.md    Restart the bridge (stop + start)
+   ├─ bridge-restart/SKILL.md    Restart the bridge (stop + start)
+   └─ dj-test/SKILL.md           Sequential D200H feature test harness
 ```
 
 ## Deck Layout

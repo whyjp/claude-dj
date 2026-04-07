@@ -22,7 +22,7 @@ Claude Code 세션에서:
 | 자동 설정 항목 | 상세 내용 |
 |----------------|---------|
 | **Hooks (17)** | SessionStart/End, PermissionRequest(blocking), PreToolUse/PostToolUse, PostToolUseFailure, Stop/StopFailure, SubagentStart/Stop, UserPromptSubmit, TaskCreated/Completed, PreCompact/PostCompact, TeammateIdle, Notification |
-| **Skills (4)** | choice-format (모든 선택지를 AskUserQuestion으로 출력), bridge-start, bridge-stop, bridge-restart |
+| **Skills (5)** | choice-format (모든 선택지를 AskUserQuestion으로 출력), bridge-start, bridge-stop, bridge-restart, dj-test (D200H 기능 테스트 하네스) |
 
 ### 2. Bridge 시작
 
@@ -260,7 +260,7 @@ Claude Code는 부모의 `session_id`를 공유하는 서브에이전트(Explore
      │              ▼                     ▼
      │  ┌───────────────────┐  ┌─────────────────────────┐
      │  │  Virtual DJ       │  │  Ulanzi Translator      │
-     │  │  (Browser)        │  │  Plugin (Phase 3)       │
+     │  │  (Browser)        │  │  Plugin                       │
      │  │                   │  │                         │
      │  │  ← LAYOUT (JSON)  │  │  ← LAYOUT → render PNG  │
      │  │  ← ALL_DIM        │  │  ← ALL_DIM              │
@@ -274,12 +274,12 @@ Claude Code는 부모의 `session_id`를 공유하는 서브에이전트(Explore
      │                                       │
      │                           ┌───────────▼───────────┐
      │                           │  UlanziStudio App     │
-     │                           │  (host, manages D200) │
+     │                           │  (host, manages D200H) │
      │                           └───────────┬───────────┘
      │                                       │ USB HID
      │                           ┌───────────▼───────────┐
-     │                           │  Ulanzi D200 Hardware │
-     │                           │  13 LCD keys + encoder│
+     │                           │  Ulanzi D200H         │
+     │                           │  20 LCD keys (5×4)   │
      │                           └───────────────────────┘
      │
      └── HTTP response flows back through permission.js stdout to Claude
@@ -293,10 +293,10 @@ Claude Code는 부모의 `session_id`를 공유하는 서브에이전트(Explore
 | Hook → Bridge | HTTP REST | `fetch()` to localhost | Hook script → Bridge | **PermissionRequest: YES** (버튼/타임아웃까지 블로킹) |
 | Bridge → Virtual DJ | WebSocket JSON | `ws://localhost:39200/ws` | Bridge → Browser | 아니오 (broadcast) |
 | Virtual DJ → Bridge | WebSocket JSON | 동일 연결 | Browser → Bridge | 아니오 (fire-and-forget) |
-| Bridge → Ulanzi Plugin | WebSocket JSON | `ws://localhost:39200/ws` | Bridge → Plugin | 아니오 (broadcast) |
-| Ulanzi Plugin → Bridge | WebSocket JSON | 동일 연결 | Plugin → Bridge | 아니오 (fire-and-forget) |
-| Plugin ↔ UlanziStudio | WebSocket JSON | `ws://127.0.0.1:3906` (Ulanzi SDK) | 양방향 | 아니오 |
-| UlanziStudio ↔ D200 | USB HID | proprietary | 양방향 | — |
+| Bridge → Ulanzi Translator | WebSocket JSON | `ws://localhost:39200/ws` | Bridge → Plugin | 아니오 (broadcast) |
+| Ulanzi Translator → Bridge | WebSocket JSON | 동일 연결 | Plugin → Bridge | 아니오 (fire-and-forget) |
+| Translator ↔ UlanziStudio | WebSocket JSON | `ws://127.0.0.1:3906` (Ulanzi SDK) | 양방향 | 아니오 |
+| UlanziStudio ↔ D200H | USB HID | proprietary | 양방향 | — |
 | Bridge → Claude | HTTP response | Hook→Bridge와 동일 연결 | Bridge → Hook script → stdout → Claude | 블로킹 요청 해소 |
 
 **핵심 경로:** `PermissionRequest` hook이 유일한 **동기** 세그먼트입니다. hook 스크립트(`permission.js`)가 HTTP POST를 만들고 bridge가 응답(버튼 누름)하거나 60초 타임아웃까지 **블로킹**합니다. 다른 모든 hook은 fire-and-forget입니다.
@@ -385,7 +385,7 @@ sequenceDiagram
 1. **Fence 선택지** — `[claude-dj-choices]...[/claude-dj-choices]` 블록 (최우선)
 2. **Regex 폴백** — 마지막 800자에서 번호(`1. X`) 또는 문자(`A. X`) 목록, 15줄 윈도우 내 클러스터링 (섹션 헤더의 false positive 방지)
 
-**D200 하드웨어 참고:** D200은 bridge에 직접 연결되지 않고 USB로 UlanziStudio 데스크탑 앱에 연결됩니다. 번역 플러그인(Phase 3)이 두 WebSocket 프로토콜을 연결합니다. 자세한 내용은 `docs/todo/d200-integration-architecture.md`를 참고하세요.
+**D200H 하드웨어 참고:** D200H는 bridge에 직접 연결되지 않고 USB로 UlanziStudio 데스크탑 앱에 연결됩니다. 번역 플러그인(`ulanzi/com.claudedj.deck.ulanziPlugin`)이 두 WebSocket 프로토콜을 연결하며, 행 우선(row-major) Bridge 슬롯을 열 우선(column-major) UlanziStudio 슬롯으로 변환하고 동적 아이콘을 72×72 PNG 비트맵으로 렌더링합니다. 설정 및 개발에 대한 자세한 내용은 `ulanzi/com.claudedj.deck.ulanziPlugin/README.md`를 참고하세요.
 
 ### 별도 Bridge 프로세스가 필요한 이유
 
@@ -430,7 +430,8 @@ claude-plugin/
    ├─ choice-format/SKILL.md     Claude에 주입: "모든 선택지에 AskUserQuestion 사용"
    ├─ bridge-start/SKILL.md      Bridge 수동 시작
    ├─ bridge-stop/SKILL.md       실행 중인 Bridge 중지
-   └─ bridge-restart/SKILL.md    Bridge 재시작 (중지 + 시작)
+   ├─ bridge-restart/SKILL.md    Bridge 재시작 (중지 + 시작)
+   └─ dj-test/SKILL.md           D200H 순차 기능 테스트 하네스
 ```
 
 ## 덱 레이아웃

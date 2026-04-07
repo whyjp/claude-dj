@@ -22,7 +22,7 @@
 | 自动配置项 | 详情 |
 |----------------|---------|
 | **Hooks (17)** | SessionStart/End, PermissionRequest(blocking), PreToolUse/PostToolUse, PostToolUseFailure, Stop/StopFailure, SubagentStart/Stop, UserPromptSubmit, TaskCreated/Completed, PreCompact/PostCompact, TeammateIdle, Notification |
-| **Skills (4)** | choice-format（通过 AskUserQuestion 输出所有选项）, bridge-start, bridge-stop, bridge-restart |
+| **Skills (5)** | choice-format（通过 AskUserQuestion 输出所有选项）, bridge-start, bridge-stop, bridge-restart, dj-test（D200H 功能测试工具） |
 
 ### 2. 启动 Bridge
 
@@ -260,7 +260,7 @@ Claude Code 会生成共享父会话 `session_id` 的子代理（Explore、Plan 
      │              ▼                     ▼
      │  ┌───────────────────┐  ┌─────────────────────────┐
      │  │  Virtual DJ       │  │  Ulanzi Translator      │
-     │  │  (Browser)        │  │  Plugin (Phase 3)       │
+     │  │  (Browser)        │  │  Plugin                       │
      │  │                   │  │                         │
      │  │  ← LAYOUT (JSON)  │  │  ← LAYOUT → render PNG  │
      │  │  ← ALL_DIM        │  │  ← ALL_DIM              │
@@ -274,12 +274,12 @@ Claude Code 会生成共享父会话 `session_id` 的子代理（Explore、Plan 
      │                                       │
      │                           ┌───────────▼───────────┐
      │                           │  UlanziStudio App     │
-     │                           │  (host, manages D200) │
+     │                           │  (host, manages D200H) │
      │                           └───────────┬───────────┘
      │                                       │ USB HID
      │                           ┌───────────▼───────────┐
-     │                           │  Ulanzi D200 Hardware │
-     │                           │  13 LCD keys + encoder│
+     │                           │  Ulanzi D200H         │
+     │                           │  20 LCD keys (5×4)   │
      │                           └───────────────────────┘
      │
      └── HTTP response flows back through permission.js stdout to Claude
@@ -293,10 +293,10 @@ Claude Code 会生成共享父会话 `session_id` 的子代理（Explore、Plan 
 | Hook → Bridge | HTTP REST | `fetch()` to localhost | Hook script → Bridge | **PermissionRequest: 是**（阻塞直到按钮/超时） |
 | Bridge → Virtual DJ | WebSocket JSON | `ws://localhost:39200/ws` | Bridge → Browser | 否（广播） |
 | Virtual DJ → Bridge | WebSocket JSON | 同一连接 | Browser → Bridge | 否（fire-and-forget） |
-| Bridge → Ulanzi Plugin | WebSocket JSON | `ws://localhost:39200/ws` | Bridge → Plugin | 否（广播） |
-| Ulanzi Plugin → Bridge | WebSocket JSON | 同一连接 | Plugin → Bridge | 否（fire-and-forget） |
-| Plugin ↔ UlanziStudio | WebSocket JSON | `ws://127.0.0.1:3906`（Ulanzi SDK） | 双向 | 否 |
-| UlanziStudio ↔ D200 | USB HID | proprietary | 双向 | — |
+| Bridge → Ulanzi Translator | WebSocket JSON | `ws://localhost:39200/ws` | Bridge → Plugin | 否（广播） |
+| Ulanzi Translator → Bridge | WebSocket JSON | 同一连接 | Plugin → Bridge | 否（fire-and-forget） |
+| Translator ↔ UlanziStudio | WebSocket JSON | `ws://127.0.0.1:3906`（Ulanzi SDK） | 双向 | 否 |
+| UlanziStudio ↔ D200H | USB HID | proprietary | 双向 | — |
 | Bridge → Claude | HTTP response | 与 Hook→Bridge 相同的连接 | Bridge → Hook script → stdout → Claude | 解除阻塞请求 |
 
 ### 时序图 — Permission（Blocking）
@@ -385,7 +385,7 @@ sequenceDiagram
 
 **关键路径：** `PermissionRequest` hook 是唯一的**同步**段。hook 脚本（`permission.js`）发出 HTTP POST 并**阻塞**，直到 Bridge 响应（按钮按下）或 60 秒超时。所有其他 hook 均为 fire-and-forget。
 
-**D200 硬件说明：** D200 通过 USB 连接到 UlanziStudio 桌面应用，而不是直接连接到 Bridge。翻译插件（Phase 3）桥接两个 WebSocket 协议。详情请参阅 `docs/todo/d200-integration-architecture.md`。
+**D200H 硬件说明：** D200H 通过 USB 连接到 UlanziStudio 桌面应用，而不是直接连接到 Bridge。翻译插件（`ulanzi/com.claudedj.deck.ulanziPlugin`）桥接两个 WebSocket 协议——将行优先（row-major）Bridge 槽位转换为列优先（column-major）UlanziStudio 槽位，并将动态图标渲染为 72×72 PNG 位图。设置和开发详情请参阅 `ulanzi/com.claudedj.deck.ulanziPlugin/README.md`。
 
 ### 为何需要独立的 Bridge 进程？
 
@@ -430,7 +430,8 @@ claude-plugin/
    ├─ choice-format/SKILL.md     注入 Claude："所有选项使用 AskUserQuestion"
    ├─ bridge-start/SKILL.md      手动启动 Bridge
    ├─ bridge-stop/SKILL.md       停止运行中的 Bridge
-   └─ bridge-restart/SKILL.md    重启 Bridge（停止 + 启动）
+   ├─ bridge-restart/SKILL.md    重启 Bridge（停止 + 启动）
+   └─ dj-test/SKILL.md           D200H 顺序功能测试工具
 ```
 
 ## Deck 布局

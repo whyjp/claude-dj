@@ -33,6 +33,7 @@ cp claude-plugin/public/js/d200-renderer.js    "$INSTALL/public/js/d200-renderer
 cp claude-plugin/public/index.html             "$INSTALL/public/index.html"
 cp claude-plugin/public/css/style.css          "$INSTALL/public/css/style.css"
 cp claude-plugin/skills/choice-format/SKILL.md "$INSTALL/skills/choice-format/SKILL.md"
+cp claude-plugin/skills/dj-test/SKILL.md       "$INSTALL/skills/dj-test/SKILL.md"
 
 # 5. Restart bridge (if bridge/*.js or package.json changed)
 #    /claude-dj-plugin:bridge-restart

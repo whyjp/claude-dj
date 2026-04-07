@@ -172,7 +172,7 @@ h1 .g { color: var(--green); }
   position: relative;
 }
 .d200::before {
-  content: 'ULANZI D200 × CLAUDE CODE';
+  content: 'ULANZI D200H × CLAUDE CODE';
   position: absolute; top: -9px; left: 12px;
   font-size: 8px; color: var(--bd); background: #090910;
   padding: 0 6px; letter-spacing: .12em;
@@ -485,7 +485,7 @@ footer {
         <div class="k-big">
           <span class="bi">🖥</span>
           <span class="bn" id="bn">SYSTEM</span>
-          <span class="bs" id="bs" style="font-size:6px;">D200 Info Display</span>
+          <span class="bs" id="bs" style="font-size:6px;">D200H Info Display</span>
         </div>
       </div>
     </div>
@@ -518,7 +518,7 @@ footer {
     <div class="fc hi">
       <div class="fc-n" style="color:var(--green);">03</div>
       <h4 data-i18n="why.f3.h">Deck or touch, your choice</h4>
-      <p data-i18n="why.f3.p">Ulanzi D200 physical buttons, browser virtual deck, touch monitor — pick the interface that fits your setup. The behavior is the same regardless of input method.</p>
+      <p data-i18n="why.f3.p">Ulanzi D200H physical buttons, browser virtual deck, touch monitor — pick the interface that fits your setup. The behavior is the same regardless of input method.</p>
     </div>
   </div>
 </section>
@@ -533,7 +533,7 @@ footer {
     <div class="fc hi">
       <div class="fc-n" style="color:var(--green);">A</div>
       <h4 data-i18n="ext.fA.h">Physical Deck</h4>
-      <p data-i18n="ext.fA.p">USB stream deck like the Ulanzi D200. Tactile button feedback lets you operate without looking. Translator Plugin bridges Bridge and UlanziStudio.</p>
+      <p data-i18n="ext.fA.p">USB stream deck like the Ulanzi D200H. Tactile button feedback lets you operate without looking. Translator Plugin bridges Bridge and UlanziStudio.</p>
     </div>
     <div class="fc hi">
       <div class="fc-n" style="color:var(--green);">B</div>
@@ -564,7 +564,7 @@ footer {
               │
       <span class="a">UlanziStudio App</span>
               │ USB HID
-       <span class="a">Ulanzi D200</span></div>
+       <span class="a">Ulanzi D200H</span></div>
 </section>
 
 <!-- HOW IT WORKS -->
@@ -783,9 +783,9 @@ footer {
                                      └─ Static serve    → Virtual DJ
                                             │ WebSocket /ws
                                      ┌──────┴──────────────────┐
-                              <span class="w">Virtual DJ</span>       <span class="a">Translator Plugin</span> (Phase 3)
+                              <span class="w">Virtual DJ</span>       <span class="a">Translator Plugin</span>
                               (browser)        ↓ WS (port 3906)
-                                          <span class="a">UlanziStudio</span> → USB → <span class="a">D200</span>
+                                          <span class="a">UlanziStudio</span> → USB → <span class="a">D200H</span>
                                  │
                           [0][1][2][3][4]  ← dynamic (choices / approve-deny)
                           [5][6][7][8][9]  ← dynamic (choices, <span data-i18n="arch.max10">max 10</span>)
@@ -803,7 +803,7 @@ footer {
 <section id="protocol">
   <p class="label">WebSocket Protocol</p>
   <h2 data-i18n="proto.h2">Bridge ↔ client communication spec</h2>
-  <p class="sec-sub" data-i18n="proto.sub">WebSocket message schema exchanged between the Bridge Server and clients (Virtual DJ or Ulanzi D200).</p>
+  <p class="sec-sub" data-i18n="proto.sub">WebSocket message schema exchanged between the Bridge Server and clients (Virtual DJ or Ulanzi D200H).</p>
 
   <div class="proto-grid">
     <div class="proto-card">
@@ -931,14 +931,14 @@ footer {
     <div class="ml">
       <div class="ml-head">
         <span class="ml-phase">Phase 3</span>
-        <h4 data-i18n="ms.p3.h">Physical D200 + Distribution</h4>
+        <h4 data-i18n="ms.p3.h">Physical D200H + Distribution</h4>
       </div>
       <div class="ml-items">
-        <span class="ml-item">Translator Plugin (Bridge WS ↔ UlanziStudio WS)</span>
-        <span class="ml-item" data-i18n="ms.p3.i2">Key state PNG rendering (Canvas/SVG → base64)</span>
-        <span class="ml-item" data-i18n="ms.p3.i3">UlanziStudio plugin packaging (manifest.json)</span>
+        <span class="ml-item">✅ Translator Plugin (Bridge WS ↔ UlanziStudio WS)</span>
+        <span class="ml-item" data-i18n="ms.p3.i2">✅ Key state PNG rendering (Canvas/SVG → base64)</span>
+        <span class="ml-item" data-i18n="ms.p3.i3">✅ UlanziStudio plugin packaging (manifest.json)</span>
         <span class="ml-item" data-i18n="ms.p3.i4">MCP wrapper — Bridge auto-launch (POC)</span>
-        <span class="ml-item" data-i18n="ms.p3.i5">D200 physical button E2E tests</span>
+        <span class="ml-item" data-i18n="ms.p3.i5">✅ D200H physical button E2E tests</span>
         <span class="ml-item" data-i18n="ms.p3.i6">npm publish + GitHub release</span>
       </div>
     </div>
@@ -1030,13 +1030,13 @@ const TRANSLATIONS = {
   'why.f2.h':             { en: 'All sessions, one place', ko: '모든 세션, 한 곳에서' },
   'why.f2.p':             { en: 'Main task, side branch, separate project — however many sessions, whichever one needs a response surfaces automatically on the deck.', ko: '메인 작업, 사이드 브랜치, 별도 프로젝트 — 세션이 몇 개든 응답 대기 중인 세션이 자동으로 덱 위에 올라온다. 화면을 찾아 헤매지 않는다.' },
   'why.f3.h':             { en: 'Deck or touch, your choice', ko: '덱이든 터치든' },
-  'why.f3.p':             { en: 'Ulanzi D200 physical buttons, browser virtual deck, touch monitor — pick the interface that fits your setup. The behavior is the same regardless of input method.', ko: 'Ulanzi D200 물리 버튼, 브라우저 가상 덱, 터치 모니터까지 — 환경에 맞는 인터페이스를 고르면 된다. 입력 수단이 바뀌어도 동작은 같다.' },
+  'why.f3.p':             { en: 'Ulanzi D200H physical buttons, browser virtual deck, touch monitor — pick the interface that fits your setup. The behavior is the same regardless of input method.', ko: 'Ulanzi D200H 물리 버튼, 브라우저 가상 덱, 터치 모니터까지 — 환경에 맞는 인터페이스를 고르면 된다. 입력 수단이 바뀌어도 동작은 같다.' },
 
   'ext.label':            { en: 'Extensibility',         ko: '확장성' },
   'ext.h2':               { en: 'Any device becomes a deck', ko: '어떤 장비든, 덱이 된다' },
   'ext.sub':              { en: 'Claude DJ clients connect to the Bridge over a single WebSocket. No restrictions on input device form factor.', ko: 'Claude DJ의 클라이언트는 WebSocket 하나로 Bridge에 연결된다. 입력 장치의 형태에 제약이 없다.' },
   'ext.fA.h':             { en: 'Physical Deck',          ko: '물리 덱' },
-  'ext.fA.p':             { en: 'USB stream deck like the Ulanzi D200. Tactile button feedback lets you operate without looking. Translator Plugin bridges Bridge and UlanziStudio.', ko: 'Ulanzi D200 같은 USB 스트림 덱. 물리 버튼의 촉각 피드백으로 시선 없이도 조작할 수 있다. Translator Plugin이 Bridge와 UlanziStudio 사이를 연결.' },
+  'ext.fA.p':             { en: 'USB stream deck like the Ulanzi D200H. Tactile button feedback lets you operate without looking. Translator Plugin bridges Bridge and UlanziStudio.', ko: 'Ulanzi D200H 같은 USB 스트림 덱. 물리 버튼의 촉각 피드백으로 시선 없이도 조작할 수 있다. Translator Plugin이 Bridge와 UlanziStudio 사이를 연결.' },
   'ext.fB.h':             { en: 'Browser Virtual Deck',   ko: '브라우저 가상 덱' },
   'ext.fB.p':             { en: 'Launch Virtual DJ in a browser with no extra hardware. Fastest way to get started. Direct WebSocket connection to the local Bridge.', ko: '별도 장비 없이 브라우저에서 Virtual DJ를 띄운다. 가장 빠르게 시작할 수 있는 방식. 로컬 Bridge에 WebSocket으로 직결.' },
   'ext.fC.h':             { en: 'Touch Monitor',          ko: '터치 모니터 직결' },
@@ -1129,7 +1129,7 @@ const TRANSLATIONS = {
   'arch.skillCore':       { en: '← core of Claude behavior change', ko: '← Claude 행동 변경의 핵심' },
 
   'proto.h2':             { en: 'Bridge ↔ client communication spec', ko: 'Bridge ↔ 클라이언트 통신 규약' },
-  'proto.sub':            { en: 'WebSocket message schema exchanged between the Bridge Server and clients (Virtual DJ or Ulanzi D200).', ko: 'Bridge Server와 클라이언트(Virtual DJ 또는 Ulanzi D200) 간 주고받는 WebSocket 메시지 스키마.' },
+  'proto.sub':            { en: 'WebSocket message schema exchanged between the Bridge Server and clients (Virtual DJ or Ulanzi D200H).', ko: 'Bridge Server와 클라이언트(Virtual DJ 또는 Ulanzi D200H) 간 주고받는 WebSocket 메시지 스키마.' },
   'proto.layout.dir':     { en: '← Bridge → Client: LAYOUT (full state)', ko: '← Bridge → Client: LAYOUT (전체 상태)' },
   'proto.agentComment':   { en: 'subagent (null=root)',     ko: '서브에이전트 (null=root)' },
   'proto.agentCount':     { en: 'child count of current session', ko: '현재 세션의 자식 수' },
@@ -1165,11 +1165,11 @@ const TRANSLATIONS = {
   'ms.p2.i6':             { en: 'Plugin install/uninstall CLI + marketplace compatible', ko: 'Plugin install/uninstall CLI + marketplace 호환' },
   'ms.p2.i7':             { en: 'Bridge auto-start via SessionStart hook', ko: 'SessionStart 훅을 통한 Bridge 자동 시작' },
   'ms.p2.i8':             { en: 'Miniview mode — always-on-top PiP window', ko: 'Miniview 모드 — always-on-top PiP 윈도우' },
-  'ms.p3.h':              { en: 'Physical D200 + Distribution', ko: 'Physical D200 + 배포' },
-  'ms.p3.i2':             { en: 'Key state PNG rendering (Canvas/SVG → base64)', ko: '키 상태 PNG 렌더링 (Canvas/SVG → base64)' },
-  'ms.p3.i3':             { en: 'UlanziStudio plugin packaging (manifest.json)', ko: 'UlanziStudio 플러그인 패키징 (manifest.json)' },
+  'ms.p3.h':              { en: 'Physical D200H + Distribution', ko: 'Physical D200H + 배포' },
+  'ms.p3.i2':             { en: '✅ Key state PNG rendering (Canvas/SVG → base64)', ko: '✅ 키 상태 PNG 렌더링 (Canvas/SVG → base64)' },
+  'ms.p3.i3':             { en: '✅ UlanziStudio plugin packaging (manifest.json)', ko: '✅ UlanziStudio 플러그인 패키징 (manifest.json)' },
   'ms.p3.i4':             { en: 'MCP wrapper — Bridge auto-launch (POC)', ko: 'MCP wrapper — Bridge 자동구동 (POC)' },
-  'ms.p3.i5':             { en: 'D200 physical button E2E tests', ko: 'D200 물리 버튼 E2E 테스트' },
+  'ms.p3.i5':             { en: '✅ D200H physical button E2E tests', ko: '✅ D200H 물리 버튼 E2E 테스트' },
   'ms.p3.i6':             { en: 'npm publish + GitHub release', ko: 'npm publish + GitHub 배포' },
 
   'qs.label':             { en: 'Get Started',             ko: '시작하기' },
@@ -1423,7 +1423,7 @@ function applyState(name) {
     const bw = document.createElement('div');
     bw.className = 'k-big';
     bw.style.cssText = 'cursor:default;pointer-events:none;';
-    bw.innerHTML = `<span class="bi">🖥</span><span class="bn">SYSTEM</span><span class="bs" style="font-size:6px;">D200 Info Display</span>`;
+    bw.innerHTML = `<span class="bi">🖥</span><span class="bn">SYSTEM</span><span class="bs" style="font-size:6px;">D200H Info Display</span>`;
     r2el.appendChild(bw);
   }
   // Prompt
