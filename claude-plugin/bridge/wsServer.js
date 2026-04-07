@@ -61,7 +61,8 @@ export class WsServer {
         break;
       case 'BUTTON_PRESS': {
         const slot = Number(msg.slot);
-        if (!Number.isInteger(slot) || slot < 0 || slot > 12) {
+        // D200H: 5×4=20키, 행-우선 슬롯 0~19. 슬롯 11=세션전환, 12=에이전트전환도 포함.
+        if (!Number.isInteger(slot) || slot < 0 || slot > 19) {
           warn(`[ws] BUTTON_PRESS dropped — invalid slot: ${msg.slot}`);
           break;
         }
