@@ -9,11 +9,13 @@
  *   djSlot = row × DEVICE_COLS + col
  *
  * D200H 물리 장치는 열-우선(column-major) 슬롯을 사용한다:
- *   d200hSlot = col × DEVICE_ROWS + row
+ *   d200hSlot = col × GRID_COLS + row   (GRID_COLS=5, UlanziStudio 고정값)
  *
- * 이 모듈은 Bridge djSlot → D200H d200hSlot 변환을 담당한다.
+ * [중요] UlanziStudio는 5×5 그리드 기준으로 slot을 계산한다.
+ * D200H가 5×4 장치여도 한 열 이동 시 +5이다 (행 수 4가 아님).
+ * key:"2_1" → col=2, row=1 → slot=2*5+1=11 (PORTING.md 실기기 검증)
  *
- * D200H 물리 배치 (열-우선):
+ * D200H 물리 배치 (열-우선, GRID_COLS=5 기준):
  *   col0  col1  col2  col3  col4
  *    ┌────┬────┬────┬────┬────┐
  * r0 │  0 │  5 │ 10 │ 15 │ 20 │
@@ -44,34 +46,53 @@
  * }
  */
 
+/** Bridge 내부 행-우선 그리드 열 수 */
 export const DEVICE_COLS = 5;
+/** Bridge 내부 행-우선 그리드 행 수 */
 export const DEVICE_ROWS = 4;
+/** Bridge 내부 총 슬롯 수 */
 export const TOTAL_SLOTS = DEVICE_COLS * DEVICE_ROWS; // 20
 
-// Bridge 행-우선 시스템 슬롯 (D200H 물리 위치로 변환 후 특수 처리)
+/**
+ * UlanziStudio slot 계산 기준 열 수.
+ * D200H가 5×4 장치여도 UlanziStudio는 5×5 그리드 기준으로
+ * slot = col × GRID_COLS + row 를 계산한다.
+ * PORTING.md 실기기 검증: key:"2_1" → slot=11 = 2*5+1
+ */
+const GRID_COLS = 5;
+
+// Bridge 행-우선 시스템 슬롯
 const DJ_SLOT_SESSION_COUNT  = 10;
 const DJ_SLOT_SESSION_SWITCH = 11;
 const DJ_SLOT_AGENT_SWITCH   = 12;
 
 /**
- * Bridge(행-우선) 슬롯 → D200H 열-우선 슬롯 변환
- * @param {number} djSlot
- * @returns {number}
+ * Bridge(행-우선) 슬롯 → D200H UlanziStudio 슬롯 변환
+ *
+ * Bridge: djSlot = row × DEVICE_COLS + col
+ * D200H:  d200hSlot = col × GRID_COLS + row
+ *
+ * @param {number} djSlot - Bridge 행-우선 슬롯 (0~19)
+ * @returns {number} D200H UlanziStudio 슬롯
  */
 export function toD200hSlot(djSlot) {
   const row = Math.floor(djSlot / DEVICE_COLS);
   const col = djSlot % DEVICE_COLS;
-  return col * DEVICE_ROWS + row;
+  return col * GRID_COLS + row;
 }
 
 /**
- * D200H 열-우선 슬롯 → Bridge 행-우선 슬롯 변환
- * @param {number} d200hSlot
- * @returns {number}
+ * D200H UlanziStudio 슬롯 → Bridge(행-우선) 슬롯 변환
+ *
+ * D200H:  d200hSlot = col × GRID_COLS + row
+ * Bridge: djSlot = row × DEVICE_COLS + col
+ *
+ * @param {number} d200hSlot - D200H UlanziStudio 슬롯
+ * @returns {number} Bridge 행-우선 슬롯 (0~19)
  */
 export function toInternalSlot(d200hSlot) {
-  const col = Math.floor(d200hSlot / DEVICE_ROWS);
-  const row = d200hSlot % DEVICE_ROWS;
+  const col = Math.floor(d200hSlot / GRID_COLS);
+  const row = d200hSlot % GRID_COLS;
   return row * DEVICE_COLS + col;
 }
 
