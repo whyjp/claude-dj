@@ -119,23 +119,15 @@ Record the result, then proceed to Step 5.
 
 ---
 
-### Step 5: Awaiting State
+### Step 5: Awaiting State (직접 입력 대기)
 
-Tell the user:
-> **Step 5/6 — Awaiting 상태 테스트**: 지금 이 메시지를 보고 있는 상태가 awaiting입니다. D200H에서 awaiting 상태가 표시되는지 확인해주세요.
+Tell the user exactly this — then **END your message. Do NOT call AskUserQuestion.**
 
-Then ask:
+> **Step 5/6 — Awaiting 상태 테스트**: 이 메시지 이후 AskUserQuestion 없이 직접 입력을 기다립니다. D200H에서 awaiting 상태(보라색 모래시계)가 표시되는지 확인한 뒤, 터미널에 직접 `pass` 또는 `fail`을 입력해주세요.
 
-```
-question: "Step 5/6 — Awaiting 상태가 D200H에 표시되나요?"
-header: "5. Awaiting"
-options:
-  - label: "Pass"   description: "awaiting 상태가 정상 표시됨"
-  - label: "Fail"   description: "상태 변화 없음 또는 문제 있음"
-multiSelect: false
-```
+**CRITICAL: Do NOT call AskUserQuestion here.** The point of this step is to trigger the Stop hook → WAITING_RESPONSE state, which only happens when Claude's response ends without a pending AskUserQuestion. If you call AskUserQuestion, the state becomes WAITING_CHOICE and the test is invalid.
 
-Record the result, then proceed to Step 6.
+Wait for the user's typed response (`pass` or `fail`). Record the result, then proceed to Step 6.
 
 ---
 
