@@ -34,6 +34,8 @@ const jsonFiles = [
   'claude-plugin/plugin.json',
   '.claude-plugin/plugin.json',
   '.claude-plugin/marketplace.json',
+  'ulanzi/com.claudedj.deck.ulanziPlugin/plugin/package.json',
+  'ulanzi/com.claudedj.deck.ulanziPlugin/manifest.json',
 ];
 
 for (const rel of jsonFiles) {
@@ -41,6 +43,7 @@ for (const rel of jsonFiles) {
   try {
     const data = JSON.parse(readFileSync(fp, 'utf8'));
     if (data.version) data.version = version;
+    if (data.Version) data.Version = version; // UlanziStudio manifest.json
     // marketplace.json has nested plugin version
     if (data.plugins?.[0]?.version) data.plugins[0].version = version;
     writeFileSync(fp, JSON.stringify(data, null, 2) + '\n');

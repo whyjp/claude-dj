@@ -3,7 +3,7 @@
   "Name": "claude-dj Deck",
   "Description": "claude-dj hardware deck — translates Ulanzi D200H button events to Bridge protocol",
   "Icon": "resources/idle.png",
-  "Version": "1.0.0",
+  "Version": "0.5.0",
   "UUID": "com.claudedj.deck",
   "Type": "JavaScript",
   "CodePath": "plugin/app.js",
@@ -13,18 +13,41 @@
       "Icon": "resources/idle.png",
       "UUID": "com.claudedj.deck.slot",
       "States": [
-        { "Name": "IDLE",    "Image": "resources/idle.png"    },
-        { "Name": "ACTIVE",  "Image": "resources/active.png"  },
-        { "Name": "APPROVE", "Image": "resources/approve.png" },
-        { "Name": "DENY",    "Image": "resources/deny.png"    },
-        { "Name": "CHOICE",  "Image": "resources/choice.png"  }
+        {
+          "Name": "IDLE",
+          "Image": "resources/idle.png"
+        },
+        {
+          "Name": "ACTIVE",
+          "Image": "resources/active.png"
+        },
+        {
+          "Name": "APPROVE",
+          "Image": "resources/approve.png"
+        },
+        {
+          "Name": "DENY",
+          "Image": "resources/deny.png"
+        },
+        {
+          "Name": "CHOICE",
+          "Image": "resources/choice.png"
+        }
       ],
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "Devices": []
     }
   ],
   "OS": [
-    { "Platform": "windows", "MinimumVersion": "10" },
-    { "Platform": "mac",     "MinimumVersion": "10.11" }
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    },
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.11"
+    }
   ]
 }
