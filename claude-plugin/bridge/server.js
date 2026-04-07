@@ -267,9 +267,9 @@ app.post('/api/hook/stop', (req, res, next) => { try {
     return;
   }
 
-  // No choices — go to IDLE (dismiss if session exists, ignore if not)
-  sm.dismissSession(sessionId);
-  ws.broadcast({ type: 'ALL_DIM' });
+  // No choices — Claude finished responding, waiting for user input
+  const session = sm.handleStop(input);
+  broadcastSessionLayout(session);
 
   res.json({ ok: true });
 } catch (e) { next(e); }
