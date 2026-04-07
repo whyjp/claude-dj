@@ -9,4 +9,4 @@ test/live/scratch.txt
 .playwright-mcp/
 *.png
 !docs/images/*.png
-!ulanzi/translator/resources/*.png
+!ulanzi/com.claudedj.deck.ulanziPlugin/resources/*.png

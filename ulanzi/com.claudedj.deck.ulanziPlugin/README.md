@@ -20,7 +20,7 @@ claude-dj Bridge와 Ulanzi D200H 하드웨어 사이의 번역 레이어.
 ### 1. 플러그인 폴더 복사
 
 ```powershell
-$src  = "D:\github\claude-dj\ulanzi\translator"
+$src  = "D:\github\claude-dj\ulanzi\com.claudedj.deck.ulanziPlugin"
 $dest = "$env:APPDATA\Ulanzi\UlanziDeck\Plugins\com.claudedj.deck.ulanziPlugin"
 Copy-Item $src $dest -Recurse
 ```
