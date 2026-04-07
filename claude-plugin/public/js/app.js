@@ -7,8 +7,9 @@
 
 import { initGrid, onPress, renderLayout, renderAllDim, setConnectionOverlay, updateMiniAgentTabs } from './d200-renderer.js';
 import { initDashboard, log, updateWsStatus, clearLog, updateSession, dimAllSessions, disconnectSessions, setSessions, switchLogSession } from './dashboard.js';
+import { initTranslator, handleTranslatorStatus, handleTranslatorLog } from './translator.js';
 
-let VERSION = '0.4.0';
+let VERSION = '0.4.1';
 const WS_PATH = '/ws';
 const RECONNECT_DELAY = 3000;
 
@@ -26,6 +27,7 @@ function _updateAboutVersion() {
 function init() {
   initGrid();
   initDashboard();
+  initTranslator();
   _initMiniview();
   _updateAboutVersion();
 
@@ -180,6 +182,14 @@ function _handleMessage(msg) {
         switchLogSession(sid, msg.agent?.agentId || null);
       }
       break;
+
+    case 'TRANSLATOR_STATUS':
+      handleTranslatorStatus(msg);
+      return sid;
+
+    case 'TRANSLATOR_LOG':
+      handleTranslatorLog(msg.entry);
+      return sid;
 
     case 'ALL_DIM':
       renderAllDim();

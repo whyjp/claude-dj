@@ -95,6 +95,14 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+app.get('/api/translator/status', (req, res) => {
+  res.json({
+    connected: ws.translatorConnected,
+    connectedAt: ws.translatorConnectedAt,
+    log: ws.getTranslatorLog(),
+  });
+});
+
 // --- Helpers ---
 
 function broadcastLayout(layout) {

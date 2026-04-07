@@ -51,6 +51,7 @@
     <div class="tabs" id="tabBar">
       <div class="tab on" data-tab="log">Event Log <span class="lbadge" id="lbadge"></span></div>
       <div class="tab" data-tab="sessions">Sessions <span class="lbadge" id="sbadge"></span></div>
+      <div class="tab" data-tab="translator">Translator <span class="tr-dot" id="trDot"></span></div>
       <div class="tab" data-tab="proto">Protocol</div>
       <div class="tab" data-tab="settings">Settings</div>
     </div>
@@ -76,6 +77,36 @@
       <div class="pane" id="pane-sessions">
         <div class="sess-list" id="sessList"></div>
         <div class="sess-empty" id="sessEmpty">No active sessions</div>
+      </div>
+
+      <!-- TRANSLATOR -->
+      <div class="pane" id="pane-translator">
+        <div class="tr-panel">
+          <!-- 연결 상태 헤더 -->
+          <div class="tr-status-bar">
+            <div class="tr-conn" id="trConnBadge">
+              <span class="tr-conn-dot" id="trConnDot"></span>
+              <span class="tr-conn-lbl" id="trConnLbl">disconnected</span>
+              <span class="tr-conn-time" id="trConnTime"></span>
+            </div>
+            <div class="tr-actions">
+              <button class="btn-s" id="btnTrClear">clear log</button>
+              <label class="tr-filter-lbl">
+                <input class="log-fil" id="trFil" placeholder="filter type…">
+              </label>
+              <label class="tr-filter-lbl" style="font-size:9px;color:var(--muted);display:flex;align-items:center;gap:4px;">
+                <input type="checkbox" id="trAutoScroll" checked> auto scroll
+              </label>
+            </div>
+          </div>
+          <!-- 슬롯 매핑 요약 -->
+          <div class="tr-map-bar" id="trMapBar">
+            <span class="tr-map-lbl">D200H slots registered:</span>
+            <span class="tr-map-val" id="trSlotCount">—</span>
+          </div>
+          <!-- 교환 로그 -->
+          <div class="tr-log" id="trLog"></div>
+        </div>
       </div>
 
       <!-- PROTOCOL -->
