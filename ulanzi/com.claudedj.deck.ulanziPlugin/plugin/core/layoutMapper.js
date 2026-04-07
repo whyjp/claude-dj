@@ -61,7 +61,7 @@ export const TOTAL_SLOTS = DEVICE_COLS * DEVICE_ROWS; // 20
  */
 const GRID_COLS = 5;
 
-// Bridge 행-우선 시스템 슬롯
+// Bridge 행-우선 시스템 슬롯 (row2 col0/col1/col2)
 const DJ_SLOT_SESSION_COUNT  = 10;
 const DJ_SLOT_SESSION_SWITCH = 11;
 const DJ_SLOT_AGENT_SWITCH   = 12;
@@ -96,6 +96,16 @@ export function toInternalSlot(d200hSlot) {
   return row * DEVICE_COLS + col;
 }
 
+// D200H 시스템 슬롯 집합 (열-우선) — 함수 정의 후 초기화
+const D200H_SYSTEM_SLOTS = new Set([
+  toD200hSlot(DJ_SLOT_SESSION_COUNT),
+  toD200hSlot(DJ_SLOT_SESSION_SWITCH),
+  toD200hSlot(DJ_SLOT_AGENT_SWITCH),
+]);
+
+// Bridge 행-우선 동적 슬롯 (0~9): 실제 액션 버튼 영역
+const DJ_DYNAMIC_SLOTS = Array.from({length: 10}, (_, i) => i);
+
 /**
  * LAYOUT 메시지를 SlotCommand 배열로 변환한다.
  * 반환되는 slot 값은 D200H 열-우선 슬롯이다.
@@ -111,20 +121,20 @@ export function mapLayout(layout) {
 
   switch (layout.preset) {
     case 'idle': {
-      const cmds = allSlotsD200h('idle');
-      // 슬롯 9 (Bridge 행-우선) = idle 인디케이터
-      _setCmd(cmds, toD200hSlot(9), 'idle', 'Idle');
+      // 동적 슬롯(0~9)만 idle로 설정 — 시스템 슬롯은 systemCmds가 담당
+      const cmds = dynamicSlotsD200h('idle');
       return [...cmds, ...systemCmds];
     }
 
     case 'processing': {
-      const cmds = allSlotsD200h('processing');
+      // 동적 슬롯(0~9)만 processing — 시스템 슬롯은 유지
+      const cmds = dynamicSlotsD200h('processing');
       return [...cmds, ...systemCmds];
     }
 
     case 'active': {
       const djActiveSlot = Number(layout.slot ?? -1);
-      const cmds = allSlotsD200h('idle');
+      const cmds = dynamicSlotsD200h('idle');
       if (Number.isInteger(djActiveSlot) && djActiveSlot >= 0 && djActiveSlot < TOTAL_SLOTS) {
         _setCmd(cmds, toD200hSlot(djActiveSlot), 'active');
       }
@@ -132,7 +142,7 @@ export function mapLayout(layout) {
     }
 
     case 'binary': {
-      const cmds = allSlotsD200h('idle');
+      const cmds = dynamicSlotsD200h('idle');
       const hasAlways = layout.prompt?.hasAlwaysAllow;
       // Bridge 슬롯 0 = Allow
       _setCmd(cmds, toD200hSlot(0), 'approve', 'Allow');
@@ -149,7 +159,7 @@ export function mapLayout(layout) {
 
     case 'choice': {
       const choices = layout.choices ?? [];
-      const cmds = allSlotsD200h('idle');
+      const cmds = dynamicSlotsD200h('idle');
       choices.slice(0, TOTAL_SLOTS).forEach((c, i) => {
         const iconKey = _choiceIcon(i, choices.length);
         const label = (c.label ?? '').slice(0, 12);
@@ -160,7 +170,7 @@ export function mapLayout(layout) {
 
     case 'multiSelect': {
       const choices = layout.choices ?? [];
-      const cmds = allSlotsD200h('idle');
+      const cmds = dynamicSlotsD200h('idle');
       choices.slice(0, 9).forEach((c, i) => {
         const selected = c.selected ?? false;
         const label = (c.label ?? '').slice(0, 10);
@@ -172,15 +182,14 @@ export function mapLayout(layout) {
     }
 
     case 'awaiting_input': {
-      const cmds = allSlotsD200h('idle');
+      const cmds = dynamicSlotsD200h('idle');
       _setCmd(cmds, toD200hSlot(4), 'awaiting', 'Wait');
       return [...cmds, ...systemCmds];
     }
 
     case 'choice_hint': {
-      // 표시 전용 (클릭 불가)
       const choices = layout.choices ?? [];
-      const cmds = allSlotsD200h('idle');
+      const cmds = dynamicSlotsD200h('idle');
       choices.slice(0, TOTAL_SLOTS).forEach((c, i) => {
         const iconKey = _choiceIcon(i, choices.length);
         _setCmd(cmds, toD200hSlot(i), iconKey, (c.label ?? '').slice(0, 12));
@@ -190,7 +199,7 @@ export function mapLayout(layout) {
 
     case 'custom': {
       const slotsMap = layout.slots ?? {};
-      const cmds = allSlotsD200h('idle');
+      const cmds = dynamicSlotsD200h('idle');
       for (const [djSlotStr, iconKey] of Object.entries(slotsMap)) {
         const djSlot = Number(djSlotStr);
         if (Number.isInteger(djSlot) && djSlot >= 0 && djSlot < TOTAL_SLOTS) {
@@ -254,10 +263,14 @@ function _choiceIcon(index, total) {
 }
 
 /**
- * 모든 D200H 슬롯(0~TOTAL_SLOTS-1)을 동일한 iconKey로 채운다.
+ * 동적 슬롯(Bridge 0~9)만 D200H 슬롯으로 변환해 iconKey로 채운다.
+ * 시스템 슬롯(10/11/12)은 포함하지 않는다 — systemCmds가 담당.
  */
-function allSlotsD200h(iconKey) {
-  return Array.from({ length: TOTAL_SLOTS }, (_, i) => ({ slot: i, iconKey }));
+function dynamicSlotsD200h(iconKey) {
+  return DJ_DYNAMIC_SLOTS.map(djSlot => ({
+    slot: toD200hSlot(djSlot),
+    iconKey,
+  }));
 }
 
 /**

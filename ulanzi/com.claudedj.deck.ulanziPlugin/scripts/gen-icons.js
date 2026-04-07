@@ -1,12 +1,10 @@
 /**
  * gen-icons.js — D200H LCD 버튼 아이콘 PNG 생성
  *
- * canvas 없이 순수 Node.js로 72×72 RGBA PNG를 생성한다.
- * 각 아이콘은 배경색 + 중앙 텍스트(UTF-8 렌더링은 UlanziStudio가 담당)로 구성.
- * setBaseDataIcon(context, base64, text) 에서 text가 LCD에 오버레이되므로
- * PNG 자체는 배경색/심볼만 담는다.
- *
- * 출력: ../resources/*.png
+ * 72×72 RGBA PNG를 순수 Node.js로 생성한다.
+ * choice-N / choice-A 아이콘에는 비트맵 폰트로 숫자/문자를 직접 그린다.
+ * (setBaseDataIcon의 text 오버레이는 D200H에서 표시 안 될 수 있으므로
+ *  아이콘 이미지 자체에 숫자/문자를 포함한다.)
  */
 
 import { writeFileSync, mkdirSync } from 'fs';
@@ -37,354 +35,377 @@ function crc32(buf) {
 function chunk(type, data) {
   const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
   const t = Buffer.from(type);
-  const crcBuf = Buffer.concat([t, data]);
-  const c = Buffer.alloc(4); c.writeUInt32BE(crc32(crcBuf));
+  const c = Buffer.alloc(4); c.writeUInt32BE(crc32(Buffer.concat([t, data])));
   return Buffer.concat([len, t, data, c]);
 }
 
-/**
- * RGBA 픽셀 배열(W×H×4)로 PNG Buffer를 만든다.
- * @param {Uint8Array} pixels - length = W*H*4
- */
 function makePng(pixels) {
   const raw = Buffer.alloc(H * (1 + W * 4));
   for (let y = 0; y < H; y++) {
-    raw[y * (1 + W * 4)] = 0; // filter: None
+    raw[y * (1 + W * 4)] = 0;
     for (let x = 0; x < W; x++) {
       const src = (y * W + x) * 4;
       const dst = y * (1 + W * 4) + 1 + x * 4;
-      raw[dst]     = pixels[src];
-      raw[dst + 1] = pixels[src + 1];
-      raw[dst + 2] = pixels[src + 2];
-      raw[dst + 3] = pixels[src + 3];
+      raw[dst] = pixels[src]; raw[dst+1] = pixels[src+1];
+      raw[dst+2] = pixels[src+2]; raw[dst+3] = pixels[src+3];
     }
   }
   const compressed = zlib.deflateSync(raw, { level: 9 });
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(W, 0); ihdr.writeUInt32BE(H, 4);
-  ihdr[8] = 8; ihdr[9] = 6; // 8bit RGBA
-  const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  ihdr[8] = 8; ihdr[9] = 6;
   return Buffer.concat([
-    sig,
+    Buffer.from([137,80,78,71,13,10,26,10]),
     chunk('IHDR', ihdr),
     chunk('IDAT', compressed),
     chunk('IEND', Buffer.alloc(0)),
   ]);
 }
 
-// ── 드로잉 헬퍼 ─────────────────────────────────────────────
+// ── 픽셀 헬퍼 ──────────────────────────────────────────────
 
-function fillPixels(r, g, b, a = 255) {
+function fill(r, g, b, a = 255) {
   const px = new Uint8Array(W * H * 4);
   for (let i = 0; i < W * H; i++) {
-    px[i * 4]     = r;
-    px[i * 4 + 1] = g;
-    px[i * 4 + 2] = b;
-    px[i * 4 + 3] = a;
+    px[i*4]=r; px[i*4+1]=g; px[i*4+2]=b; px[i*4+3]=a;
   }
   return px;
 }
 
-/** 픽셀 단위 원 그리기 */
-function drawCircle(px, cx, cy, r, col) {
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const dx = x - cx, dy = y - cy;
-      if (dx * dx + dy * dy <= r * r) {
-        const i = (y * W + x) * 4;
-        px[i] = col[0]; px[i+1] = col[1]; px[i+2] = col[2]; px[i+3] = col[3] ?? 255;
-      }
-    }
-  }
+function setPixel(px, x, y, col) {
+  if (x < 0 || x >= W || y < 0 || y >= H) return;
+  const i = (y * W + x) * 4;
+  px[i]=col[0]; px[i+1]=col[1]; px[i+2]=col[2]; px[i+3]=col[3]??255;
 }
 
-/** 픽셀 단위 둥근 사각형 */
-function drawRoundRect(px, x0, y0, x1, y1, r, col) {
+function circle(px, cx, cy, r, col) {
+  for (let y = cy-r; y <= cy+r; y++)
+    for (let x = cx-r; x <= cx+r; x++)
+      if ((x-cx)**2+(y-cy)**2 <= r*r) setPixel(px, x, y, col);
+}
+
+function rect(px, x0, y0, x1, y1, col) {
+  for (let y = y0; y <= y1; y++)
+    for (let x = x0; x <= x1; x++)
+      setPixel(px, x, y, col);
+}
+
+function roundRect(px, x0, y0, x1, y1, r, col) {
   for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {
-      // 모서리 체크
-      let inside = true;
-      if (x < x0 + r && y < y0 + r) inside = (x0+r-x)**2+(y0+r-y)**2 <= r*r;
-      else if (x > x1 - r && y < y0 + r) inside = (x1-r-x)**2+(y0+r-y)**2 <= r*r;
-      else if (x < x0 + r && y > y1 - r) inside = (x0+r-x)**2+(y1-r-y)**2 <= r*r;
-      else if (x > x1 - r && y > y1 - r) inside = (x1-r-x)**2+(y1-r-y)**2 <= r*r;
-      if (inside) {
-        const i = (y * W + x) * 4;
-        px[i] = col[0]; px[i+1] = col[1]; px[i+2] = col[2]; px[i+3] = col[3] ?? 255;
+      let ok = true;
+      if (x<x0+r&&y<y0+r) ok=(x0+r-x)**2+(y0+r-y)**2<=r*r;
+      else if (x>x1-r&&y<y0+r) ok=(x1-r-x)**2+(y0+r-y)**2<=r*r;
+      else if (x<x0+r&&y>y1-r) ok=(x0+r-x)**2+(y1-r-y)**2<=r*r;
+      else if (x>x1-r&&y>y1-r) ok=(x1-r-x)**2+(y1-r-y)**2<=r*r;
+      if (ok) setPixel(px, x, y, col);
+    }
+  }
+}
+
+function line(px, x0, y0, x1, y1, col, thick=2) {
+  const dx = Math.abs(x1-x0), dy = Math.abs(y1-y0);
+  const sx = x0<x1?1:-1, sy = y0<y1?1:-1;
+  let err = dx-dy, x=x0, y=y0;
+  while (true) {
+    for (let ty=-Math.floor(thick/2); ty<=Math.floor(thick/2); ty++)
+      for (let tx=-Math.floor(thick/2); tx<=Math.floor(thick/2); tx++)
+        setPixel(px, x+tx, y+ty, col);
+    if (x===x1&&y===y1) break;
+    const e2=2*err;
+    if (e2>-dy){err-=dy;x+=sx;}
+    if (e2<dx){err+=dx;y+=sy;}
+  }
+}
+
+// ── 비트맵 폰트 (7×9 픽셀) ──────────────────────────────────
+
+// 각 문자: 7열×9행 비트맵 (1=픽셀, 0=배경)
+const FONT = {
+  '0': [0b0111110,0b1100011,0b1100011,0b1100011,0b1100011,0b1100011,0b1100011,0b1100011,0b0111110],
+  '1': [0b0011000,0b0111000,0b1111000,0b0011000,0b0011000,0b0011000,0b0011000,0b0011000,0b1111111],
+  '2': [0b0111110,0b1100011,0b0000011,0b0000110,0b0001100,0b0011000,0b0110000,0b1100000,0b1111111],
+  '3': [0b0111110,0b1100011,0b0000011,0b0000011,0b0011110,0b0000011,0b0000011,0b1100011,0b0111110],
+  '4': [0b0000110,0b0001110,0b0011110,0b0110110,0b1100110,0b1111111,0b0000110,0b0000110,0b0000110],
+  '5': [0b1111111,0b1100000,0b1100000,0b1111110,0b0000011,0b0000011,0b0000011,0b1100011,0b0111110],
+  '6': [0b0011110,0b0110000,0b1100000,0b1111110,0b1100011,0b1100011,0b1100011,0b1100011,0b0111110],
+  '7': [0b1111111,0b0000011,0b0000110,0b0001100,0b0011000,0b0011000,0b0011000,0b0011000,0b0011000],
+  '8': [0b0111110,0b1100011,0b1100011,0b1100011,0b0111110,0b1100011,0b1100011,0b1100011,0b0111110],
+  '9': [0b0111110,0b1100011,0b1100011,0b1100011,0b0111111,0b0000011,0b0000011,0b0110011,0b0111110],
+  'A': [0b0011100,0b0110110,0b1100011,0b1100011,0b1111111,0b1100011,0b1100011,0b1100011,0b1100011],
+  'B': [0b1111110,0b1100011,0b1100011,0b1100011,0b1111110,0b1100011,0b1100011,0b1100011,0b1111110],
+  'C': [0b0111110,0b1100011,0b1100000,0b1100000,0b1100000,0b1100000,0b1100000,0b1100011,0b0111110],
+  'D': [0b1111100,0b1100110,0b1100011,0b1100011,0b1100011,0b1100011,0b1100011,0b1100110,0b1111100],
+  'E': [0b1111111,0b1100000,0b1100000,0b1100000,0b1111100,0b1100000,0b1100000,0b1100000,0b1111111],
+  'F': [0b1111111,0b1100000,0b1100000,0b1100000,0b1111100,0b1100000,0b1100000,0b1100000,0b1100000],
+  'G': [0b0111110,0b1100011,0b1100000,0b1100000,0b1100111,0b1100011,0b1100011,0b1100011,0b0111110],
+  'H': [0b1100011,0b1100011,0b1100011,0b1100011,0b1111111,0b1100011,0b1100011,0b1100011,0b1100011],
+  'I': [0b1111111,0b0011000,0b0011000,0b0011000,0b0011000,0b0011000,0b0011000,0b0011000,0b1111111],
+  'J': [0b0000111,0b0000011,0b0000011,0b0000011,0b0000011,0b0000011,0b1100011,0b1100011,0b0111110],
+};
+
+/**
+ * 비트맵 문자를 픽셀 배열에 그린다.
+ * @param {Uint8Array} px
+ * @param {string} ch - 단일 문자
+ * @param {number} cx - 중앙 x
+ * @param {number} cy - 중앙 y
+ * @param {number} scale - 픽셀 크기 배수
+ * @param {number[]} col - RGBA 색상
+ */
+function drawChar(px, ch, cx, cy, scale, col) {
+  const bitmap = FONT[ch.toUpperCase()];
+  if (!bitmap) return;
+  const fw = 7 * scale, fh = 9 * scale;
+  const ox = cx - Math.floor(fw / 2);
+  const oy = cy - Math.floor(fh / 2);
+  for (let row = 0; row < 9; row++) {
+    for (let bit = 0; bit < 7; bit++) {
+      if (bitmap[row] & (1 << (6 - bit))) {
+        for (let sy = 0; sy < scale; sy++)
+          for (let sx = 0; sx < scale; sx++)
+            setPixel(px, ox + bit*scale + sx, oy + row*scale + sy, col);
       }
     }
   }
 }
 
-/** 수평선 */
-function drawHLine(px, x0, x1, y, col, thick = 1) {
-  for (let t = 0; t < thick; t++) {
-    for (let x = x0; x <= x1; x++) {
-      const i = ((y + t) * W + x) * 4;
-      if (i >= 0 && i < px.length - 3) {
-        px[i] = col[0]; px[i+1] = col[1]; px[i+2] = col[2]; px[i+3] = col[3] ?? 255;
-      }
-    }
-  }
-}
-
-/** 수직선 */
-function drawVLine(px, x, y0, y1, col, thick = 1) {
-  for (let t = 0; t < thick; t++) {
-    for (let y = y0; y <= y1; y++) {
-      const i = (y * W + (x + t)) * 4;
-      if (i >= 0 && i < px.length - 3) {
-        px[i] = col[0]; px[i+1] = col[1]; px[i+2] = col[2]; px[i+3] = col[3] ?? 255;
-      }
-    }
+/**
+ * 두 자리 숫자(10)를 그린다.
+ */
+function drawText(px, text, cx, cy, scale, col) {
+  const chars = String(text).split('');
+  const fw = 7 * scale;
+  const gap = scale;
+  const totalW = chars.length * fw + (chars.length - 1) * gap;
+  let x = cx - Math.floor(totalW / 2) + Math.floor(fw / 2);
+  for (const ch of chars) {
+    drawChar(px, ch, x, cy, scale, col);
+    x += fw + gap;
   }
 }
 
 // ── 색상 팔레트 ──────────────────────────────────────────────
 
 const C = {
-  bg:       [12,  12,  20,  255],  // 거의 검정
-  bgDim:    [20,  20,  32,  255],  // 어두운 배경
-  bgGreen:  [10,  40,  20,  255],  // 초록 배경
-  bgRed:    [40,  10,  15,  255],  // 빨강 배경
-  bgAmber:  [40,  32,   8,  255],  // 노랑 배경
-  bgBlue:   [10,  25,  50,  255],  // 파랑 배경
-  bgPurple: [25,  15,  45,  255],  // 보라 배경
-  bgTeal:   [10,  35,  35,  255],  // 청록 배경
-  bgGray:   [25,  25,  35,  255],  // 회색 배경
+  bg:       [10,  10,  18, 255],
+  bgGreen:  [ 8,  35,  16, 255],
+  bgRed:    [35,   8,  12, 255],
+  bgAmber:  [35,  28,   5, 255],
+  bgBlue:   [ 8,  20,  45, 255],
+  bgPurple: [22,  12,  40, 255],
+  bgTeal:   [ 8,  30,  30, 255],
+  bgGray:   [20,  20,  30, 255],
 
-  green:    [39, 255, 110, 255],
-  greenDim: [20, 120,  55, 255],
+  green:    [ 39, 255, 110, 255],
+  greenDim: [ 18, 100,  48, 255],
   red:      [255,  51,  85, 255],
-  redDim:   [140,  30,  50, 255],
+  redDim:   [120,  25,  42, 255],
   amber:    [255, 200,   0, 255],
-  amberDim: [140, 110,   0, 255],
+  amberDim: [120,  95,   0, 255],
   blue:     [ 68, 170, 255, 255],
-  blueDim:  [ 35,  90, 140, 255],
+  blueDim:  [ 30,  80, 130, 255],
   purple:   [187, 136, 255, 255],
-  purpleDim:[ 90,  65, 130, 255],
+  purpleDim:[ 80,  55, 120, 255],
   teal:     [ 68, 255, 204, 255],
   white:    [244, 244, 255, 255],
-  muted:    [100, 100, 140, 255],
-  dark:     [ 30,  30,  50, 255],
+  muted:    [ 80,  80, 120, 255],
+  dark:     [ 25,  25,  40, 255],
 };
 
-// ── 아이콘 정의 ──────────────────────────────────────────────
+// choice 색상 10종
+const CHOICE_BG = [
+  [8,35,16],[35,28,5],[8,20,45],[22,12,40],
+  [35,18,5],[8,30,25],[30,8,25],[25,30,8],
+  [8,18,35],[30,22,8],
+].map(v => [...v, 255]);
+
+const CHOICE_FG = [
+  C.green, C.amber, C.blue, C.purple,
+  [255,136,68,255],[68,255,204,255],[255,68,170,255],
+  [136,255,68,255],[68,170,255,255],[255,170,68,255],
+];
+
+// ── 아이콘 생성 함수 ─────────────────────────────────────────
 
 function save(name, px) {
-  const buf = makePng(px);
-  writeFileSync(join(OUT, name + '.png'), buf);
+  writeFileSync(join(OUT, name + '.png'), makePng(px));
   console.log(`  ✓ ${name}.png`);
 }
 
 // idle — 어두운 배경에 작은 dim 원
 function makeIdle() {
-  const px = fillPixels(...C.bg);
-  drawCircle(px, 36, 36, 8, C.dark);
+  const px = fill(...C.bg);
+  circle(px, 36, 36, 6, C.dark);
   return px;
 }
 
-// active — 초록 배경에 초록 원
+// active — 초록 링
 function makeActive() {
-  const px = fillPixels(...C.bgGreen);
-  drawCircle(px, 36, 36, 22, C.green);
-  drawCircle(px, 36, 36, 14, C.bgGreen);
+  const px = fill(...C.bgGreen);
+  circle(px, 36, 36, 24, C.green);
+  circle(px, 36, 36, 16, C.bgGreen);
+  circle(px, 36, 36, 8, C.greenDim);
   return px;
 }
 
-// processing — 노랑 배경에 점 3개 (로딩 표시)
+// processing — 노랑 배경에 점 3개
 function makeProcessing() {
-  const px = fillPixels(...C.bgAmber);
-  drawCircle(px, 20, 36, 7, C.amber);
-  drawCircle(px, 36, 36, 7, C.amberDim);
-  drawCircle(px, 52, 36, 7, C.amberDim);
+  const px = fill(...C.bgAmber);
+  circle(px, 18, 36, 8, C.amber);
+  circle(px, 36, 36, 8, C.amberDim);
+  circle(px, 54, 36, 8, C.amberDim);
   return px;
 }
 
-// approve — 초록 배경에 체크마크
+// approve — 초록 체크마크
 function makeApprove() {
-  const px = fillPixels(...C.bgGreen);
-  drawRoundRect(px, 10, 10, 62, 62, 8, C.greenDim);
-  // 체크마크: \ 부분
-  for (let i = 0; i < 14; i++) {
-    const x = 18 + i, y = 34 + i;
-    drawCircle(px, x, y, 3, C.green);
-  }
-  // 체크마크: / 부분
-  for (let i = 0; i < 22; i++) {
-    const x = 30 + i, y = 48 - i;
-    drawCircle(px, x, y, 3, C.green);
-  }
+  const px = fill(...C.bgGreen);
+  roundRect(px, 8, 8, 64, 64, 10, C.greenDim);
+  line(px, 16, 36, 28, 50, C.green, 4);
+  line(px, 28, 50, 56, 20, C.green, 4);
   return px;
 }
 
-// always (Always Allow) — 파랑 배경에 자물쇠
+// always — 파랑 자물쇠
 function makeAlways() {
-  const px = fillPixels(...C.bgBlue);
-  drawRoundRect(px, 10, 10, 62, 62, 8, C.blueDim);
+  const px = fill(...C.bgBlue);
+  roundRect(px, 8, 8, 64, 64, 10, C.blueDim);
   // 자물쇠 몸통
-  drawRoundRect(px, 22, 38, 50, 60, 4, C.blue);
-  // 자물쇠 고리 (반원)
-  for (let y = 20; y <= 40; y++) {
-    for (let x = 22; x <= 50; x++) {
-      const dx = x - 36, dy = y - 36;
-      const r2 = dx*dx + dy*dy;
-      if (r2 >= 100 && r2 <= 196 && y <= 36) { // 반원 외곽
-        const i = (y * W + x) * 4;
-        px[i] = C.blue[0]; px[i+1] = C.blue[1]; px[i+2] = C.blue[2]; px[i+3] = 255;
-      }
+  roundRect(px, 20, 38, 52, 62, 5, C.blue);
+  // 고리
+  for (let y = 18; y <= 40; y++) {
+    for (let x = 20; x <= 52; x++) {
+      const dx = x-36, dy = y-32;
+      const r2 = dx*dx+dy*dy;
+      if (r2 >= 100 && r2 <= 196) setPixel(px, x, y, C.blue);
     }
   }
-  // 열쇠 구멍
-  drawCircle(px, 36, 48, 4, C.bgBlue);
+  circle(px, 36, 50, 5, C.bgBlue);
   return px;
 }
 
-// deny — 빨강 배경에 X
+// deny — 빨강 X
 function makeDeny() {
-  const px = fillPixels(...C.bgRed);
-  drawRoundRect(px, 10, 10, 62, 62, 8, C.redDim);
-  for (let i = 0; i < 30; i++) {
-    drawCircle(px, 18 + i, 18 + i, 3, C.red);
-    drawCircle(px, 54 - i, 18 + i, 3, C.red);
-  }
+  const px = fill(...C.bgRed);
+  roundRect(px, 8, 8, 64, 64, 10, C.redDim);
+  line(px, 16, 16, 56, 56, C.red, 5);
+  line(px, 56, 16, 16, 56, C.red, 5);
   return px;
 }
 
-// submit (Done) — 청록 배경에 더블 체크
+// submit — 청록 더블체크
 function makeSubmit() {
-  const px = fillPixels(...C.bgTeal);
-  drawRoundRect(px, 10, 10, 62, 62, 8, [20, 80, 70, 255]);
-  for (let i = 0; i < 10; i++) {
-    drawCircle(px, 14+i, 34+i, 2, C.teal);
-    drawCircle(px, 24+i, 44-i, 2, C.teal);
-  }
-  for (let i = 0; i < 10; i++) {
-    drawCircle(px, 24+i, 34+i, 2, C.teal);
-    drawCircle(px, 34+i, 44-i, 2, C.teal);
-  }
+  const px = fill(...C.bgTeal);
+  roundRect(px, 8, 8, 64, 64, 10, [15,65,60,255]);
+  line(px, 10, 36, 22, 50, C.teal, 3);
+  line(px, 22, 50, 38, 28, C.teal, 3);
+  line(px, 24, 36, 36, 50, C.teal, 3);
+  line(px, 36, 50, 58, 22, C.teal, 3);
   return px;
 }
 
-// awaiting — 보라 배경에 모래시계
+// awaiting — 보라 모래시계
 function makeAwaiting() {
-  const px = fillPixels(...C.bgPurple);
-  drawRoundRect(px, 10, 10, 62, 62, 8, C.purpleDim);
-  // 모래시계 위 삼각형
-  for (let y = 16; y <= 36; y++) {
-    const w = Math.round((36 - y) * 20 / 20);
-    drawHLine(px, 36 - w, 36 + w, y, C.purple, 1);
+  const px = fill(...C.bgPurple);
+  roundRect(px, 8, 8, 64, 64, 10, C.purpleDim);
+  for (let y = 14; y <= 36; y++) {
+    const w = Math.round((36-y)*22/22);
+    rect(px, 36-w, y, 36+w, y, C.purple);
   }
-  // 모래시계 아래 삼각형
-  for (let y = 36; y <= 56; y++) {
-    const w = Math.round((y - 36) * 20 / 20);
-    drawHLine(px, 36 - w, 36 + w, y, C.purple, 1);
+  for (let y = 36; y <= 58; y++) {
+    const w = Math.round((y-36)*22/22);
+    rect(px, 36-w, y, 36+w, y, C.purple);
   }
   return px;
 }
 
-// session-count — 회색 배경에 # 심볼
+// session-count — 회색 배경에 # + 숫자는 text 오버레이
 function makeSessionCount() {
-  const px = fillPixels(...C.bgGray);
-  drawHLine(px, 20, 52, 28, C.muted, 3);
-  drawHLine(px, 20, 52, 42, C.muted, 3);
-  drawVLine(px, 28, 20, 52, C.muted, 3);
-  drawVLine(px, 42, 20, 52, C.muted, 3);
+  const px = fill(...C.bgGray);
+  // # 심볼
+  rect(px, 18, 26, 54, 30, C.muted);
+  rect(px, 18, 42, 54, 46, C.muted);
+  rect(px, 26, 18, 30, 54, C.muted);
+  rect(px, 42, 18, 46, 54, C.muted);
   return px;
 }
 
-// session-switch — 파랑 배경에 육각형 (⬡)
+// session-switch — 파랑 육각형
 function makeSessionSwitch() {
-  const px = fillPixels(...C.bgBlue);
-  // 육각형 꼭짓점
-  const pts = [];
+  const px = fill(...C.bgBlue);
+  const pts = Array.from({length:6}, (_,i) => {
+    const a = Math.PI/3*i - Math.PI/6;
+    return [36+24*Math.cos(a), 36+24*Math.sin(a)];
+  });
   for (let i = 0; i < 6; i++) {
-    const a = (Math.PI / 3) * i - Math.PI / 6;
-    pts.push([36 + 22 * Math.cos(a), 36 + 22 * Math.sin(a)]);
+    const [x0,y0]=pts[i], [x1,y1]=pts[(i+1)%6];
+    line(px, Math.round(x0), Math.round(y0), Math.round(x1), Math.round(y1), C.blue, 3);
   }
-  // 변 그리기
-  for (let i = 0; i < 6; i++) {
-    const [x0, y0] = pts[i];
-    const [x1, y1] = pts[(i + 1) % 6];
-    const steps = 30;
-    for (let t = 0; t <= steps; t++) {
-      const x = Math.round(x0 + (x1 - x0) * t / steps);
-      const y = Math.round(y0 + (y1 - y0) * t / steps);
-      drawCircle(px, x, y, 2, C.blue);
-    }
-  }
+  circle(px, 36, 36, 5, C.blue);
   return px;
 }
 
-// agent-switch — 보라 배경에 ◈ (다이아몬드+원)
+// agent-switch — 보라 다이아몬드
 function makeAgentSwitch() {
-  const px = fillPixels(...C.bgPurple);
-  // 다이아몬드
-  const pts = [[36,14],[58,36],[36,58],[14,36]];
+  const px = fill(...C.bgPurple);
+  const pts = [[36,12],[60,36],[36,60],[12,36]];
   for (let i = 0; i < 4; i++) {
-    const [x0, y0] = pts[i];
-    const [x1, y1] = pts[(i + 1) % 4];
-    const steps = 30;
-    for (let t = 0; t <= steps; t++) {
-      const x = Math.round(x0 + (x1 - x0) * t / steps);
-      const y = Math.round(y0 + (y1 - y0) * t / steps);
-      drawCircle(px, x, y, 2, C.purple);
-    }
+    const [x0,y0]=pts[i], [x1,y1]=pts[(i+1)%4];
+    line(px, x0, y0, x1, y1, C.purple, 3);
   }
-  // 중앙 원
-  drawCircle(px, 36, 36, 8, C.purple);
-  drawCircle(px, 36, 36, 5, C.bgPurple);
+  circle(px, 36, 36, 9, C.purple);
+  circle(px, 36, 36, 5, C.bgPurple);
   return px;
 }
 
-// choice-N (숫자) — 배경색 + 숫자 표시는 text 오버레이로
-// 각 번호별 색상 구분
-const CHOICE_COLORS = [
-  C.bgGreen, C.bgAmber, C.bgBlue, C.bgPurple,
-  [40, 20, 10, 255], [10, 35, 30, 255], [35, 10, 30, 255],
-  [30, 35, 10, 255], [10, 25, 40, 255], [35, 25, 10, 255],
-];
-const CHOICE_FG = [
-  C.green, C.amber, C.blue, C.purple,
-  [255, 136, 68, 255], [68, 255, 204, 255], [255, 68, 170, 255],
-  [136, 255, 68, 255], [68, 170, 255, 255], [255, 170, 68, 255],
-];
-
-function makeChoiceN(n) { // n: 1~10
-  const idx = (n - 1) % 10;
-  const px = fillPixels(...CHOICE_COLORS[idx]);
-  drawRoundRect(px, 8, 8, 64, 64, 10, CHOICE_FG[idx].map((v, i) => i < 3 ? Math.round(v * 0.25) : v));
-  // 테두리
-  for (let t = 0; t < 3; t++) {
-    drawHLine(px, 8+t, 64-t, 8+t, CHOICE_FG[idx], 1);
-    drawHLine(px, 8+t, 64-t, 64-t, CHOICE_FG[idx], 1);
-    drawVLine(px, 8+t, 8+t, 64-t, CHOICE_FG[idx], 1);
-    drawVLine(px, 64-t, 8+t, 64-t, CHOICE_FG[idx], 1);
-  }
-  return px;
-}
-
-// choice-A~J (알파벳) — 숫자와 동일 배경, 알파벳은 text 오버레이
-function makeChoiceAlpha(letter) { // letter: 'a'~'j'
-  const idx = letter.charCodeAt(0) - 'a'.charCodeAt(0);
-  return makeChoiceN(idx + 1); // 같은 색상 패턴 재사용
-}
-
-// multi-on / multi-off — 체크박스 스타일
+// multi-on / multi-off
 function makeMultiOn() {
-  const px = fillPixels(...C.bgGreen);
-  drawRoundRect(px, 12, 12, 60, 60, 6, C.greenDim);
-  // 체크
-  for (let i = 0; i < 12; i++) {
-    drawCircle(px, 22+i, 36+i*0.5, 2, C.green);
-    drawCircle(px, 34+i, 48-i, 2, C.green);
-  }
+  const px = fill(...C.bgGreen);
+  roundRect(px, 10, 10, 62, 62, 8, C.greenDim);
+  line(px, 16, 36, 28, 52, C.green, 4);
+  line(px, 28, 52, 56, 18, C.green, 4);
   return px;
 }
 
 function makeMultiOff() {
-  const px = fillPixels(...C.bgGray);
-  drawRoundRect(px, 12, 12, 60, 60, 6, C.muted);
+  const px = fill(...C.bgGray);
+  roundRect(px, 10, 10, 62, 62, 8, C.muted);
+  return px;
+}
+
+// choice-N — 배경 + 숫자 비트맵 렌더링
+function makeChoiceNum(n) { // n: 1~10
+  const idx = (n - 1) % 10;
+  const px = fill(...CHOICE_BG[idx]);
+  roundRect(px, 6, 6, 66, 66, 10, CHOICE_FG[idx].map((v,i)=>i<3?Math.round(v*0.2):v));
+  // 테두리
+  for (let t = 0; t < 3; t++) {
+    rect(px, 6+t, 6+t, 66-t, 6+t+1, CHOICE_FG[idx]);
+    rect(px, 6+t, 66-t-1, 66-t, 66-t, CHOICE_FG[idx]);
+    rect(px, 6+t, 6+t, 6+t+1, 66-t, CHOICE_FG[idx]);
+    rect(px, 66-t-1, 6+t, 66-t, 66-t, CHOICE_FG[idx]);
+  }
+  // 숫자 (scale=4: 7*4=28px 폭, 9*4=36px 높이)
+  const label = String(n);
+  const scale = label.length === 1 ? 5 : 3;
+  drawText(px, label, 36, 36, scale, CHOICE_FG[idx]);
+  return px;
+}
+
+// choice-A~J — 알파벳 비트맵 렌더링
+function makeChoiceAlpha(letter) { // 'A'~'J'
+  const idx = letter.toUpperCase().charCodeAt(0) - 65; // A=0
+  const safeIdx = idx % 10;
+  const px = fill(...CHOICE_BG[safeIdx]);
+  roundRect(px, 6, 6, 66, 66, 10, CHOICE_FG[safeIdx].map((v,i)=>i<3?Math.round(v*0.2):v));
+  for (let t = 0; t < 3; t++) {
+    rect(px, 6+t, 6+t, 66-t, 6+t+1, CHOICE_FG[safeIdx]);
+    rect(px, 6+t, 66-t-1, 66-t, 66-t, CHOICE_FG[safeIdx]);
+    rect(px, 6+t, 6+t, 6+t+1, 66-t, CHOICE_FG[safeIdx]);
+    rect(px, 66-t-1, 6+t, 66-t, 66-t, CHOICE_FG[safeIdx]);
+  }
+  drawChar(px, letter.toUpperCase(), 36, 36, 5, CHOICE_FG[safeIdx]);
   return px;
 }
 
@@ -406,15 +427,10 @@ save('agent-switch',   makeAgentSwitch());
 save('multi-on',       makeMultiOn());
 save('multi-off',      makeMultiOff());
 
-// 숫자 선택지 1~10
-for (let n = 1; n <= 10; n++) {
-  save(`choice-${n}`, makeChoiceN(n));
-}
-
-// 알파벳 선택지 a~j
+for (let n = 1; n <= 10; n++) save(`choice-${n}`, makeChoiceNum(n));
 for (let i = 0; i < 10; i++) {
-  const letter = String.fromCharCode('a'.charCodeAt(0) + i);
-  save(`choice-${letter}`, makeChoiceAlpha(letter));
+  const letter = String.fromCharCode(65 + i); // A~J
+  save(`choice-${letter.toLowerCase()}`, makeChoiceAlpha(letter));
 }
 
-console.log(`Done — ${13 + 10 + 10} icons generated in ${OUT}`);
+console.log(`Done — 33 icons in ${OUT}`);
