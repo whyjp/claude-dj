@@ -40,7 +40,13 @@ export function parseFencedChoices(text) {
  */
 const EXPLAIN_MARKER_RE = /\s[\u2014\u2013\u2192]\s/;
 function looksLikeExplanation(matches) {
-  // Check the full matched line (m[0]), not the truncated label
+  // Check the full matched line (m[0]), not the truncated label.
+  // For binary (2-item) lists, require ALL items to look explanatory —
+  // a single em-dash in one option is common for descriptive choices.
+  // For 3+ items, reject if ANY item has a marker.
+  if (matches.length <= 2) {
+    return matches.every((m) => EXPLAIN_MARKER_RE.test(m[0]));
+  }
   return matches.some((m) => EXPLAIN_MARKER_RE.test(m[0]));
 }
 

@@ -207,6 +207,24 @@ Ulanzi Studio를 재시작해보셨나요?`;
     assert.equal(parseRegexChoices(text), null);
   });
 
+  it('detects binary choice where one option has em-dash description', () => {
+    const text = `어떻게 할까요?
+1. 진행 — 현재 방향으로 구현
+2. 취소`;
+    const result = parseRegexChoices(text);
+    assert.notEqual(result, null);
+    assert.equal(result.length, 2);
+    assert.equal(result[0].index, '1');
+    assert.equal(result[1].index, '2');
+  });
+
+  it('returns null for binary explanation where both have em-dashes', () => {
+    const text = `원인 분석:
+1. 캐시 문제 — 브라우저 캐시가 남아있음
+2. 버전 불일치 — 서버와 클라이언트 버전이 다름`;
+    assert.equal(parseRegexChoices(text), null);
+  });
+
   it('detects letter choices (A/B/C)', () => {
     const text = `Which option?
 A. Keep current implementation
