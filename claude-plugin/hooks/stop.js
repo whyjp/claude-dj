@@ -13,19 +13,18 @@ const BRIDGE_URL = (() => {
 })();
 
 /**
- * Extract last assistant text from transcript JSONL and parse choices.
- * Used as display-only fallback when Claude doesn't use AskUserQuestion.
+ * Extract last assistant text from transcript JSONL (fallback).
+ * Note: transcript may be stale when stop hook fires — prefer
+ * parsed.last_assistant_message from stdin when available.
  */
-function parseChoices(transcriptPath) {
+function extractTranscriptText(transcriptPath) {
   try {
-    // Guard against path traversal — only allow files under ~/.claude/ or system temp
     const resolved = path.resolve(transcriptPath);
     const allowedPrefixes = [path.join(os.homedir(), '.claude'), os.tmpdir()];
     if (!allowedPrefixes.some(p => resolved.startsWith(p))) return null;
     const content = readFileSync(resolved, 'utf8');
     const lines = content.trim().split('\n');
 
-    let lastAssistant = null;
     for (let i = lines.length - 1; i >= 0; i--) {
       try {
         const entry = JSON.parse(lines[i]);
@@ -34,21 +33,11 @@ function parseChoices(transcriptPath) {
             .filter((c) => c.type === 'text')
             .map((c) => c.text)
             .join('\n');
-          if (textParts) {
-            lastAssistant = textParts;
-            break;
-          }
+          if (textParts) return textParts;
         }
       } catch (e) { /* skip malformed lines */ }
     }
-
-    if (!lastAssistant) return null;
-
-    const fenced = parseFencedChoices(lastAssistant);
-    const regex = parseRegexChoices(lastAssistant);
-    const result = fenced || regex;
-    hookLog('stop', `choices=${result?.length ?? 0} fenced=${!!fenced} regex=${!!regex} tail=${JSON.stringify(lastAssistant.slice(-200))}`);
-    return result;
+    return null;
   } catch (e) {
     return null;
   }
@@ -69,11 +58,34 @@ async function main() {
       return;
     }
 
-    // Parse transcript for choices
+    // Parse choices from last_assistant_message (current text block).
+    // Fenced choices may be in an earlier text block (before tool calls),
+    // so also check transcript as fallback for fenced detection.
     let choices = null;
-    if (parsed.transcript_path) {
-      choices = parseChoices(parsed.transcript_path);
+    const stdinText = parsed.last_assistant_message || null;
+    let src = 'none';
+
+    if (stdinText) {
+      const fenced = parseFencedChoices(stdinText);
+      const regex = parseRegexChoices(stdinText);
+      choices = fenced || regex;
+      src = fenced ? 'stdin-fenced' : regex ? 'stdin-regex' : 'none';
     }
+
+    // Fallback: if no fenced choices in stdin, check transcript
+    // (fenced tags may be in a previous text block before AskUserQuestion)
+    if (!choices && parsed.transcript_path) {
+      const transcriptText = extractTranscriptText(parsed.transcript_path);
+      if (transcriptText) {
+        const fenced = parseFencedChoices(transcriptText);
+        if (fenced) {
+          choices = fenced;
+          src = 'transcript-fenced';
+        }
+      }
+    }
+
+    hookLog('stop', `choices=${choices?.length ?? 0} src=${src} tail=${JSON.stringify((stdinText || '').slice(-200))}`);
 
     if (choices && choices.length > 0) {
       // Proxy mode: send choices to bridge and hold HTTP open.
@@ -88,9 +100,12 @@ async function main() {
       });
       const result = await resp.json();
       if (result.selectedChoice) {
+        // block injects selection into Claude's context immediately.
+        // Claude Code displays this as "Stop hook error: {reason}" —
+        // the "error" label is a fixed Claude Code UI string, not a real error.
         process.stdout.write(JSON.stringify({
           decision: 'block',
-          reason: `User selected: ${result.selectedChoice}`,
+          reason: result.selectedChoice,
         }));
         return;
       }

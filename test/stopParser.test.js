@@ -288,7 +288,7 @@ describe('parseRegexChoices — plan & false-positive scenarios', () => {
   });
 
   it('returns null for implementation steps (not a choice prompt)', () => {
-    // This is a common freeze scenario: numbered instructions look like choices
+    // Heading colon "진행하겠습니다:" → explanation, not choices
     const text = `다음 순서로 진행하겠습니다:
 
 1. choiceParser.js 수정
@@ -297,15 +297,7 @@ describe('parseRegexChoices — plan & false-positive scenarios', () => {
 4. 배포 확인
 
 진행하겠습니다.`;
-    // "진행하겠습니다" = "I'll proceed" — not asking user to choose
-    // But the numbered list at the tail will be detected.
-    // This is the known limitation of regex-only detection.
-    const result = parseRegexChoices(text);
-    // Currently detected (no explanation markers) — this documents current behavior.
-    // Fenced choices or AskUserQuestion should be used instead.
-    if (result) {
-      assert.equal(result.length, 4);
-    }
+    assert.equal(parseRegexChoices(text), null);
   });
 
   it('returns null for numbered summary with long descriptions', () => {

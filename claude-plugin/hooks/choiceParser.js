@@ -33,21 +33,54 @@ export function parseFencedChoices(text) {
 }
 
 /**
- * Detect "explanation smell" — numbered lists that describe steps/reasons,
- * not actionable choices.  Real choices are direct ("Yes", "Retry",
- * "Refactor the module").  Explanations use em-dash/en-dash/arrow separators
- * like "Topic — explanation" or "Step → result".
+ * Context-based choice detection — analyzes text BEFORE and AFTER the
+ * numbered list to determine intent.
+ *
+ * Choice pattern:  question/prompt → list → end of message
+ * Explanation pattern:  statement/heading → list → continuation text
+ *
+ * Em-dashes in list items are irrelevant — they're just punctuation.
+ * What matters is whether the surrounding text asks for a decision.
  */
-const EXPLAIN_MARKER_RE = /\s[\u2014\u2013\u2192]\s/;
-function looksLikeExplanation(matches) {
-  // Check the full matched line (m[0]), not the truncated label.
-  // For binary (2-item) lists, require ALL items to look explanatory —
-  // a single em-dash in one option is common for descriptive choices.
-  // For 3+ items, reject if ANY item has a marker.
-  if (matches.length <= 2) {
-    return matches.every((m) => EXPLAIN_MARKER_RE.test(m[0]));
-  }
-  return matches.some((m) => EXPLAIN_MARKER_RE.test(m[0]));
+const QUESTION_TAIL_RE = /[?？]\s*$/m;
+const CHOICE_KEYWORD_RE =
+  /(?:선택|골라|어떤|어느|진행할|할까|주세요|원하시|방식으로|어떻게|결정|필요합니다|which|choose|select|pick|prefer|decide|need)/i;
+const HEADING_COLON_RE = /[:：]\s*$/;
+
+function looksLikeChoices(tail, matches) {
+  if (matches.length === 0) return false;
+
+  const firstMatchPos = matches[0].index;
+  const lastMatch = matches[matches.length - 1];
+  const lastMatchEnd = lastMatch.index + lastMatch[0].length;
+
+  // Text before the first numbered item
+  const preamble = tail.slice(0, firstMatchPos).trim();
+  const preambleLines = preamble.split('\n').filter((l) => l.trim());
+  const lastPreambleLine = preambleLines[preambleLines.length - 1] || '';
+
+  // Text after the last numbered item
+  const aftermath = tail.slice(lastMatchEnd).trim();
+
+  // --- Strong choice signals ---
+  // Question mark in the line immediately before the list
+  if (QUESTION_TAIL_RE.test(lastPreambleLine)) return true;
+  // Choice-related keyword anywhere in the preamble
+  if (CHOICE_KEYWORD_RE.test(preamble)) return true;
+
+  // --- Strong explanation signals ---
+  // Heading-style colon without question/keyword → description, not choices
+  // e.g. "확인 사항:", "원인:", "구현 계획:", "변경 이력:"
+  if (HEADING_COLON_RE.test(lastPreambleLine)) return false;
+  // Substantial text continues after the list (summary, analysis, next steps)
+  if (aftermath.length > 50) return false;
+
+  // --- Structural signal ---
+  // List ends the message with no/minimal text after → likely choices
+  if (aftermath.length === 0) return true;
+
+  // Default: conservative — not choices
+  return false;
 }
 
 /**
@@ -90,8 +123,8 @@ export function parseRegexChoices(text) {
     const span = matchLineNums[matchLineNums.length - 1] - matchLineNums[0];
     if (span > 15) continue;
 
-    // Filter out explanation-style lists (em-dash, arrows, long lines)
-    if (looksLikeExplanation(matches)) continue;
+    // Context-based detection: analyze text before/after the list
+    if (!looksLikeChoices(tail, matches)) continue;
 
     return matches.slice(0, 10).map((m) => ({
       index: m[1],

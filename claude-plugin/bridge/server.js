@@ -338,6 +338,12 @@ app.post('/api/hook/stopFailure', (req, res, next) => {
 
 fs.mkdirSync(config.eventsDir, { recursive: true });
 
+/** Append an event to the session's JSONL file for userPrompt hook to pick up. */
+function writeEvent(sessionId, event) {
+  const file = path.join(config.eventsDir, `${sessionId}.jsonl`);
+  fs.appendFileSync(file, JSON.stringify(event) + '\n');
+}
+
 app.get('/api/events/:sessionId', (req, res) => {
   const sessionId = req.params.sessionId;
   if (!sessionId || sessionId.length > 256 || !/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
