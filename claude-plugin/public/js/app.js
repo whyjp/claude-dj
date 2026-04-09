@@ -9,7 +9,7 @@ import { initGrid, onPress, renderLayout, renderAllDim, setConnectionOverlay, up
 import { initDashboard, log, updateWsStatus, clearLog, updateSession, dimAllSessions, disconnectSessions, setSessions, switchLogSession } from './dashboard.js';
 import { initTranslator, handleTranslatorStatus, handleTranslatorLog } from './translator.js';
 
-let VERSION = '0.5.5';
+let VERSION = '0.5.6';
 const WS_PATH = '/ws';
 const RECONNECT_DELAY = 3000;
 

@@ -38,6 +38,7 @@ const DEPLOYABLE = [
   'hooks/subagentStop.js',
   'skills/choice-format/SKILL.md',
   'skills/dj-test/SKILL.md',
+  'skills/dj-choice-test/SKILL.md',
 ];
 
 // Determine which files to deploy
@@ -81,7 +82,7 @@ for (const file of files) {
   for (const target of targets) {
     const dest = path.join(target.base, file);
     const destDir = path.dirname(dest);
-    if (!fs.existsSync(destDir)) continue; // version doesn't have this directory
+    if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
 
     try {
       fs.copyFileSync(src, dest);
