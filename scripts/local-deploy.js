@@ -97,3 +97,25 @@ console.log(`\nDeployed ${copied} file(s) across ${targets.length} targets (${sk
 console.log(`Targets: ${targets.map(t => t.label).join(', ')}`);
 console.log('\nNote: hooks take effect immediately (no restart needed).');
 console.log('      bridge/*.js changes require /claude-dj-plugin:bridge-restart');
+
+// --- Ulanzi Studio plugin deploy ---
+// Copies ulanzi/com.claudedj.deck.ulanziPlugin → Ulanzi installed path
+const ULANZI_SRC = path.resolve(import.meta.dirname, '..', 'ulanzi', 'com.claudedj.deck.ulanziPlugin');
+const ULANZI_DST = path.join(os.homedir(), 'AppData', 'Roaming', 'Ulanzi', 'UlanziDeck', 'Plugins', 'com.claudedj.deck.ulanziPlugin');
+
+if (fs.existsSync(ULANZI_DST)) {
+  const ulanziFiles = ['manifest.json', 'plugin/package.json'];
+  let ulanziCopied = 0;
+  for (const f of ulanziFiles) {
+    const src = path.join(ULANZI_SRC, f);
+    const dst = path.join(ULANZI_DST, f);
+    if (!fs.existsSync(src)) continue;
+    fs.mkdirSync(path.dirname(dst), { recursive: true });
+    try { fs.copyFileSync(src, dst); ulanziCopied++; } catch (e) {
+      console.error(`  FAIL ulanzi/${f}: ${e.message}`);
+    }
+  }
+  console.log(`\nUlanzi plugin: ${ulanziCopied} file(s) → ${ULANZI_DST}`);
+} else {
+  console.log('\nUlanzi plugin: install path not found (skip)');
+}
