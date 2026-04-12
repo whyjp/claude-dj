@@ -39,6 +39,7 @@ const DEPLOYABLE = [
   'skills/choice-format/SKILL.md',
   'skills/dj-test/SKILL.md',
   'skills/dj-choice-test/SKILL.md',
+  'skills/ulanzi-deploy/SKILL.md',
 ];
 
 // Determine which files to deploy
@@ -103,19 +104,25 @@ console.log('      bridge/*.js changes require /claude-dj-plugin:bridge-restart'
 const ULANZI_SRC = path.resolve(import.meta.dirname, '..', 'ulanzi', 'com.claudedj.deck.ulanziPlugin');
 const ULANZI_DST = path.join(os.homedir(), 'AppData', 'Roaming', 'Ulanzi', 'UlanziDeck', 'Plugins', 'com.claudedj.deck.ulanziPlugin');
 
-if (fs.existsSync(ULANZI_DST)) {
-  const ulanziFiles = ['manifest.json', 'plugin/package.json'];
+const ULANZI_BASE = path.join(os.homedir(), 'AppData', 'Roaming', 'Ulanzi', 'UlanziDeck');
+if (fs.existsSync(ULANZI_BASE)) {
   let ulanziCopied = 0;
-  for (const f of ulanziFiles) {
-    const src = path.join(ULANZI_SRC, f);
-    const dst = path.join(ULANZI_DST, f);
-    if (!fs.existsSync(src)) continue;
-    fs.mkdirSync(path.dirname(dst), { recursive: true });
-    try { fs.copyFileSync(src, dst); ulanziCopied++; } catch (e) {
-      console.error(`  FAIL ulanzi/${f}: ${e.message}`);
+  function copyDirSync(src, dst, skip = ['node_modules', 'logs']) {
+    fs.mkdirSync(dst, { recursive: true });
+    for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+      if (skip.includes(entry.name)) continue;
+      const s = path.join(src, entry.name);
+      const d = path.join(dst, entry.name);
+      if (entry.isDirectory()) copyDirSync(s, d, skip);
+      else { fs.copyFileSync(s, d); ulanziCopied++; }
     }
   }
-  console.log(`\nUlanzi plugin: ${ulanziCopied} file(s) → ${ULANZI_DST}`);
+  try {
+    copyDirSync(ULANZI_SRC, ULANZI_DST);
+    console.log(`\nUlanzi plugin: ${ulanziCopied} file(s) → ${ULANZI_DST}`);
+  } catch (e) {
+    console.error(`\nUlanzi plugin: deploy failed — ${e.message}`);
+  }
 } else {
-  console.log('\nUlanzi plugin: install path not found (skip)');
+  console.log('\nUlanzi plugin: Ulanzi Studio not installed (skip)');
 }
