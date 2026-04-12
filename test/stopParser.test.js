@@ -383,6 +383,41 @@ USB 케이블을 확인해주세요.`;
   });
 });
 
+describe('parseRegexChoices — dash-prefix and bold formats', () => {
+  it('detects "  - A) text" format (dash-prefix, space-indented)', () => {
+    const text = `LLM-as-Judge의 실행 환경은 어떻게 생각하시나요?\n\n  - A) Python 스크립트 — scripts/judge.py\n  - B) 별도 서비스 — FastAPI\n  - C) Claude Code 에이전트\n  - D) 유연하게`;
+    const result = parseRegexChoices(text);
+    assert.notEqual(result, null);
+    assert.equal(result.length, 4);
+    assert.equal(result[0].index, 'A');
+    assert.equal(result[0].label, 'Python 스크립트 — scripts/judge.py');
+  });
+
+  it('detects "- **A) label** — desc" format (bold dash-prefix)', () => {
+    const text = `우선순위를 어떻게 잡을까요?\n\n- **A) Git 정리** — 미커밋 파일 정리\n- **B) 문서 진단** — spec/docs 점검\n- **C) 대시보드** — 종합 진단`;
+    const result = parseRegexChoices(text);
+    assert.notEqual(result, null);
+    assert.equal(result.length, 3);
+    assert.ok(!result[0].label.includes('**'), 'label must not contain ** markers');
+    assert.equal(result[0].label, 'Git 정리 — 미커밋 파일 정리');
+  });
+
+  it('returns null for "- A) item — desc" under heading colon', () => {
+    const text = `확인 사항:\n\n- A) 설정 파일 확인 — config.json 점검\n- B) 서버 재시작 여부\n- C) 로그 파일 점검`;
+    assert.equal(parseRegexChoices(text), null);
+  });
+
+  it('returns null for "- **A) label**" under heading colon', () => {
+    const text = `변경 사항:\n\n- **A) 코드 수정** — 기존 패턴 유지\n- **B) 리팩터링** — 새로운 구조\n- **C) 패치** — 일부만 수정`;
+    assert.equal(parseRegexChoices(text), null);
+  });
+
+  it('returns null for dash-prefix choices with substantial aftermath', () => {
+    const text = `분석 결과를 공유합니다.\n\n- A) 성능 저하 — DB 쿼리 최적화\n- B) 메모리 누수 — 이벤트 리스너 정리\n- C) 캐시 미스 — Redis TTL 조정\n\n위 내용을 바탕으로 다음 단계를 진행하겠습니다. 각 항목별로 순서대로 처리하면 됩니다.`;
+    assert.equal(parseRegexChoices(text), null);
+  });
+});
+
 describe('parseFencedChoices edge cases', () => {
   it('returns null for empty string', () => {
     assert.equal(parseFencedChoices(''), null);
