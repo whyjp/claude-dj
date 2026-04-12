@@ -1,6 +1,12 @@
 const FENCE_OPEN = '[claude-dj-choices]';
 const FENCE_CLOSE = '[/claude-dj-choices]';
-const LINE_RE = /^\s*([A-Za-z0-9]+(?:[a-z])?)[.):\]]\s*(.+)/;
+// Handles optional dash prefix and bold markers: "  - **A) label" or "A) label"
+const LINE_RE = /^\s*(?:-\s*)?(?:\*\*)?([A-Za-z0-9]+(?:[a-z])?)[.):\]]\s*(?:\*\*)?\s*(.+)/;
+
+/** Strip markdown bold/italic markers from a label string */
+function stripMarkdown(text) {
+  return text.replace(/\*\*/g, '').replace(/\*/g, '').trim();
+}
 
 /**
  * Parse choices from the last [claude-dj-choices] fence block.
@@ -23,7 +29,7 @@ export function parseFencedChoices(text) {
     if (m) {
       choices.push({
         index: m[1],
-        label: m[2].trim().slice(0, 30),
+        label: stripMarkdown(m[2]).slice(0, 30),
       });
     }
     if (choices.length >= 10) break;
@@ -94,10 +100,14 @@ export function parseRegexChoices(text) {
   const tail = (text.length > 800 ? text.slice(-800) : text).replace(/\r\n/g, '\n');
 
   const patterns = [
-    /^(?:\*\*)?(\d+)[.):\]]\s*\*?\*?\s*(.+)/gm,
-    /^\((\d+)\)\s*(.+)/gm,
-    /^(?:\*\*)?([A-Za-z])[.):\]]\s*\*?\*?\s*(.+)/gm,
-    /^\(([A-Za-z])\)\s*(.+)/gm,
+    // "1." / "1)" / "**1)**" with optional dash prefix: "  - 1) text" or "- **1) text"
+    /^\s*(?:-\s*)?(?:\*\*)?(\d+)[.):\]]\s*(?:\*\*)?\s*(.+)/gm,
+    // "(1) text" with optional leading whitespace
+    /^\s*\((\d+)\)\s*(.+)/gm,
+    // "A." / "A)" / "**A)**" with optional dash prefix: "  - A) text" or "- **A) text**"
+    /^\s*(?:-\s*)?(?:\*\*)?([A-Za-z])[.):\]]\s*(?:\*\*)?\s*(.+)/gm,
+    // "(A) text" with optional leading whitespace
+    /^\s*\(([A-Za-z])\)\s*(.+)/gm,
   ];
 
   for (const pattern of patterns) {
@@ -128,7 +138,7 @@ export function parseRegexChoices(text) {
 
     return matches.slice(0, 10).map((m) => ({
       index: m[1],
-      label: m[2].trim().slice(0, 30),
+      label: stripMarkdown(m[2]).slice(0, 30),
     }));
   }
 
