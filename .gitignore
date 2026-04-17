@@ -9,6 +9,7 @@ ulanzi/sdk/
 ulanzi/software/
 test/live/scratch.txt
 .playwright-mcp/
+dj-test-report.html
 *.png
 !docs/images/*.png
 !ulanzi/com.claudedj.deck.ulanziPlugin/resources/*.png

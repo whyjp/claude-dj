@@ -561,6 +561,33 @@ npm run debug                          # start bridge with file logging
 npm run stop                           # stop running bridge
 ```
 
+## Choice Detection Test Suite
+
+Three-layer regression suite for the stop-hook choice parser.
+
+| Layer | Runner | Purpose |
+|-------|--------|---------|
+| 1 Unit | `npm run dj:parse:all` | Parser-only verdict vs `.expect.json` |
+| 2 Integration | `/claude-dj-plugin:dj-stress` | Live deck + bridge + auto-judge |
+| 3 Instrumentation | `claude-plugin/logs/hooks.log` | `[choiceParser]` trace per decision |
+
+Quick run:
+
+```bash
+npm run dj:parse:all       # expect: 49 pass, 0 fail
+npm run dj:report          # writes dj-test-report.html
+node tools/dj-stress-gen.js --seed=42 --count=10   # regenerate dynamic fixtures
+```
+
+Fixture categories under `.dj-test/fixtures/`:
+- `nd/` — negative (should NOT detect)
+- `pd/` — positive (should detect)
+- `ex/` — edge cases (bold+em-dash, preamble/postamble shapes)
+- `pl/` — plan-mode outputs
+- `dy/` — dynamic, seed-42 baseline committed; regenerate via `dj:gen`
+
+`/api/logs?source=hooks&since=<iso>` tails `claude-plugin/logs/hooks.log` for live trace inspection.
+
 ## License
 
 MIT
