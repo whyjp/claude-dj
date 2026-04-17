@@ -17,6 +17,14 @@ function emit(trace, record) {
 }
 
 // ---------- Stage 1: Fence extraction ----------
+/**
+ * Stage 1 — parse choices from the last `[claude-dj-choices]...[/claude-dj-choices]`
+ * fence block.
+ *
+ * @param {string} text
+ * @param {{ trace?: (record: object) => void }} [options]
+ * @returns {{index: string, label: string}[] | null} null when no fence is found
+ */
 export function parseFencedChoices(text, { trace } = {}) {
   const lastOpen = text.lastIndexOf(FENCE_OPEN);
   if (lastOpen === -1) {
@@ -50,7 +58,10 @@ export function parseFencedChoices(text, { trace } = {}) {
 
 // ---------- Stage 3c: Context filter (was looksLikeChoices) ----------
 function contextAccepts(tail, matches, trace) {
-  if (matches.length === 0) return false;
+  if (matches.length === 0) {
+    emit(trace, { phase: '3c-context', accept: false, rule: 'no-matches' });
+    return false;
+  }
 
   const firstMatchPos = matches[0].index;
   const lastMatch = matches[matches.length - 1];
@@ -86,6 +97,15 @@ function contextAccepts(tail, matches, trace) {
 }
 
 // ---------- Stages 2 + 3d: Candidate extraction + quality gate ----------
+/**
+ * Stages 2+3 — regex candidate extraction, context-based gating, and truncation.
+ * Only scans the last 800 chars of `text` to avoid matching numbered section
+ * headers buried deeper in longer responses.
+ *
+ * @param {string} text
+ * @param {{ trace?: (record: object) => void }} [options]
+ * @returns {{index: string, label: string}[] | null} null when no pattern accepts
+ */
 export function parseRegexChoices(text, { trace } = {}) {
   const tail = (text.length > 800 ? text.slice(-800) : text).replace(/\r\n/g, '\n');
 
@@ -133,5 +153,6 @@ export function parseRegexChoices(text, { trace } = {}) {
     return choices;
   }
 
+  emit(trace, { phase: '2-extract', accept: false, reason: 'all-patterns-exhausted' });
   return null;
 }

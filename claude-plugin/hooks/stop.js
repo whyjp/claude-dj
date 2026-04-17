@@ -78,9 +78,8 @@ async function main() {
     if (!choices && parsed.transcript_path) {
       const transcriptText = extractTranscriptText(parsed.transcript_path);
       if (transcriptText) {
-        const fenced = parseFencedChoices(transcriptText, {
-          trace: (d) => hookLog('choiceParser', JSON.stringify({ ...d, source: 'transcript' })),
-        });
+        const traceTranscript = (d) => hookLog('choiceParser', JSON.stringify({ ...d, source: 'transcript' }));
+        const fenced = parseFencedChoices(transcriptText, { trace: traceTranscript });
         if (fenced) {
           choices = fenced;
           src = 'transcript-fenced';
