@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // tools/dj-parse.js — Layer 1 unit runner for choiceParser.js
 import path from 'node:path';
-import { discoverFixtures, runFixture } from './_fixture-runner.js';
+import { discoverFixtures, loadParser, runFixture } from './_fixture-runner.js';
 
 const args = process.argv.slice(2);
 const flags = new Set(args.filter(a => a.startsWith('--')));
@@ -10,6 +10,9 @@ const jsonOut = flags.has('--json');
 const all = flags.has('--all');
 
 async function main() {
+  if (all && targets.length > 0) {
+    console.error('warning: --all ignores positional targets');
+  }
   const fixtures = all
     ? discoverFixtures(path.resolve('.dj-test/fixtures'))
     : targets.map(t => path.resolve(t));
@@ -19,8 +22,9 @@ async function main() {
     process.exit(2);
   }
 
+  const parsers = await loadParser();
   const results = [];
-  for (const f of fixtures) results.push(await runFixture(f));
+  for (const f of fixtures) results.push(await runFixture(f, parsers));
 
   if (jsonOut) {
     process.stdout.write(JSON.stringify(results, null, 2) + '\n');

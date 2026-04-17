@@ -1,5 +1,5 @@
 // tools/_fixture-runner.js
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -14,11 +14,22 @@ export function loadFixture(fixturePath) {
   const text = readFileSync(fixturePath, 'utf8');
   const expectPath = fixturePath.replace(/\.txt$/, '.expect.json');
   let expected = null;
-  try { expected = JSON.parse(readFileSync(expectPath, 'utf8')); } catch { /* may be dynamic */ }
+  let expectRaw = null;
+  try {
+    expectRaw = readFileSync(expectPath, 'utf8');
+  } catch (e) {
+    if (e.code !== 'ENOENT') throw e;
+  }
+  if (expectRaw !== null) {
+    expected = JSON.parse(expectRaw); // let SyntaxError propagate
+  }
   return { text, expected, path: fixturePath, expectPath };
 }
 
 export function discoverFixtures(root) {
+  if (!existsSync(root)) {
+    throw new Error(`Fixture directory not found: ${root}. Run from repo root.`);
+  }
   const results = [];
   function walk(dir) {
     for (const entry of readdirSync(dir)) {
@@ -32,8 +43,8 @@ export function discoverFixtures(root) {
   return results.sort();
 }
 
-export async function runFixture(fixturePath) {
-  const { parseFencedChoices, parseRegexChoices } = await loadParser();
+export async function runFixture(fixturePath, parsers) {
+  const { parseFencedChoices, parseRegexChoices } = parsers;
   const { text, expected } = loadFixture(fixturePath);
   const trace = [];
   const collect = (d) => trace.push(d);
@@ -52,7 +63,8 @@ export async function runFixture(fixturePath) {
 
   const pass = expected
     ? actual.detect === expected.detect &&
-      (!expected.choices || sameArray(actual.choices, expected.choices))
+      (!expected.choices || sameArray(actual.choices, expected.choices)) &&
+      (!expected.expectedRule || actual.rule === expected.expectedRule)
     : null;
 
   return { fixture: path.relative(process.cwd(), fixturePath), expected, actual, pass };
