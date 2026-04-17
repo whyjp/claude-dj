@@ -16,11 +16,12 @@ const results = JSON.parse(raw);
 
 const byCategory = { original: [], nd: [], pd: [], ex: [], pl: [], dy: [] };
 for (const r of results) {
-  const cat = r.fixture.includes('/nd/') ? 'nd'
-    : r.fixture.includes('/pd/') ? 'pd'
-    : r.fixture.includes('/ex/') ? 'ex'
-    : r.fixture.includes('/pl/') ? 'pl'
-    : r.fixture.includes('/dy/') ? 'dy'
+  const fx = r.fixture.replace(/\\/g, '/');
+  const cat = fx.includes('/nd/') ? 'nd'
+    : fx.includes('/pd/') ? 'pd'
+    : fx.includes('/ex/') ? 'ex'
+    : fx.includes('/pl/') ? 'pl'
+    : fx.includes('/dy/') ? 'dy'
     : 'original';
   byCategory[cat].push(r);
 }

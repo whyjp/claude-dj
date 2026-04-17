@@ -49,7 +49,7 @@ export async function runFixture(fixturePath, parsers) {
   const trace = [];
   const collect = (d) => trace.push(d);
 
-  // Parser currently ignores trace — Task 2 wires it. Both calls tolerated.
+  // Parser emits structured trace records via the callback — see claude-plugin/hooks/choiceParser.js
   const fenced = parseFencedChoices(text, { trace: collect });
   const regex = fenced ? null : parseRegexChoices(text, { trace: collect });
   const choices = fenced || regex;

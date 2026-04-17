@@ -1,6 +1,6 @@
 ---
 name: dj-stress
-description: Auto-judged stress test for choice detection. Iterates .dj-test/fixtures/**, outputs each verbatim, fetches /api/deck-state + /api/logs to classify Pass/Fail without per-step user confirmation. Final summary only.
+description: Auto-judged stress test for choice detection. Enumerates all .dj-test/fixtures/**/*.txt at runtime, outputs each verbatim, fetches /api/deck-state + /api/logs to classify Pass/Fail without per-step user confirmation. Final summary only.
 user_invocable: true
 ---
 
@@ -25,7 +25,10 @@ echo "$RUN_START"
 ```
 
 2. Announce:
-> **DJ Stress Test 시작** — 39개 fixture 자동 판정 진행.
+```bash
+TOTAL=$(find .dj-test/fixtures -name '*.txt' | wc -l)
+```
+> **DJ Stress Test 시작** — $TOTAL개 fixture 자동 판정 진행.
 
 3. Confirm prerequisites:
 ```bash
@@ -49,7 +52,7 @@ Process fixtures in this order:
 10. `.dj-test/fixtures/ex/*.txt` (7 fixtures)
 11. `.dj-test/fixtures/pl/*.txt` (5 fixtures)
 
-Total: 39 fixtures.
+Total: all `*.txt` fixtures discovered at runtime (static + dynamic if present).
 
 ### Per-fixture procedure
 
@@ -116,7 +119,7 @@ rm -rf .dj-test/fixtures/dy
 
 ## Summary
 
-After all 39 fixtures:
+After all fixtures (static + dynamic):
 
 ```markdown
 ## DJ Stress Test Results
@@ -129,9 +132,11 @@ After all 39 fixtures:
 | ex/ (edge)         | 7 | X | Y |
 | pl/ (plan-mode)    | 5 | X | Y |
 | dy/ (dynamic)      | N | X | Y |
-| **Total**          | **39+N** | **X** | **Y** |
+| **Total**          | **N** | **X** | **Y** |
 
-Accuracy: (X / (39+N)) × 100 = Z%
+(N = sum of category totals above)
+
+Accuracy: (X / N) × 100 = Z%
 Target: ≥ 95% agreement with Layer 1 (`node tools/dj-parse.js --all`).
 ```
 
