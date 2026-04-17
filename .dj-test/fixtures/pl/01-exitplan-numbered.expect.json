@@ -1,0 +1,6 @@
+{
+  "detect": true,
+  "choices": ["choiceParser.js에 trace 옵션 추가", "stop.js에서 hookLog 콜백 전달", "Layer 1 CLI로 fixture 회귀 검증", "v0.6.5 bump"],
+  "expectedRule": "regex-context",
+  "notes": "Plan body followed by a question within the 800-char tail → the whole numbered block is extracted"
+}

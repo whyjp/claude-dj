@@ -1,0 +1,6 @@
+{
+  "detect": true,
+  "choices": ["감지 누락 (False Negative)", "오탐 (False Positive)", "AskUserQuestion이 호출되지 않음", "Plan 모드 자체 통합 문제", "정확히는 모름"],
+  "expectedRule": "regex-context",
+  "notes": "Q2 live reproduction — bold letter + em-dash short explanation is a real choice"
+}

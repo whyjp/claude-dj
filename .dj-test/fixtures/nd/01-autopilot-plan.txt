@@ -1,0 +1,10 @@
+Autopilot 실행 계획:
+
+1. executor 에이전트 위임 — bridge/server.js WebSocket 핸들러 리팩터링
+2. choiceParser.js 수정 — fenced block 우선순위 로직 추가, regex fallback 개선
+3. test-engineer 에이전트 — 단위 테스트 15개 추가 (choiceParser, stopHook, buttonManager)
+4. d200-renderer.js 업데이트 — 버튼 트렁케이션 30자 제한, overflow 처리
+5. verifier 에이전트 — 전체 테스트 스위트 실행 및 검증
+6. 버전 범프 0.5.6 → 0.5.7, CHANGELOG 업데이트
+
+총 예상 변경: 6개 파일, ~200 LOC. 진행하겠습니다.

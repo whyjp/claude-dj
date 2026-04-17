@@ -1,0 +1,1 @@
+{ "detect": true, "choices": ["빠른 경로", "느린 경로 — 더 안전함"], "expectedRule": "regex-context" }

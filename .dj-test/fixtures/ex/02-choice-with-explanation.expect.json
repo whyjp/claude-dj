@@ -1,0 +1,1 @@
+{ "detect": true, "choices": ["승인 — 바로 배포", "거절 — 추가 수정 필요"], "expectedRule": "regex-context" }

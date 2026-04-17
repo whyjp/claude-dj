@@ -1,0 +1,1 @@
+{ "detect": true, "choices": ["웹", "모바일", "데스크탑", "서버", "CLI", "라이브러리", "기타"], "expectedRule": "regex-context" }

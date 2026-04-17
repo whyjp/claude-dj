@@ -1,0 +1,1 @@
+{ "detect": true, "choices": ["지금 바로 배포", "리뷰 후 배포", "다음 스프린트로 연기"], "expectedRule": "regex-context" }

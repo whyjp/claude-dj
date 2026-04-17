@@ -1,0 +1,10 @@
+{
+  "detect": true,
+  "choices": [
+    "모놀리식 서버로 통합하고 마이크로서비스 전환은 나중에 ",
+    "처음부터 마이크로서비스로 설계하고 각 서비스별 독립 배",
+    "하이브리드 접근법으로 핵심 서비스만 분리하고 나머지는 "
+  ],
+  "expectedRule": "regex-context",
+  "notes": "Long descriptions — captured truncated values reflect current parser output"
+}

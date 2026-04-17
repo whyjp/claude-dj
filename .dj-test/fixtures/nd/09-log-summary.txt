@@ -1,0 +1,8 @@
+마지막 1시간 동안의 에러 로그 요약:
+
+1. ECONNREFUSED — 12건
+2. TIMEOUT — 4건
+3. EPIPE — 2건
+4. ENOTFOUND — 1건
+
+대부분 네트워크 이슈입니다.

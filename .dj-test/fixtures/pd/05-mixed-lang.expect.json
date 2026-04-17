@@ -1,0 +1,1 @@
+{ "detect": true, "choices": ["Refactor the module", "모듈 재작성", "Patch and move on"], "expectedRule": "regex-context" }

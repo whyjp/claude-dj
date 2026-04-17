@@ -1,0 +1,1 @@
+{ "detect": true, "choices": ["즉시 적용", "단계별 적용", "취소"], "expectedRule": "regex-context" }

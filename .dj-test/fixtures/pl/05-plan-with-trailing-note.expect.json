@@ -1,0 +1,6 @@
+{
+  "detect": true,
+  "choices": ["접근법 하나", "접근법 둘"],
+  "expectedRule": "regex-context",
+  "notes": "Question is in aftermath but within 50 chars, plus choice keyword"
+}

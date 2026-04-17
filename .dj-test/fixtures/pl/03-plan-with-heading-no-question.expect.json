@@ -1,0 +1,5 @@
+{
+  "detect": false,
+  "expectedRejectionReason": "heading-colon-preamble",
+  "notes": "Plan body with heading colon and no question — not choices"
+}

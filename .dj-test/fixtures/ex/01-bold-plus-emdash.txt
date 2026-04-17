@@ -1,0 +1,7 @@
+어느 쪽에 가깝나요?
+
+- **A. 감지 누락 (False Negative)** — Claude가 선택지를 제시했는데 덱에 버튼이 안 뜸
+- **B. 오탐 (False Positive)** — 일반 설명인데 choice 버튼이 뜨면서 세션이 freeze됨
+- **C. AskUserQuestion이 호출되지 않음** — Claude가 그냥 텍스트로만 끝내버림
+- **D. Plan 모드 자체 통합 문제** — ExitPlanMode 결과가 덱에 전달 안 됨
+- **E. 정확히는 모름** — 다양한 케이스로 파악하고 싶음

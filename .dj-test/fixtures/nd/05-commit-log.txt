@@ -1,0 +1,8 @@
+최근 커밋 히스토리:
+
+1. feat: add WebSocket reconnection logic
+2. fix: race condition in session cleanup
+3. test: expand choice parser coverage
+4. chore: bump version to 0.6.4
+
+총 4개 커밋이 main에 머지되었습니다.

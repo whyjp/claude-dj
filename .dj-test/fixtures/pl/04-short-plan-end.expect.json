@@ -1,0 +1,6 @@
+{
+  "detect": true,
+  "choices": ["A 방향", "B 방향"],
+  "expectedRule": "regex-context",
+  "notes": "Choice keyword in preamble overrides heading-colon filter"
+}

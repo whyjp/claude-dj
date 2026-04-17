@@ -1,0 +1,1 @@
+{ "detect": true, "choices": ["첫 번째 옵션", "두 번째 옵션", "세 번째 옵션"], "expectedRule": "regex-context" }

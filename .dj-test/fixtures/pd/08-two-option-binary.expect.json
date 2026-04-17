@@ -1,0 +1,1 @@
+{ "detect": true, "choices": ["네, 적용", "아니요, 취소"], "expectedRule": "regex-context" }

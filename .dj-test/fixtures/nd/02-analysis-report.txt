@@ -1,0 +1,8 @@
+코드베이스 분석 완료. 발견된 이슈:
+
+1. bridge/wsServer.js:42 — 클라이언트 연결 해제 시 메모리 누수 가능성
+2. hooks/stop.js:187 — proxy timeout이 하드코딩됨 (120000ms), 설정으로 분리 필요
+3. public/js/app.js:23 — VERSION 상수가 빌드 타임에 주입되지 않고 수동 관리됨
+4. bridge/sessionManager.js:95 — 세션 정리 로직에 race condition 존재
+
+심각도: 중간. 즉시 수정이 필요한 항목은 #1과 #4입니다.

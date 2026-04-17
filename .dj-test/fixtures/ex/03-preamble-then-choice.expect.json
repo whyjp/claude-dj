@@ -1,0 +1,1 @@
+{ "detect": true, "choices": ["재시작", "상태 유지", "종료"], "expectedRule": "regex-context" }

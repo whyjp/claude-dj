@@ -1,0 +1,5 @@
+{
+  "detect": false,
+  "expectedRejectionReason": "long-aftermath",
+  "notes": "Aftermath > 50 chars — treated as continuation, not choices (conservative default)"
+}

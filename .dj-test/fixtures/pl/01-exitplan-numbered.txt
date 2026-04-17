@@ -1,0 +1,8 @@
+구현 계획:
+
+1. choiceParser.js에 trace 옵션 추가
+2. stop.js에서 hookLog 콜백 전달
+3. Layer 1 CLI로 fixture 회귀 검증
+4. v0.6.5 bump
+
+어떤 순서로 진행할까요?
