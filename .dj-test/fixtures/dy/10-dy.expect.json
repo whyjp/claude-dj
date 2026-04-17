@@ -1,13 +1,10 @@
 {
   "detect": true,
   "choices": [
-    "Option A: detailed info",
-    "Second choice: detailed info",
-    "Third alternative: detailed in",
-    "Fourth path: detailed info",
-    "Fifth route: detailed info",
-    "Sixth branch: detailed info",
-    "Final option: detailed info"
+    "Option A",
+    "Second choice",
+    "Third alternative",
+    "Fourth path"
   ],
   "expectedRule": "regex-context",
   "notes": "dy seed=42 id=10"

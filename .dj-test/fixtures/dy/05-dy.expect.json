@@ -1,14 +1,9 @@
 {
   "detect": true,
   "choices": [
-    "Option A — extra info",
-    "Second choice — extra info",
-    "Third alternative — extra info",
-    "Fourth path — extra info",
-    "Fifth route — extra info",
-    "Sixth branch — extra info",
-    "Final option — extra info"
+    "Option A: detailed info",
+    "Second choice: detailed info"
   ],
-  "expectedRule": "fenced-block",
+  "expectedRule": "regex-context",
   "notes": "dy seed=42 id=5"
 }

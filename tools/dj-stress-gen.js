@@ -15,6 +15,9 @@ const seed = parseInt(flags.seed ?? '42', 10);
 const count = parseInt(flags.count ?? '10', 10);
 const out = flags.out ?? '.dj-test/fixtures/dy';
 
+if (Number.isNaN(seed)) { console.error('Invalid --seed value. Use --seed=N (equals, no space)'); process.exit(1); }
+if (Number.isNaN(count) || count < 1) { console.error('Invalid --count. Use --count=N where N >= 1'); process.exit(1); }
+
 // Deterministic PRNG — Mulberry32
 function mulberry32(a) {
   return function () {
@@ -35,7 +38,6 @@ const AXES = {
   preamble: ['none', 'short', 'long', 'analysis'],
   postamble: ['none', 'short', 'question'],
   fence: [false, true],
-  labelLen: ['short', 'medium', 'long'],
 };
 
 const LABELS = {
@@ -57,17 +59,22 @@ const POSTAMBLES = {
   question: { ko: '\n\n어떤 걸 선택하시겠어요?', en: '\n\nWhich one do you pick?', mixed: '\n\n어떤 one을 pick?' },
 };
 
+function explanationSuffix(explanation, lang) {
+  if (explanation === 'none') return '';
+  if (explanation === 'emdash') return ' — ' + (lang === 'ko' ? '추가 설명' : 'extra info');
+  if (explanation === 'paren') return ' (' + (lang === 'ko' ? '부가 설명' : 'extra info') + ')';
+  if (explanation === 'colon') return ': ' + (lang === 'ko' ? '상세 설명' : 'detailed info');
+  return '';
+}
+
 function formatLine(idx, prefix, label, explanation, lang) {
-  const expText = explanation === 'none' ? '' :
-    explanation === 'emdash' ? ' — ' + (lang === 'ko' ? '추가 설명' : 'extra info') :
-    explanation === 'paren' ? ' (' + (lang === 'ko' ? '부가 설명' : 'extra info') + ')' :
-    explanation === 'colon' ? ': ' + (lang === 'ko' ? '상세 설명' : 'detailed info') : '';
-  const body = label + expText;
+  const body = label + explanationSuffix(explanation, lang);
   switch (prefix) {
     case 'bare':  return `${idx}. ${body}`;
     case 'bold':  return `**${idx}.** ${body}`;
     case 'dash':  return `- ${idx}. ${body}`;
     case 'paren': return `(${idx}) ${body}`;
+    default: throw new Error(`Unknown prefix: ${prefix}`);
   }
 }
 
@@ -80,7 +87,6 @@ function generate(id) {
     preamble: pick(AXES.preamble),
     postamble: pick(AXES.postamble),
     fence: pick(AXES.fence),
-    labelLen: pick(AXES.labelLen),
   };
 
   const labels = LABELS[axes.language].slice(0, axes.count);
@@ -105,11 +111,7 @@ function generate(id) {
 
   // Build choice labels as the parser will extract them (label + explanation text)
   const choiceLabels = labels.map((l) => {
-    const expText = axes.explanation === 'none' ? '' :
-      axes.explanation === 'emdash' ? ' — ' + (axes.language === 'ko' ? '추가 설명' : 'extra info') :
-      axes.explanation === 'paren' ? ' (' + (axes.language === 'ko' ? '부가 설명' : 'extra info') + ')' :
-      axes.explanation === 'colon' ? ': ' + (axes.language === 'ko' ? '상세 설명' : 'detailed info') : '';
-    return (l + expText).slice(0, 30);
+    return (l + explanationSuffix(axes.explanation, axes.language)).slice(0, 30);
   });
 
   return {

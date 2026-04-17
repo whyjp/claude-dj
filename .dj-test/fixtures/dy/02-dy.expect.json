@@ -1,9 +1,13 @@
 {
   "detect": true,
   "choices": [
-    "Option 하나: detailed info",
-    "두 번째 path: detailed info",
-    "Third 대안: detailed info"
+    "Option A",
+    "Second choice",
+    "Third alternative",
+    "Fourth path",
+    "Fifth route",
+    "Sixth branch",
+    "Final option"
   ],
   "expectedRule": "regex-context",
   "notes": "dy seed=42 id=2"

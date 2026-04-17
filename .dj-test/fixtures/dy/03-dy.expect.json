@@ -1,10 +1,10 @@
 {
   "detect": true,
   "choices": [
-    "Option 하나 — extra info",
-    "두 번째 path — extra info",
-    "Third 대안 — extra info",
-    "Fourth 방법 — extra info"
+    "옵션 하나 (부가 설명)",
+    "두 번째 선택 (부가 설명)",
+    "세 번째 대안 (부가 설명)",
+    "네 번째 방법 (부가 설명)"
   ],
   "expectedRule": "fenced-block",
   "notes": "dy seed=42 id=3"

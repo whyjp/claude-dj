@@ -1,5 +1,11 @@
-상황 파악을 위해 which direction이 좋을까요?
+Analysis results:
 
-1. Option 하나: detailed info
-2. 두 번째 path: detailed info
-3. Third 대안: detailed info
+**1.** Option A
+**2.** Second choice
+**3.** Third alternative
+**4.** Fourth path
+**5.** Fifth route
+**6.** Sixth branch
+**7.** Final option
+
+Which one do you pick?

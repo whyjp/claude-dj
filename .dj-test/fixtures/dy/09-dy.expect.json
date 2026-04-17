@@ -1,14 +1,10 @@
 {
   "detect": true,
   "choices": [
-    "Option A (extra info)",
-    "Second choice (extra info)",
-    "Third alternative (extra info)",
-    "Fourth path (extra info)",
-    "Fifth route (extra info)",
-    "Sixth branch (extra info)",
-    "Final option (extra info)"
+    "Option 하나",
+    "두 번째 path",
+    "Third 대안"
   ],
-  "expectedRule": "fenced-block",
+  "expectedRule": "regex-context",
   "notes": "dy seed=42 id=9"
 }

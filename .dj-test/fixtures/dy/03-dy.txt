@@ -1,8 +1,8 @@
-분석 results:
-
 [claude-dj-choices]
-1. Option 하나 — extra info
-2. 두 번째 path — extra info
-3. Third 대안 — extra info
-4. Fourth 방법 — extra info
+- 1. 옵션 하나 (부가 설명)
+- 2. 두 번째 선택 (부가 설명)
+- 3. 세 번째 대안 (부가 설명)
+- 4. 네 번째 방법 (부가 설명)
 [/claude-dj-choices]
+
+참고 바랍니다.

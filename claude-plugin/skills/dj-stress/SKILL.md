@@ -128,9 +128,10 @@ After all 39 fixtures:
 | pd/ (positive)     | 10 | X | Y |
 | ex/ (edge)         | 7 | X | Y |
 | pl/ (plan-mode)    | 5 | X | Y |
-| **Total**          | **39** | **X** | **Y** |
+| dy/ (dynamic)      | N | X | Y |
+| **Total**          | **39+N** | **X** | **Y** |
 
-Accuracy: (X / 39) × 100 = Z%
+Accuracy: (X / (39+N)) × 100 = Z%
 Target: ≥ 95% agreement with Layer 1 (`node tools/dj-parse.js --all`).
 ```
 
