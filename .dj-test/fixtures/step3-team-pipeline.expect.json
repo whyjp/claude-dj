@@ -1,0 +1,5 @@
+{
+  "detect": false,
+  "expectedRejectionReason": "heading-colon-preamble",
+  "notes": "Team pipeline plan — heading + em-dash descriptions"
+}

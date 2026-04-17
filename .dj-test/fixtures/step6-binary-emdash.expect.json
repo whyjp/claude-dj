@@ -1,0 +1,6 @@
+{
+  "detect": true,
+  "choices": ["적용 — 테스트 통과 확인됨", "취소"],
+  "expectedRule": "regex-context",
+  "notes": "Binary choice with em-dash explanation in one item (v0.5.5 fix)"
+}

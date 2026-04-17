@@ -1,0 +1,5 @@
+{
+  "detect": false,
+  "expectedRejectionReason": "heading-colon-preamble",
+  "notes": "Analysis report — preamble ends with ':', substantial aftermath"
+}

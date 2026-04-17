@@ -1,0 +1,6 @@
+{
+  "detect": true,
+  "choices": ["전체 리팩터링", "부분 수정", "현재 상태 유지"],
+  "expectedRule": "regex-context",
+  "notes": "Preamble ends with question mark → real choices"
+}

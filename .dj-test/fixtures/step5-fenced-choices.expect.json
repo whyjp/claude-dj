@@ -1,0 +1,6 @@
+{
+  "detect": true,
+  "choices": ["커밋하고 푸시", "추가 수정", "변경사항 되돌리기", "리뷰 요청"],
+  "expectedRule": "fenced-block",
+  "notes": "Fenced block → always detect"
+}

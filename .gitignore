@@ -1,7 +1,8 @@
 .superpowers/
 .claude/
 .omc/
-.dj-test/
+.dj-test/*
+!.dj-test/fixtures/
 node_modules/
 logs/
 ulanzi/sdk/

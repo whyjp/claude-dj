@@ -1,0 +1,12 @@
+Team 파이프라인 구성:
+
+1. architect (opus) — 전체 아키텍처 리뷰, WebSocket 프로토콜 재설계 제안
+2. executor (sonnet) — 구현 작업 3건 병렬 실행
+   - bridge/server.js 리팩터링
+   - hooks/choiceParser.js 신규 파서 통합
+   - public/js/d200-renderer.js 버튼 레이아웃 개선
+3. test-engineer (sonnet) — TDD 워크플로우, 실패 테스트 먼저 작성
+4. code-reviewer (opus) — SOLID 원칙 점검, 보안 취약점 스캔
+5. verifier (haiku) — 최종 검증, 회귀 테스트 실행
+
+예상 소요: 5개 에이전트, 3 라운드. 병렬 실행으로 최적화합니다.

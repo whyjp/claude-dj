@@ -1,0 +1,5 @@
+{
+  "detect": false,
+  "expectedRejectionReason": "em-dash-with-file-reference",
+  "notes": "Autopilot plan — items have em-dash markers and file:line refs, not choices"
+}

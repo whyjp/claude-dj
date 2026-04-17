@@ -1,6 +1,6 @@
 {
   "name": "claude-dj",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "Control Claude Code with physical buttons or browser — no terminal focus needed",
   "type": "module",
   "main": "claude-plugin/bridge/server.js",
@@ -16,7 +16,9 @@
     "bump:patch": "node scripts/bump-version.js patch",
     "bump:minor": "node scripts/bump-version.js minor",
     "bump:major": "node scripts/bump-version.js major",
-    "setup": "node tools/setup.js"
+    "setup": "node tools/setup.js",
+    "dj:parse": "node tools/dj-parse.js",
+    "dj:parse:all": "node tools/dj-parse.js --all"
   },
   "keywords": [
     "claude-code",
