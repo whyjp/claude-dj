@@ -1,0 +1,11 @@
+{
+  "detect": true,
+  "choices": [
+    "Option 하나 — extra info",
+    "두 번째 path — extra info",
+    "Third 대안 — extra info",
+    "Fourth 방법 — extra info"
+  ],
+  "expectedRule": "fenced-block",
+  "notes": "dy seed=42 id=3"
+}

@@ -1,0 +1,5 @@
+상황 파악을 위해 which direction이 좋을까요?
+
+1. Option 하나: detailed info
+2. 두 번째 path: detailed info
+3. Third 대안: detailed info

@@ -1,0 +1,11 @@
+Analysis results:
+
+[claude-dj-choices]
+1. Option A (extra info)
+2. Second choice (extra info)
+3. Third alternative (extra info)
+4. Fourth path (extra info)
+5. Fifth route (extra info)
+6. Sixth branch (extra info)
+7. Final option (extra info)
+[/claude-dj-choices]

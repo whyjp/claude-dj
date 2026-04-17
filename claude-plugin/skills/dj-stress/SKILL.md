@@ -98,6 +98,22 @@ For each fixture path `$F`:
 
    Then continue. **Do NOT ask the user Pass/Fail per fixture.**
 
+## Dynamic Block (optional)
+
+Before the summary, generate 10 fresh dynamic fixtures:
+
+```bash
+node tools/dj-stress-gen.js --seed=$(date +%s) --count=10 --out=.dj-test/fixtures/dy
+```
+
+Then iterate `.dj-test/fixtures/dy/*.txt` through the standard per-fixture procedure (steps 1–8 above, including step 6a). Append results to the summary under a new `dy/ (dynamic)` row.
+
+After the summary, clean up:
+
+```bash
+rm -rf .dj-test/fixtures/dy
+```
+
 ## Summary
 
 After all 39 fixtures:

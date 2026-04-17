@@ -1,0 +1,8 @@
+분석 results:
+
+[claude-dj-choices]
+1. Option 하나 — extra info
+2. 두 번째 path — extra info
+3. Third 대안 — extra info
+4. Fourth 방법 — extra info
+[/claude-dj-choices]

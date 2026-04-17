@@ -1,0 +1,9 @@
+{
+  "detect": true,
+  "choices": [
+    "옵션 하나: 상세 설명",
+    "두 번째 선택: 상세 설명"
+  ],
+  "expectedRule": "regex-context",
+  "notes": "dy seed=42 id=4"
+}

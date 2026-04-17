@@ -1,0 +1,10 @@
+{
+  "detect": true,
+  "choices": [
+    "Option 하나",
+    "두 번째 path",
+    "Third 대안"
+  ],
+  "expectedRule": "regex-context",
+  "notes": "dy seed=42 id=8"
+}

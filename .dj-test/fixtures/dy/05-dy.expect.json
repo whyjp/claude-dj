@@ -1,0 +1,14 @@
+{
+  "detect": true,
+  "choices": [
+    "Option A — extra info",
+    "Second choice — extra info",
+    "Third alternative — extra info",
+    "Fourth path — extra info",
+    "Fifth route — extra info",
+    "Sixth branch — extra info",
+    "Final option — extra info"
+  ],
+  "expectedRule": "fenced-block",
+  "notes": "dy seed=42 id=5"
+}

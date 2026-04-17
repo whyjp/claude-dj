@@ -1,0 +1,10 @@
+{
+  "detect": true,
+  "choices": [
+    "옵션 하나 (부가 설명)",
+    "두 번째 선택 (부가 설명)",
+    "세 번째 대안 (부가 설명)"
+  ],
+  "expectedRule": "fenced-block",
+  "notes": "dy seed=42 id=7"
+}

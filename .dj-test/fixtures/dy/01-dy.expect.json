@@ -1,0 +1,5 @@
+{
+  "detect": false,
+  "expectedRejectionReason": "axis-driven-negative",
+  "notes": "dy seed=42 id=1"
+}
