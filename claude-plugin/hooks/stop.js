@@ -64,10 +64,11 @@ async function main() {
     let choices = null;
     const stdinText = parsed.last_assistant_message || null;
     let src = 'none';
+    const traceStdin = (d) => hookLog('choiceParser', JSON.stringify({ ...d, source: 'stdin' }));
 
     if (stdinText) {
-      const fenced = parseFencedChoices(stdinText);
-      const regex = parseRegexChoices(stdinText);
+      const fenced = parseFencedChoices(stdinText, { trace: traceStdin });
+      const regex = parseRegexChoices(stdinText, { trace: traceStdin });
       choices = fenced || regex;
       src = fenced ? 'stdin-fenced' : regex ? 'stdin-regex' : 'none';
     }
@@ -77,7 +78,9 @@ async function main() {
     if (!choices && parsed.transcript_path) {
       const transcriptText = extractTranscriptText(parsed.transcript_path);
       if (transcriptText) {
-        const fenced = parseFencedChoices(transcriptText);
+        const fenced = parseFencedChoices(transcriptText, {
+          trace: (d) => hookLog('choiceParser', JSON.stringify({ ...d, source: 'transcript' })),
+        });
         if (fenced) {
           choices = fenced;
           src = 'transcript-fenced';
