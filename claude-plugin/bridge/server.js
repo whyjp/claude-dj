@@ -95,9 +95,30 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-app.get('/api/logs', (req, res) => {
-  const n = Math.min(parseInt(req.query.n) || 50, 200);
-  res.json(getRecentLogs(n));
+app.get('/api/logs', async (req, res) => {
+  const source = req.query.source || 'bridge';
+  const n = Math.min(parseInt(req.query.n) || 50, 500);
+  if (source === 'bridge') {
+    return res.json(getRecentLogs(n));
+  }
+  if (source === 'hooks') {
+    try {
+      const { readFileSync } = await import('node:fs');
+      const path = await import('node:path');
+      const { fileURLToPath } = await import('node:url');
+      const __dirname = path.dirname(fileURLToPath(import.meta.url));
+      const hooksLog = path.join(__dirname, '..', 'logs', 'hooks.log');
+      const text = readFileSync(hooksLog, 'utf8');
+      const lines = text.trim().split('\n').filter(Boolean);
+      const since = req.query.since;
+      const filtered = since ? lines.filter(l => l.slice(0, 23) >= since) : lines;
+      return res.json(filtered.slice(-n));
+    } catch (e) {
+      if (e.code === 'ENOENT') return res.json([]);
+      return res.status(500).json({ error: String(e) });
+    }
+  }
+  res.status(400).json({ error: `unknown source: ${source}` });
 });
 
 app.get('/api/deck-state', (req, res) => {
