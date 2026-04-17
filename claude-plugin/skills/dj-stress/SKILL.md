@@ -81,6 +81,9 @@ For each fixture path `$F`:
    LOGS=$(curl -s "http://localhost:39200/api/logs?source=hooks&since=$STEP_START&n=100")
    ```
 
+6a. Bridge reachability:
+   If `DECK` is empty or does not contain a valid JSON object, record this fixture as **ERROR** (not FAIL) with reason `bridge_unreachable` and continue to the next fixture. Do not attempt classification.
+
 7. Classify:
    - If `expected.detect === true`: PASS iff `DECK.preset === 'choice'` AND the deck's choice count equals `expected.choices.length`.
    - If `expected.detect === false`: PASS iff `DECK.preset !== 'choice'`.
