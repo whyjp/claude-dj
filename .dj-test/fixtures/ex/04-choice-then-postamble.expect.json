@@ -1,5 +1,6 @@
 {
-  "detect": false,
-  "expectedRejectionReason": "long-aftermath",
-  "notes": "Aftermath > 50 chars — treated as continuation, not choices (conservative default)"
+  "detect": true,
+  "choices": ["옵션 A", "옵션 B", "옵션 C"],
+  "expectedRule": "regex-context",
+  "notes": "Aftermath has continuation text but under 50 chars — accept is reasonable; Task 3 rationale ('Aftermath > 50 chars') mis-counted. If this becomes a real FN in the wild, tighten with an aftermath-pattern heuristic."
 }

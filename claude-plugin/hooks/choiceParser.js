@@ -7,9 +7,27 @@ const QUESTION_TAIL_RE = /[?？]\s*$/m;
 const CHOICE_KEYWORD_RE =
   /(?:선택|골라|어떤|어느|진행할|할까|주세요|원하시|방식으로|어떻게|결정|필요합니다|which|choose|select|pick|prefer|decide|need)/i;
 const HEADING_COLON_RE = /[:：]\s*$/;
+const AFTERMATH_QUESTION_RE = /[?？]/;
 
 function stripMarkdown(text) {
   return text.replace(/\*\*/g, '').replace(/\*/g, '').trim();
+}
+
+// Split a raw regex capture into a label. When the captured text contains a
+// bold-closing `**` that appears before a ` — ` (or ` -- `) separator, the
+// bold-wrapped segment is taken as the label — the em-dash in that shape is a
+// trailing explanation sitting OUTSIDE the bold wrap (see ex/01-bold-plus-emdash).
+// When the em-dash is inline with no bold-close before it (see ex/02, ex/06,
+// step6), the dash is part of the label content and is preserved verbatim.
+// Always caps output at 30 chars to match downstream button sizing.
+function splitLabel(raw) {
+  const emIdx = raw.indexOf(' — ');
+  const dashIdx = raw.indexOf(' -- ');
+  const sepIdx = [emIdx, dashIdx].filter((i) => i > 0).sort((a, b) => a - b)[0];
+  const boldCloseIdx = raw.indexOf('**');
+  const useSplit = sepIdx != null && boldCloseIdx !== -1 && boldCloseIdx < sepIdx;
+  const cut = useSplit ? raw.slice(0, sepIdx) : raw;
+  return stripMarkdown(cut).slice(0, 30);
 }
 
 function emit(trace, record) {
@@ -47,7 +65,7 @@ export function parseFencedChoices(text, { trace } = {}) {
   for (const line of block.split('\n')) {
     const m = line.match(LINE_RE);
     if (m) {
-      choices.push({ index: m[1], label: stripMarkdown(m[2]).slice(0, 30) });
+      choices.push({ index: m[1], label: splitLabel(m[2]) });
     }
     if (choices.length >= 10) break;
   }
@@ -78,6 +96,10 @@ function contextAccepts(tail, matches, trace) {
   }
   if (CHOICE_KEYWORD_RE.test(preamble)) {
     emit(trace, { phase: '3c-context', accept: true, rule: 'choice-keyword' });
+    return true;
+  }
+  if (AFTERMATH_QUESTION_RE.test(aftermath)) {
+    emit(trace, { phase: '3c-context', accept: true, rule: 'aftermath-question' });
     return true;
   }
   if (HEADING_COLON_RE.test(lastPreambleLine)) {
@@ -147,7 +169,7 @@ export function parseRegexChoices(text, { trace } = {}) {
 
     const choices = matches.slice(0, 10).map((m) => ({
       index: m[1],
-      label: stripMarkdown(m[2]).slice(0, 30),
+      label: splitLabel(m[2]),
     }));
     emit(trace, { phase: '3d-gate', patternIdx, accept: true, count: choices.length });
     return choices;
